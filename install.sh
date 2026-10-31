@@ -17,8 +17,8 @@ NC='\033[0m' # No Color
 
 echo -e "${CYAN}${BOLD}"
 echo "================================================================================"
-echo "          BeE PRINTER PLATFORM - TRUNG TÂM QUẢN LÝ NÔNG TRẠI IN 3D              "
-echo "                       Powered by BeeStem Solutions                            "
+echo "          BeE PRINTER PLATFORM - TRUNG TÂM QUẢN LÝ MÁY IN 3D                    "
+echo "                     Powered by BeE STEM Solutions                              "
 echo "================================================================================"
 echo -e "${NC}"
 

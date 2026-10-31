@@ -1,7 +1,7 @@
 # BeE Printer Platform (3D Printer Platform)
 
-> **Trung tâm điều hành và quản lý nông trại in 3D đa nền tảng (Bambu Lab, Klipper, Prusa & Elegoo).**  
-> *Phát triển bởi [BeeStem Solutions](https://beestemsolutions.com)*
+> **Trung tâm điều hành và quản lý máy in 3D đa nền tảng (Bambu Lab, Klipper, Prusa & Elegoo).**  
+> *Phát triển bởi [BeE STEM Solutions](https://beestemsolutions.com)*
 
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 [![Docker Support](https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
@@ -89,7 +89,7 @@ DATA_PATH=./data
 ## ⚖️ Giấy Phép & Bản Quyền
 
 - **Core Platform**: Phát hành theo giấy phép mã nguồn mở **AGPLv3** (kế thừa từ dự án Printbuddy).
-- **Pro Sidecar Extension**: Bản quyền thương mại thuộc về **BeeStem Solutions**. Cung cấp 7 ngày dùng thử miễn phí đầy đủ tính năng Auto Swap PEI và Smart Power.
+- **Pro Sidecar Extension**: Bản quyền thương mại thuộc về **BeE STEM Solutions**. Cung cấp 7 ngày dùng thử miễn phí đầy đủ tính năng Auto Swap PEI và Smart Power.
 
 ---
 
