@@ -71,6 +71,17 @@ if ! command -v docker >/dev/null 2>&1; then
             rm -f /tmp/Docker.dmg
         fi
         echo -e "${GREEN}✅ Đã cài đặt Docker Desktop thành công!${NC}"
+    elif [[ "$OS" == MINGW* || "$OS" == MSYS* || "$OS" == CYGWIN* ]]; then
+        echo -e "${CYAN}Phát hiện Windows (Git Bash/MSYS). Đang cài đặt Docker Desktop...${NC}"
+        if command -v winget.exe >/dev/null 2>&1; then
+            winget.exe install -e --id Docker.DockerDesktop --accept-source-agreements --accept-package-agreements
+        else
+            echo -e "${CYAN}Đang tải Docker Desktop Installer.exe...${NC}"
+            curl -L -o /tmp/DockerInstaller.exe "https://desktop.docker.com/win/main/amd64/Docker%20Desktop%20Installer.exe"
+            /tmp/DockerInstaller.exe install --quiet
+            rm -f /tmp/DockerInstaller.exe
+        fi
+        echo -e "${GREEN}✅ Cài đặt Docker Desktop thành công!${NC}"
     else
         echo -e "${RED}❌ Hệ điều hành ${OS} chưa hỗ trợ tự động cài Docker. Vui lòng cài Docker thủ công.${NC}"
         exit 1

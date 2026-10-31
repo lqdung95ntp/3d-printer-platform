@@ -24,16 +24,20 @@
 
 ## Cài Đặt Nhanh (1-Command Quick Start)
 
-Hỗ trợ mọi hệ điều hành: **Ubuntu, Debian, Raspberry Pi OS, macOS, Windows WSL**.
-
-Mở Terminal và chạy lệnh sau:
-
+### Dành cho Linux, macOS & Raspberry Pi OS (Terminal)
+Mở Terminal và dán lệnh sau:
 ```bash
 curl -fsSL https://raw.githubusercontent.com/lqdung95ntp/3d-printer-platform/main/install.sh | bash
 ```
 
+### Dành cho Windows 10 / 11 (PowerShell)
+Mở PowerShell và dán lệnh sau:
+```powershell
+irm https://raw.githubusercontent.com/lqdung95ntp/3d-printer-platform/main/install.ps1 | iex
+```
+
 Sau khi hoàn tất, mở trình duyệt web và truy cập:
-**`http://<IP-của-máy>:8000`**
+**`http://localhost:8000`** (hoặc `http://<IP-của-máy>:8000`)
 
 ---
 
