@@ -41,9 +41,9 @@ esac
 
 # 2. Check Docker
 if ! command -v docker >/dev/null 2>&1; then
-    echo -e "${YELLOW}⚙️  Docker chưa được cài đặt trên máy.${NC}"
+    echo -e "${YELLOW}⚠️  Docker chưa được cài đặt trên máy.${NC}"
     if [ "$OS" = "Linux" ]; then
-        echo -e "${CYAN}🚀 Đang tự động cài đặt Docker qua script chính thức...${NC}"
+        echo -e "${CYAN}Đang tự động cài đặt Docker qua script chính thức...${NC}"
         curl -fsSL https://get.docker.com | sh
         if [ -n "$SUDO_USER" ]; then
             usermod -aG docker "$SUDO_USER" || true
@@ -70,7 +70,7 @@ echo -e "${GREEN}✅ Docker & Compose sẵn sàng!${NC}"
 
 # 4. Setup Directories & Environment
 WORKDIR="$(pwd)"
-echo -e "${BLUE}📂 Thư mục triển khai: ${BOLD}${WORKDIR}${NC}"
+echo -e "${BLUE}Thư mục triển khai: ${BOLD}${WORKDIR}${NC}"
 
 mkdir -p "${WORKDIR}/data" "${WORKDIR}/logs"
 
@@ -97,7 +97,7 @@ if [ -z "$BEE_PORT" ]; then
 fi
 
 # 5. Launch System via Docker Compose
-echo -e "${CYAN}🚀 Đang khởi động hệ thống BeE Printer Platform (Core & Pro Sidecar)...${NC}"
+echo -e "${CYAN}Đang khởi động hệ thống BeE Printer Platform (Core & Pro Sidecar)...${NC}"
 $COMPOSE_CMD up -d
 
 # 6. Detect IP Address
@@ -116,16 +116,16 @@ fi
 
 echo -e "\n${GREEN}${BOLD}"
 echo "================================================================================"
-echo "          🎉 BeE PRINTER PLATFORM ĐÃ KHỞI CHẠY THÀNH CÔNG!                      "
+echo "          BeE PRINTER PLATFORM ĐÃ KHỞI CHẠY THÀNH CÔNG                          "
 echo "================================================================================"
 echo -e "${NC}"
-echo -e "${BOLD}🌐 Mở trình duyệt web và truy cập Dashboard tại:${NC}"
-echo -e "   👉 ${CYAN}${BOLD}http://${SERVER_IP}:${BEE_PORT}${NC}"
+echo -e "${BOLD}Mở trình duyệt web và truy cập Dashboard tại:${NC}"
+echo -e "   URL: ${CYAN}${BOLD}http://${SERVER_IP}:${BEE_PORT}${NC}"
 if [ "$SERVER_IP" != "localhost" ]; then
-    echo -e "   👉 ${CYAN}http://localhost:${BEE_PORT}${NC} (Nếu mở trực tiếp trên máy này)"
+    echo -e "   Local: ${CYAN}http://localhost:${BEE_PORT}${NC}"
 fi
 echo ""
-echo -e "${BOLD}📌 Các lệnh quản lý thông dụng:${NC}"
+echo -e "${BOLD}Lệnh quản lý thông dụng:${NC}"
 echo -e "   • Xem log hệ thống:      ${YELLOW}${COMPOSE_CMD} logs -f${NC}"
 echo -e "   • Khởi động lại:         ${YELLOW}${COMPOSE_CMD} restart${NC}"
 echo -e "   • Dừng hệ thống:         ${YELLOW}${COMPOSE_CMD} down${NC}"
@@ -133,4 +133,3 @@ echo -e "   • Cập nhật bản mới nhất: ${YELLOW}${COMPOSE_CMD} pull &&
 echo ""
 echo -e "${BLUE}Hỗ trợ kỹ thuật & Cộng đồng: https://beestemsolutions.com.vn${NC}"
 echo "================================================================================"
-

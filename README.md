@@ -9,35 +9,35 @@
 
 ---
 
-## 🌟 Tính Năng Nổi Bật
+## Tính Năng Nổi Bật
 
-- 🖨️ **Quản lý đa hãng máy in**: Điều khiển tập trung Bambu Lab (X1, P1, A1, A1 mini), Klipper / Moonraker (Voron, Creality K1, Ender, Neptune...), Prusa và Elegoo.
-- 🔄 **Tự động nhận diện mạng Moonraker**: Tự động phục hồi kết nối khi modem Wi-Fi đổi địa chỉ IP (DHCP lease).
-- ⚡ **Auto Swap PEI (Tự động in 24/7)**: Tự động đợi bàn in nguội về nhiệt độ an toàn (38°C), kích hoạt gạt tấm PEI và tự động kéo file in tiếp theo từ hàng đợi.
-- 🔌 **Quản lý nguồn thông minh (Smart Power)**: Tự động ngắt điện qua Smart Plug sau 30 phút rảnh rỗi và đánh thức trước 3 phút.
-- 🎯 **Bỏ qua chi tiết lỗi (Skip Objects)**: Xem trực quan 2D Vector Bed, cho phép click bỏ qua chi tiết bị bung chân/hỏng trên bàn in nhiều món mà không làm hỏng cả mẻ in.
-- 📦 **Quản lý cuộn nhựa (Spoolman)**: Theo dõi lượng nhựa tiêu hao, màu sắc và tự động map cuộn nhựa trước khi in.
-- 📷 **Camera giám sát độ trễ thấp**: Hỗ trợ WebRTC, go2rtc và MJPEG xem mượt mà trên điện thoại.
-- 💾 **Nạp Firmware an toàn qua Web UI**: Tải trực tiếp file `.bin`/`.zip` lên thẻ nhớ máy in qua giao thức FTPS nội bộ hoặc Moonraker API.
+- **Quản lý đa hãng máy in**: Điều khiển tập trung Bambu Lab (X1, P1, A1, A1 mini), Klipper / Moonraker (Voron, Creality K1, Ender, Neptune...), Prusa và Elegoo.
+- **Tự động nhận diện mạng Moonraker**: Tự động phục hồi kết nối khi modem Wi-Fi đổi địa chỉ IP (DHCP lease).
+- **Auto Swap PEI (In liên tục 24/7)**: Tự động đợi bàn in nguội về nhiệt độ an toàn (38°C), kích hoạt gạt tấm PEI và tự động kéo file in tiếp theo từ hàng đợi.
+- **Quản lý nguồn thông minh (Smart Power)**: Tự động ngắt điện qua Smart Plug sau 30 phút rảnh rỗi và đánh thức trước 3 phút.
+- **Bỏ qua chi tiết lỗi (Skip Objects)**: Xem trực quan 2D Vector Bed, cho phép click bỏ qua chi tiết bị bung chân/hỏng trên bàn in nhiều món mà không làm hỏng cả mẻ in.
+- **Quản lý cuộn nhựa (Spoolman)**: Theo dõi lượng nhựa tiêu hao, màu sắc và tự động map cuộn nhựa trước khi in.
+- **Camera giám sát độ trễ thấp**: Hỗ trợ WebRTC, go2rtc và MJPEG xem mượt mà trên điện thoại.
+- **Nạp Firmware an toàn qua Web UI**: Tải trực tiếp file `.bin`/`.zip` lên thẻ nhớ máy in qua giao thức FTPS nội bộ hoặc Moonraker API.
 
 ---
 
-## 🚀 Cài Đặt Nhanh Bằng 1 Dòng Lệnh (1-Command Quick Start)
+## Cài Đặt Nhanh (1-Command Quick Start)
 
 Hỗ trợ mọi hệ điều hành: **Ubuntu, Debian, Raspberry Pi OS, macOS, Windows WSL**.
 
-Chỉ cần mở Terminal và dán lệnh sau:
+Mở Terminal và chạy lệnh sau:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/lqdung95ntp/3d-printer-platform/main/install.sh | bash
 ```
 
-Sau khi chạy xong, mở trình duyệt web và truy cập:
-👉 **`http://<IP-của-máy>:8000`**
+Sau khi hoàn tất, mở trình duyệt web và truy cập:
+**`http://<IP-của-máy>:8000`**
 
 ---
 
-## ⚙️ Cài Đặt Thủ Công Bằng Docker Compose
+## Cài Đặt Bằng Docker Compose
 
 Nếu bạn muốn tự clone và quản lý bằng Docker:
 
@@ -58,9 +58,9 @@ docker compose logs -f
 
 ---
 
-## 🔧 Cấu Hình Tùy Biến (`.env`)
+## Cấu Hình (.env)
 
-Mặc định hệ thống hoạt động ngay mà không cần cấu hình. Nếu bạn cần đổi cổng hoặc đường dẫn lưu dữ liệu, chỉnh sửa file `.env`:
+Mặc định hệ thống hoạt động ngay mà không cần cấu hình. Nếu cần đổi cổng hoặc đường dẫn lưu dữ liệu, chỉnh sửa file `.env`:
 
 ```env
 # Cổng truy cập Web Dashboard (Mặc định: 8000)
@@ -75,7 +75,7 @@ DATA_PATH=./data
 
 ---
 
-## 🛠️ Quản Lý Hệ Thống
+## Quản Lý Hệ Thống
 
 | Thao tác | Câu lệnh |
 | :--- | :--- |
@@ -86,15 +86,14 @@ DATA_PATH=./data
 
 ---
 
-## ⚖️ Giấy Phép & Bản Quyền
+## Giấy Phép & Bản Quyền
 
 - **Core Platform**: Phát hành theo giấy phép mã nguồn mở **AGPLv3** (kế thừa từ dự án Printbuddy).
 - **Pro Sidecar Extension**: Bản quyền thương mại thuộc về **BeE STEM Solutions**. Cung cấp 7 ngày dùng thử miễn phí đầy đủ tính năng Auto Swap PEI và Smart Power.
 
 ---
 
-## 🌐 Hỗ Trợ & Cộng Đồng
+## Hỗ Trợ & Cộng Đồng
 
 - **Trang chủ & Cửa hàng Kit**: [beestemsolutions.com.vn](https://beestemsolutions.com.vn)
 - **Báo lỗi & Góp ý tính năng**: [GitHub Issues](https://github.com/lqdung95ntp/3d-printer-platform/issues)
-
