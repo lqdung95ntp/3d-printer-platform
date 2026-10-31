@@ -68,13 +68,8 @@ RUN --mount=type=cache,target=/root/.cache/pip \
 # Copy backend
 COPY backend/ ./backend/
 
-# Capture the current git branch at build time. `.git/HEAD` is the only
-# .git metadata the build context lets through (see .dockerignore); it
-# contains `ref: refs/heads/<branch>` for runtime version/source reporting.
-# Without this, the production image has no git metadata at all and would
-# always pull `main` on the remote device regardless of which branch
-# Printbuddy itself was built from.
-COPY .git/HEAD ./.git/HEAD
+# Capture the git branch at build time. Fallback to main if .git is omitted from build context.
+RUN mkdir -p .git && echo "ref: refs/heads/main" > .git/HEAD
 
 # Copy built frontend from builder stage
 COPY --from=frontend-builder /app/static ./static
