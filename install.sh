@@ -39,7 +39,7 @@ case "$ARCH" in
         ;;
 esac
 
-# 2. Check Docker
+# 2. Check and Auto-Install Docker if missing
 if ! command -v docker >/dev/null 2>&1; then
     echo -e "${YELLOW}⚠️  Docker chưa được cài đặt trên máy.${NC}"
     if [ "$OS" = "Linux" ]; then
@@ -51,13 +51,58 @@ if ! command -v docker >/dev/null 2>&1; then
             usermod -aG docker "$USER" || true
         fi
         echo -e "${GREEN}✅ Cài đặt Docker thành công!${NC}"
+    elif [ "$OS" = "Darwin" ]; then
+        echo -e "${CYAN}Đang tự động cài đặt Docker Desktop cho macOS...${NC}"
+        if command -v brew >/dev/null 2>&1; then
+            echo -e "${CYAN}Cài đặt qua Homebrew (brew install --cask docker)...${NC}"
+            brew install --cask docker
+        else
+            echo -e "${CYAN}Đang tải bộ cài đặt Docker Desktop từ máy chủ Docker...${NC}"
+            if [ "$ARCH" = "arm64" ] || [ "$ARCH" = "aarch64" ]; then
+                DMG_URL="https://desktop.docker.com/mac/main/arm64/Docker.dmg"
+            else
+                DMG_URL="https://desktop.docker.com/mac/main/amd64/Docker.dmg"
+            fi
+            curl -L -o /tmp/Docker.dmg "$DMG_URL"
+            echo -e "${CYAN}Đang giải nén và cài đặt vào /Applications/Docker.app...${NC}"
+            hdiutil attach /tmp/Docker.dmg -nobrowse -mountpoint /Volumes/Docker >/dev/null 2>&1
+            cp -R /Volumes/Docker/Docker.app /Applications/
+            hdiutil detach /Volumes/Docker >/dev/null 2>&1
+            rm -f /tmp/Docker.dmg
+        fi
+        echo -e "${GREEN}✅ Đã cài đặt Docker Desktop thành công!${NC}"
     else
-        echo -e "${RED}❌ Vui lòng cài đặt Docker Desktop trước khi chạy script này trên macOS/Windows.${NC}"
+        echo -e "${RED}❌ Hệ điều hành ${OS} chưa hỗ trợ tự động cài Docker. Vui lòng cài Docker thủ công.${NC}"
         exit 1
     fi
 fi
 
-# 3. Check Docker Compose
+# 3. Ensure Docker Daemon is Running
+if ! docker info >/dev/null 2>&1; then
+    if [ "$OS" = "Darwin" ]; then
+        echo -e "${CYAN}Đang khởi động Docker Desktop...${NC}"
+        open -a Docker || true
+        echo -n "Đang chờ Docker daemon sẵn sàng"
+        for i in {1..35}; do
+            if docker info >/dev/null 2>&1; then
+                echo -e "\n${GREEN}✅ Docker daemon đã sẵn sàng!${NC}"
+                break
+            fi
+            echo -n "."
+            sleep 2
+        done
+        if ! docker info >/dev/null 2>&1; then
+            echo -e "\n${YELLOW}⚠️  Docker Desktop đang cần cấp quyền lần đầu.${NC}"
+            echo -e "${YELLOW}Vui lòng mở ứng dụng Docker Desktop trên màn hình, bấm Accept/Đồng ý, sau đó chạy lại script.${NC}"
+            exit 0
+        fi
+    elif [ "$OS" = "Linux" ]; then
+        echo -e "${CYAN}Đang khởi động Docker service...${NC}"
+        sudo systemctl start docker || sudo service docker start || true
+    fi
+fi
+
+# 4. Check Docker Compose
 if docker compose version >/dev/null 2>&1; then
     COMPOSE_CMD="docker compose"
 elif command -v docker-compose >/dev/null 2>&1; then
@@ -68,8 +113,23 @@ else
 fi
 echo -e "${GREEN}✅ Docker & Compose sẵn sàng!${NC}"
 
-# 4. Setup Directories & Environment
+# 5. Check and Download Project Files if running from a clean directory
 WORKDIR="$(pwd)"
+if [ ! -f "docker-compose.yml" ]; then
+    INSTALL_DIR="3d-printer-platform"
+    echo -e "${CYAN}Đang tải mã nguồn BeE Printer Platform từ GitHub...${NC}"
+    if command -v git >/dev/null 2>&1; then
+        git clone https://github.com/lqdung95ntp/3d-printer-platform.git "$INSTALL_DIR"
+        cd "$INSTALL_DIR"
+        WORKDIR="$(pwd)"
+    else
+        mkdir -p "$INSTALL_DIR" && cd "$INSTALL_DIR"
+        curl -fsSL https://github.com/lqdung95ntp/3d-printer-platform/archive/refs/heads/main.tar.gz | tar -xz --strip-components=1
+        WORKDIR="$(pwd)"
+    fi
+    echo -e "${GREEN}✅ Đã chuẩn bị mã nguồn tại: ${WORKDIR}${NC}"
+fi
+
 echo -e "${BLUE}Thư mục triển khai: ${BOLD}${WORKDIR}${NC}"
 
 mkdir -p "${WORKDIR}/data" "${WORKDIR}/logs"
@@ -96,11 +156,11 @@ if [ -z "$BEE_PORT" ]; then
     BEE_PORT=8000
 fi
 
-# 5. Launch System via Docker Compose
+# 6. Launch System via Docker Compose
 echo -e "${CYAN}Đang khởi động hệ thống BeE Printer Platform (Core & Pro Sidecar)...${NC}"
 $COMPOSE_CMD up -d
 
-# 6. Detect IP Address
+# 7. Detect IP Address
 SERVER_IP="localhost"
 if [ "$OS" = "Linux" ]; then
     DETECTED_IP=$(hostname -I 2>/dev/null | awk '{print $1}' || true)
