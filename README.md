@@ -1,7 +1,7 @@
 # BeE Printer Platform (3D Printer Platform)
 
 > **Trung tâm điều hành và quản lý máy in 3D đa nền tảng (Bambu Lab, Klipper, Prusa & Elegoo).**  
-> *Phát triển bởi [BeE STEM Solutions](https://beestemsolutions.com)*
+> *Phát triển bởi [BeE STEM Solutions](https://beestemsolutions.com.vn)*
 
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 [![Docker Support](https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
@@ -95,6 +95,6 @@ DATA_PATH=./data
 
 ## 🌐 Hỗ Trợ & Cộng Đồng
 
-- **Trang chủ & Cửa hàng Kit**: [beestemsolutions.com](https://beestemsolutions.com)
+- **Trang chủ & Cửa hàng Kit**: [beestemsolutions.com.vn](https://beestemsolutions.com.vn)
 - **Báo lỗi & Góp ý tính năng**: [GitHub Issues](https://github.com/lqdung95ntp/3d-printer-platform/issues)
 

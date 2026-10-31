@@ -2,7 +2,7 @@
 # ==============================================================================
 # BeE Printer Platform - Official 1-Command Installer
 # Supported OS: Debian, Ubuntu, Raspberry Pi OS, macOS, Linux x86_64 & ARM64
-# Website: https://beestemsolutions.com
+# Website: https://beestemsolutions.com.vn
 # ==============================================================================
 set -e
 
@@ -131,6 +131,6 @@ echo -e "   • Khởi động lại:         ${YELLOW}${COMPOSE_CMD} restart${N
 echo -e "   • Dừng hệ thống:         ${YELLOW}${COMPOSE_CMD} down${NC}"
 echo -e "   • Cập nhật bản mới nhất: ${YELLOW}${COMPOSE_CMD} pull && ${COMPOSE_CMD} up -d${NC}"
 echo ""
-echo -e "${BLUE}Hỗ trợ kỹ thuật & Cộng đồng: https://beestemsolutions.com${NC}"
+echo -e "${BLUE}Hỗ trợ kỹ thuật & Cộng đồng: https://beestemsolutions.com.vn${NC}"
 echo "================================================================================"
 
