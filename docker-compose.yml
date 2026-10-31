@@ -7,7 +7,7 @@ services:
     build:
       context: ./core
       dockerfile: Dockerfile
-    image: beestemsolutions/bee-core:latest
+    image: ghcr.io/lqdung95ntp/bee-core:latest
     container_name: bee-platform-core
     restart: unless-stopped
     ports:
@@ -34,7 +34,7 @@ services:
   # Isolated service handling Auto Swap PEI, Smart Power & Skip Objects
   # =========================================================================
   pro:
-    image: beestemsolutions/bee-pro:latest
+    image: ghcr.io/lqdung95ntp/bee-pro:latest
     container_name: bee-platform-pro
     restart: unless-stopped
     ports:
