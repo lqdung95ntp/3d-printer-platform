@@ -1,0 +1,332 @@
+import { useMemo } from 'react';
+import { useQueries } from '@tanstack/react-query';
+import { api } from '../api/client';
+import type { PrinterStatus, Printer, SpoolAssignment } from '../api/client';
+import {
+  assignmentsToInventoryRemainMap,
+  buildLoadedFilaments,
+  buildFilamentComparison,
+  buildAmsMapping,
+  computeAmsMapping,
+  type LoadedFilament,
+  type FilamentRequirement,
+} from './useFilamentMapping';
+import {
+  effectivePreferLowest,
+} from '../utils/amsHelpers';
+
+/**
+ * Match status for a single printer's filament configuration.
+ */
+export type PrinterMatchStatus = 'full' | 'partial' | 'missing';
+
+/**
+ * Per-printer configuration for AMS mapping.
+ */
+export interface PerPrinterConfig {
+  /** Whether this printer uses the default mapping or has custom config */
+  useDefault: boolean;
+  /** Manual slot overrides for this printer (slot_id -> globalTrayId) */
+  manualMappings: Record<number, number>;
+  /** Whether this mapping was auto-configured */
+  autoConfigured: boolean;
+}
+
+/**
+ * Result of filament mapping for a single printer.
+ */
+export interface PrinterMappingResult {
+  printerId: number;
+  printerName: string;
+  /** Printer status data */
+  status: PrinterStatus | undefined;
+  /** Whether status is still loading */
+  isLoading: boolean;
+  /** List of loaded filaments in this printer */
+  loadedFilaments: LoadedFilament[];
+  /** Auto-computed AMS mapping for this printer */
+  autoMapping: number[] | undefined;
+  /** Final AMS mapping (considering manual overrides) */
+  finalMapping: number[] | undefined;
+  /** Match status: full (all exact), partial (some mismatches), missing (type not found) */
+  matchStatus: PrinterMatchStatus;
+  /** Number of slots with exact match (type + color) */
+  exactMatches: number;
+  /** Number of slots with type-only match */
+  typeOnlyMatches: number;
+  /** Number of slots with missing type */
+  missingTypes: number;
+  /** Total required slots */
+  totalSlots: number;
+  /** Per-printer config */
+  config: PerPrinterConfig;
+  /** Per-globalTrayId inventory grams remaining, for the lowest-remain sort (#1766) */
+  inventoryByTrayId?: Map<number, number>;
+}
+
+/**
+ * Result of the useMultiPrinterFilamentMapping hook.
+ */
+export interface UseMultiPrinterFilamentMappingResult {
+  /** Results for each selected printer */
+  printerResults: PrinterMappingResult[];
+  /** Whether any printer data is still loading */
+  isLoading: boolean;
+  /** Per-printer configurations */
+  perPrinterConfigs: Record<number, PerPrinterConfig>;
+  /** Update config for a specific printer */
+  updatePrinterConfig: (printerId: number, config: Partial<PerPrinterConfig>) => void;
+  /** Auto-configure all printers based on their loaded filaments */
+  autoConfigureAll: () => void;
+  /** Auto-configure a specific printer */
+  autoConfigurePrinter: (printerId: number) => void;
+  /** Get final mapping for a specific printer (for submission) */
+  getFinalMapping: (printerId: number) => number[] | undefined;
+  /** Check if all printers have acceptable mappings */
+  allPrintersReady: boolean;
+}
+
+/**
+ * Compute match details for a printer given filament requirements and loaded filaments.
+ */
+function computeMatchDetails(
+  filamentReqs: FilamentRequirement[] | undefined,
+  loadedFilaments: LoadedFilament[],
+  manualMappings: Record<number, number>,
+  preferLowest?: boolean,
+  inventoryByTrayId?: Map<number, number>,
+): { exactMatches: number; typeOnlyMatches: number; missingTypes: number; totalSlots: number; status: PrinterMatchStatus } {
+  if (!filamentReqs || filamentReqs.length === 0) {
+    return { exactMatches: 0, typeOnlyMatches: 0, missingTypes: 0, totalSlots: 0, status: 'full' };
+  }
+
+  const comparisons = buildFilamentComparison(
+    { filaments: filamentReqs },
+    loadedFilaments,
+    manualMappings,
+    preferLowest,
+    inventoryByTrayId,
+  );
+
+  let exactMatches = 0;
+  let typeOnlyMatches = 0;
+  let missingTypes = 0;
+
+  for (const c of comparisons) {
+    if (c.status === 'match') {
+      exactMatches++;
+    } else if (c.status === 'type_only') {
+      typeOnlyMatches++;
+    } else {
+      missingTypes++;
+    }
+  }
+
+  const totalSlots = filamentReqs.length;
+  let status: PrinterMatchStatus = 'full';
+  if (missingTypes > 0) {
+    status = 'missing';
+  } else if (typeOnlyMatches > 0) {
+    status = 'partial';
+  }
+
+  return { exactMatches, typeOnlyMatches, missingTypes, totalSlots, status };
+}
+
+/**
+ * Compute AMS mapping with manual overrides applied.
+ */
+function computeMappingWithOverrides(
+  filamentReqs: { filaments: FilamentRequirement[] } | undefined,
+  printerStatus: PrinterStatus | undefined,
+  manualMappings: Record<number, number>,
+  preferLowest?: boolean,
+  inventoryByTrayId?: Map<number, number>,
+  assignments?: SpoolAssignment[],
+  printerId?: number,
+): number[] | undefined {
+  if (!filamentReqs?.filaments || filamentReqs.filaments.length === 0) return undefined;
+
+  const loadedFilaments = buildLoadedFilaments(printerStatus, assignments, printerId);
+  if (loadedFilaments.length === 0) return undefined;
+
+  const comparisons = buildFilamentComparison(
+    filamentReqs,
+    loadedFilaments,
+    manualMappings,
+    preferLowest,
+    inventoryByTrayId,
+  );
+
+  return buildAmsMapping(comparisons);
+}
+
+/**
+ * Default per-printer config (use default mapping).
+ */
+const DEFAULT_PRINTER_CONFIG: PerPrinterConfig = {
+  useDefault: true,
+  manualMappings: {},
+  autoConfigured: false,
+};
+
+/**
+ * Hook to manage filament mapping for multiple printers.
+ * Fetches printer status for all selected printers and computes per-printer mappings.
+ */
+export function useMultiPrinterFilamentMapping(
+  selectedPrinterIds: number[],
+  printers: Printer[] | undefined,
+  filamentReqs: { filaments: FilamentRequirement[] } | undefined,
+  defaultMappings: Record<number, number>,
+  perPrinterConfigs: Record<number, PerPrinterConfig>,
+  setPerPrinterConfigs: React.Dispatch<React.SetStateAction<Record<number, PerPrinterConfig>>>,
+  preferLowest?: boolean,
+  inventoryByTrayIdPerPrinterOrAssignments?: Map<number, Map<number, number>> | SpoolAssignment[],
+): UseMultiPrinterFilamentMappingResult {
+  const assignments = Array.isArray(inventoryByTrayIdPerPrinterOrAssignments)
+    ? inventoryByTrayIdPerPrinterOrAssignments
+    : undefined;
+  const inventoryByTrayIdPerPrinter = inventoryByTrayIdPerPrinterOrAssignments instanceof Map
+    ? inventoryByTrayIdPerPrinterOrAssignments
+    : undefined;
+
+  // Fetch printer status for all selected printers in parallel
+  const statusQueries = useQueries({
+    queries: selectedPrinterIds.map((printerId) => ({
+      queryKey: ['printer-status', printerId],
+      queryFn: () => api.getPrinterStatus(printerId),
+      enabled: selectedPrinterIds.length > 0,
+      staleTime: 5000, // Consider data fresh for 5 seconds
+    })),
+  });
+
+  // Build results for each printer
+  const printerResults = useMemo((): PrinterMappingResult[] => {
+    return selectedPrinterIds.map((printerId, index) => {
+      const query = statusQueries[index];
+      const printerStatus = query?.data;
+      const printer = printers?.find((p) => p.id === printerId);
+      const printerName = printer?.name || `Printer ${printerId}`;
+
+      const loadedFilaments = buildLoadedFilaments(printerStatus, assignments, printerId);
+      const config = perPrinterConfigs[printerId] || DEFAULT_PRINTER_CONFIG;
+      const inventoryByTrayId = inventoryByTrayIdPerPrinter?.get(printerId)
+        ?? assignmentsToInventoryRemainMap(assignments, printerId);
+      const printerPreferLowest = effectivePreferLowest(preferLowest, printerStatus?.ams_filament_backup);
+
+      // Compute auto mapping for this printer
+      const autoMapping = computeAmsMapping(filamentReqs, printerStatus, printerPreferLowest, inventoryByTrayId ?? assignments, printerId);
+
+      // Determine which mappings to use
+      const effectiveMappings = !config.useDefault
+        ? config.manualMappings
+        : defaultMappings;
+
+      // Compute final mapping with overrides
+      const finalMapping = computeMappingWithOverrides(
+        filamentReqs,
+        printerStatus,
+        effectiveMappings,
+        printerPreferLowest,
+        inventoryByTrayId,
+        assignments,
+        printerId,
+      );
+
+      // Compute match details
+      const matchDetails = computeMatchDetails(
+        filamentReqs?.filaments,
+        loadedFilaments,
+        effectiveMappings,
+        printerPreferLowest,
+        inventoryByTrayId,
+      );
+
+      return {
+        printerId,
+        printerName,
+        status: printerStatus,
+        isLoading: query?.isLoading ?? false,
+        loadedFilaments,
+        autoMapping,
+        finalMapping,
+        matchStatus: matchDetails.status,
+        exactMatches: matchDetails.exactMatches,
+        typeOnlyMatches: matchDetails.typeOnlyMatches,
+        missingTypes: matchDetails.missingTypes,
+        totalSlots: matchDetails.totalSlots,
+        config,
+        inventoryByTrayId,
+      };
+    });
+  }, [selectedPrinterIds, statusQueries, printers, filamentReqs, perPrinterConfigs, defaultMappings, preferLowest, inventoryByTrayIdPerPrinter, assignments]);
+
+  const isLoading = statusQueries.some((q) => q.isLoading);
+
+  // Update config for a specific printer
+  const updatePrinterConfig = (printerId: number, updates: Partial<PerPrinterConfig>) => {
+    setPerPrinterConfigs((prev) => ({
+      ...prev,
+      [printerId]: {
+        ...(prev[printerId] || DEFAULT_PRINTER_CONFIG),
+        ...updates,
+      },
+    }));
+  };
+
+  // Auto-configure a specific printer based on its loaded filaments
+  const autoConfigurePrinter = (printerId: number) => {
+    const result = printerResults.find((r) => r.printerId === printerId);
+    if (!result || !result.status || !filamentReqs?.filaments) return;
+
+    const autoMapping = computeAmsMapping(
+      filamentReqs,
+      result.status,
+      effectivePreferLowest(preferLowest, result.status?.ams_filament_backup),
+      result.inventoryByTrayId ?? assignments,
+      printerId,
+    );
+    if (!autoMapping) return;
+
+    const manualMappings: Record<number, number> = {};
+    autoMapping.forEach((globalTrayId, index) => {
+      if (globalTrayId !== -1) {
+        manualMappings[index + 1] = globalTrayId;
+      }
+    });
+
+    updatePrinterConfig(printerId, {
+      useDefault: false,
+      manualMappings,
+      autoConfigured: true,
+    });
+  };
+
+  // Auto-configure all printers
+  const autoConfigureAll = () => {
+    for (const printerId of selectedPrinterIds) {
+      autoConfigurePrinter(printerId);
+    }
+  };
+
+  // Get final mapping for a specific printer (for submission)
+  const getFinalMapping = (printerId: number): number[] | undefined => {
+    const result = printerResults.find((r) => r.printerId === printerId);
+    return result?.finalMapping;
+  };
+
+  // Check if all printers have acceptable mappings (no missing types)
+  const allPrintersReady = printerResults.every((r) => r.matchStatus !== 'missing');
+
+  return {
+    printerResults,
+    isLoading,
+    perPrinterConfigs,
+    updatePrinterConfig,
+    autoConfigureAll,
+    autoConfigurePrinter,
+    getFinalMapping,
+    allPrintersReady,
+  };
+}

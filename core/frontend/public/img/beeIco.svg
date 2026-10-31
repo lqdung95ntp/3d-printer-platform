@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg viewBox="0 0 792.262 545.244" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <clipPath id="clip_4">
+      <path transform="matrix(0,-.03,-.03,-0,744,598)" d="M1091 1290H14224V24477H1091V1290"/>
+    </clipPath>
+  </defs>
+  <path style="stroke: rgb(241, 196, 15); fill: rgb(241, 196, 15);" d="M 394.85 99.014 L 483.904 95.29 L 558.839 26.136 C 616.245 26.384 673.651 26.368 731.056 26.087 C 752.876 25.98 763.262 45.169 762.216 83.654 C 759.371 188.344 758.112 293.065 758.441 397.817 C 758.498 415.837 746.827 429.566 723.429 439.006 L 562.383 441.067 L 485.412 509.669 L 310.748 511.098 L 233.337 442.052 L 60.656 436.505 L 20.075 384.129 L 27.695 58.584 L 63.251 25.603 L 234.532 25.339 L 281.706 87.227 L 394.85 99.014 Z"/>
+  <text style="fill: rgb(255, 255, 255); font-family: Roboto; font-size: 200px; stroke: rgb(255, 255, 255); white-space: pre;" x="216.46" y="322.883">BeE</text>
+  <g clip-path="url(#clip_4)" transform="matrix(4.499459266662598, 0, 0, 4.499459266662598, -314.09814453124994, -1496.7626953125)" style="">
+    <path stroke-width="189" stroke-linecap="round" stroke-linejoin="round" d="M8659 21895V20904" transform="matrix(0,-.03,-.03,-0,744,598)" style="fill: rgb(241, 196, 15); stroke: rgb(255, 255, 255);"/>
+    <path stroke-width="189" stroke-linecap="round" stroke-linejoin="round" d="M8547 20633 8230 20316" transform="matrix(0,-.03,-.03,-0,744,598)" style="fill: rgb(241, 196, 15); stroke: rgb(255, 255, 255);"/>
+    <path stroke-width="189" stroke-linecap="round" stroke-linejoin="round" d="M-271.17546-271.17546C-199.25525-343.09565-101.71053-383.5 0-383.5" transform="matrix(.03,0,0,-.03,142.63501,342.95503)" style="fill: rgb(241, 196, 15); stroke: rgb(255, 255, 255);"/>
+    <path stroke-width="189" stroke-linecap="round" stroke-linejoin="round" d="M271.17546 271.17546C199.25525 343.09565 101.71053 383.5 0 383.5" transform="matrix(.03,0,0,-.03,116.86499,349.70503)" style="fill: rgb(241, 196, 15); stroke: rgb(255, 255, 255);"/>
+    <path stroke-width="189" stroke-linecap="round" stroke-linejoin="round" d="M8276 22278H5978" transform="matrix(0,-.03,-.03,-0,744,598)" style="fill: rgb(241, 196, 15); stroke: rgb(255, 255, 255);"/>
+    <path stroke-width="189" stroke-linecap="round" stroke-linejoin="round" d="M0 383.5C-211.80121 383.5-383.5 211.80121-383.5 0" transform="matrix(.03,0,0,-.03,87.13501,349.70503)" style="fill: rgb(241, 196, 15); stroke: rgb(255, 255, 255);"/>
+    <path stroke-width="189" stroke-linecap="round" stroke-linejoin="round" d="M0 383.5C-101.71053 383.5-199.25525 343.09565-271.17546 271.17546" transform="matrix(.03,0,0,-.03,198.13501,441.625)" style="fill: rgb(241, 196, 15); stroke: rgb(255, 255, 255);"/>
+    <path stroke-width="189" stroke-linecap="round" stroke-linejoin="round" d="M5595 20904V21895" transform="matrix(0,-.03,-.03,-0,744,598)" style="fill: rgb(241, 196, 15); stroke: rgb(255, 255, 255);"/>
+    <path stroke-width="189" stroke-linecap="round" stroke-linejoin="round" d="M-383.5 0C-383.5-211.80121-211.80121-383.5 0-383.5" transform="matrix(.03,0,0,-.03,87.13501,418.64503)" style="fill: rgb(241, 196, 15); stroke: rgb(255, 255, 255);"/>
+    <path stroke-width="189" stroke-linecap="round" stroke-linejoin="round" d="M5482 20633 5165 20316" transform="matrix(0,-.03,-.03,-0,744,598)" style="fill: rgb(241, 196, 15); stroke: rgb(255, 255, 255);"/>
+    <path stroke-width="189" stroke-linecap="round" stroke-linejoin="round" d="M271.17546 271.17546C199.25525 343.09565 101.71053 383.5 0 383.5" transform="matrix(.03,0,0,-.03,116.86499,441.625)" style="fill: rgb(241, 196, 15); stroke: rgb(255, 255, 255);"/>
+    <path stroke-width="189" stroke-linecap="round" stroke-linejoin="round" d="M8118 20045V19054" transform="matrix(0,-.03,-.03,-0,744,598)" style="fill: rgb(241, 196, 15); stroke: rgb(255, 255, 255);"/>
+    <path stroke-width="189" stroke-linecap="round" stroke-linejoin="round" d="M5053 20045V19054" transform="matrix(0,-.03,-.03,-0,744,598)" style="fill: rgb(241, 196, 15); stroke: rgb(255, 255, 255);"/>
+    <path stroke-width="189" stroke-linecap="round" stroke-linejoin="round" d="M0-383.5C101.71053-383.5 199.25525-343.09565 271.17546-271.17546" transform="matrix(.03,0,0,-.03,172.36499,434.905)" style="fill: rgb(241, 196, 15); stroke: rgb(255, 255, 255);"/>
+    <path stroke-width="189" stroke-linecap="round" stroke-linejoin="round" d="M-271.17546-271.17546C-199.25525-343.09565-101.71053-383.5 0-383.5" transform="matrix(.03,0,0,-.03,142.63501,434.905)" style="fill: rgb(241, 196, 15); stroke: rgb(255, 255, 255);"/>
+    <path stroke-width="189" stroke-linecap="round" stroke-linejoin="round" d="M8230 18783 8547 18466" transform="matrix(0,-.03,-.03,-0,744,598)" style="fill: rgb(241, 196, 15); stroke: rgb(255, 255, 255);"/>
+    <path stroke-width="189" stroke-linecap="round" stroke-linejoin="round" d="M0 383.5C-101.71053 383.5-199.25525 343.09565-271.17546 271.17546" transform="matrix(.03,0,0,-.03,198.13501,349.70503)" style="fill: rgb(241, 196, 15); stroke: rgb(255, 255, 255);"/>
+    <path stroke-width="189" stroke-linecap="round" stroke-linejoin="round" d="M0-383.5C101.71053-383.5 199.25525-343.09565 271.17546-271.17546" transform="matrix(.03,0,0,-.03,172.36499,342.95503)" style="fill: rgb(241, 196, 15); stroke: rgb(255, 255, 255);"/>
+    <path stroke-width="189" stroke-linecap="round" stroke-linejoin="round" d="M5165 18783 5482 18466" transform="matrix(0,-.03,-.03,-0,744,598)" style="fill: rgb(241, 196, 15); stroke: rgb(255, 255, 255);"/>
+    <path stroke-width="189" stroke-linecap="round" stroke-linejoin="round" d="M383.5 0C383.5 211.80121 211.80121 383.5 0 383.5" transform="matrix(.03,0,0,-.03,227.86499,349.70503)" style="fill: rgb(241, 196, 15); stroke: rgb(255, 255, 255);"/>
+    <path stroke-width="189" stroke-linecap="round" stroke-linejoin="round" d="M8276 16821H5978" transform="matrix(0,-.03,-.03,-0,744,598)" style="fill: rgb(241, 196, 15); stroke: rgb(255, 255, 255);"/>
+    <path stroke-width="189" stroke-linecap="round" stroke-linejoin="round" d="M0-383.5C211.80121-383.5 383.5-211.80121 383.5 0" transform="matrix(.03,0,0,-.03,227.86499,418.64503)" style="fill: rgb(241, 196, 15); stroke: rgb(255, 255, 255);"/>
+    <path stroke-width="189" stroke-linecap="round" stroke-linejoin="round" d="M8659 18195V17204" transform="matrix(0,-.03,-.03,-0,744,598)" style="fill: rgb(241, 196, 15); stroke: rgb(255, 255, 255);"/>
+    <path stroke-width="189" stroke-linecap="round" stroke-linejoin="round" d="M5595 18195V17204" transform="matrix(0,-.03,-.03,-0,744,598)" style="fill: rgb(241, 196, 15); stroke: rgb(255, 255, 255);"/>
+  </g>
+</svg>

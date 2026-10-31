@@ -1,0 +1,64 @@
+services:
+  # =========================================================================
+  # BeE Printer Platform - Open Source Core (AGPLv3)
+  # Multi-brand farm management for Bambu Lab, Klipper, Prusa & Elegoo
+  # =========================================================================
+  core:
+    build:
+      context: ./core
+      dockerfile: Dockerfile
+    image: beestemsolutions/bee-core:latest
+    container_name: bee-platform-core
+    restart: unless-stopped
+    ports:
+      - "${BEE_PORT:-8000}:8000"
+    environment:
+      - BEE_PRO_URL=http://pro:8001
+      - PYTHONUNBUFFERED=1
+      - TZ=${TZ:-Asia/Ho_Chi_Minh}
+    volumes:
+      - ${DATA_PATH:-./data}:/app/data
+    tmpfs:
+      - /tmp:size=64M
+      - /app/logs:size=32M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - bee-network
+
+  # =========================================================================
+  # BeE Printer Platform - Commercial Pro Sidecar (Compiled Native Binary)
+  # Isolated service handling Auto Swap PEI, Smart Power & Skip Objects
+  # =========================================================================
+  pro:
+    image: beestemsolutions/bee-pro:latest
+    container_name: bee-platform-pro
+    restart: unless-stopped
+    ports:
+      - "8001:8001"
+    environment:
+      - BEE_PRO_CORE_API_URL=http://core:8000
+      - BEE_PRO_DATA_DIR=/app/data
+      - BEE_PRO_LICENSE_FILE=/app/data/bee_license.key
+      - PYTHONUNBUFFERED=1
+      - TZ=${TZ:-Asia/Ho_Chi_Minh}
+    volumes:
+      - ${DATA_PATH:-./data}:/app/data
+    tmpfs:
+      - /tmp:size=32M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "3"
+    depends_on:
+      - core
+    networks:
+      - bee-network
+
+networks:
+  bee-network:
+    driver: bridge

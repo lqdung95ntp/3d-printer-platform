@@ -1,0 +1,22 @@
+# Environment
+.env
+
+# Data & Persistence
+data/
+logs/
+*.db
+*.db-shm
+*.db-wal
+archive/
+
+# Python & Node
+__pycache__/
+*.py[cod]
+node_modules/
+.venv/
+venv/
+
+# OS
+.DS_Store
+Thumbs.db
+
