@@ -25,6 +25,12 @@ echo -e "${NC}"
 # 1. Detect OS & Architecture
 OS="$(uname -s)"
 ARCH="$(uname -m)"
+
+# Add standard Docker Desktop binary paths to PATH if present
+if [ "$OS" = "Darwin" ]; then
+    export PATH="/Applications/Docker.app/Contents/Resources/bin:/usr/local/bin:$PATH"
+fi
+
 echo -e "${BLUE}ℹ️  Kiểm tra hệ thống: HĐH ${BOLD}${OS}${NC}${BLUE}, Kiến trúc CPU: ${BOLD}${ARCH}${NC}"
 
 case "$ARCH" in
@@ -52,24 +58,26 @@ if ! command -v docker >/dev/null 2>&1; then
         fi
         echo -e "${GREEN}✅ Cài đặt Docker thành công!${NC}"
     elif [ "$OS" = "Darwin" ]; then
-        echo -e "${CYAN}Đang tự động cài đặt Docker Desktop cho macOS...${NC}"
-        if command -v brew >/dev/null 2>&1; then
-            echo -e "${CYAN}Cài đặt qua Homebrew (brew install --cask docker)...${NC}"
-            brew install --cask docker
+        echo -e "${CYAN}Đang tự động tải bộ cài Docker Desktop cho macOS (${ARCH})...${NC}"
+        if [ "$ARCH" = "arm64" ] || [ "$ARCH" = "aarch64" ]; then
+            DMG_URL="https://desktop.docker.com/mac/main/arm64/Docker.dmg"
         else
-            echo -e "${CYAN}Đang tải bộ cài đặt Docker Desktop từ máy chủ Docker...${NC}"
-            if [ "$ARCH" = "arm64" ] || [ "$ARCH" = "aarch64" ]; then
-                DMG_URL="https://desktop.docker.com/mac/main/arm64/Docker.dmg"
-            else
-                DMG_URL="https://desktop.docker.com/mac/main/amd64/Docker.dmg"
-            fi
-            curl -L -o /tmp/Docker.dmg "$DMG_URL"
-            echo -e "${CYAN}Đang giải nén và cài đặt vào /Applications/Docker.app...${NC}"
-            hdiutil attach /tmp/Docker.dmg -nobrowse -mountpoint /Volumes/Docker >/dev/null 2>&1
-            cp -R /Volumes/Docker/Docker.app /Applications/
-            hdiutil detach /Volumes/Docker >/dev/null 2>&1
-            rm -f /tmp/Docker.dmg
+            DMG_URL="https://desktop.docker.com/mac/main/amd64/Docker.dmg"
         fi
+        echo -e "${CYAN}Đang tải trực tiếp từ máy chủ Docker (khoảng 600MB)...${NC}"
+        curl -# -fL -o /tmp/Docker.dmg "$DMG_URL"
+        echo -e "${CYAN}Đang giải nén và cài đặt Docker.app vào thư mục /Applications...${NC}"
+        MOUNT_DIR=$(mktemp -d /tmp/docker_mount.XXXXXX)
+        hdiutil attach /tmp/Docker.dmg -nobrowse -mountpoint "$MOUNT_DIR" -quiet || hdiutil attach /tmp/Docker.dmg -nobrowse -quiet
+        if [ -d "$MOUNT_DIR/Docker.app" ]; then
+            cp -R "$MOUNT_DIR/Docker.app" /Applications/ || sudo cp -R "$MOUNT_DIR/Docker.app" /Applications/
+            hdiutil detach "$MOUNT_DIR" -quiet || true
+        elif [ -d "/Volumes/Docker/Docker.app" ]; then
+            cp -R /Volumes/Docker/Docker.app /Applications/ || sudo cp -R /Volumes/Docker/Docker.app /Applications/
+            hdiutil detach /Volumes/Docker -quiet || true
+        fi
+        rm -rf "$MOUNT_DIR" /tmp/Docker.dmg
+        export PATH="/Applications/Docker.app/Contents/Resources/bin:/usr/local/bin:$PATH"
         echo -e "${GREEN}✅ Đã cài đặt Docker Desktop thành công!${NC}"
     elif [[ "$OS" == MINGW* || "$OS" == MSYS* || "$OS" == CYGWIN* ]]; then
         echo -e "${CYAN}Phát hiện Windows (Git Bash/MSYS). Đang cài đặt Docker Desktop...${NC}"
