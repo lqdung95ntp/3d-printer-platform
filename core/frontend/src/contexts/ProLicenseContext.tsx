@@ -56,12 +56,12 @@ export function ProLicenseProvider({ children }: { children: ReactNode }) {
 
   // Human readable plan name
   let planName = 'Beginner (Free)';
-  if (plan === 'hobby') planName = 'Hobby Pro (2–5 máy)';
+  if (plan === 'hobby') planName = 'Hobby Pro (1–5 máy)';
   else if (plan === 'farm' || plan === 'farm_pro') planName = 'Farm Pro (6–15 máy)';
   else if (plan === 'farm_max') planName = 'Farm Max (16–30 máy)';
   else if (plan === 'enterprise') planName = 'Enterprise';
   else if (isTrial) planName = 'Dùng thử Pro 7 ngày';
-  else if (isPro) planName = 'Bee Pro';
+  else if (isPro) planName = 'BeE Pro';
 
   const openUpgradeModal = (featureName?: string) => {
     setSelectedFeature(featureName || null);

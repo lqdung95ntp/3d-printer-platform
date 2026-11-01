@@ -39,7 +39,8 @@ export function UpgradeModal() {
       price: '0 đ',
       period: 'trọn đời',
       features: [
-        'Giám sát camera WebRTC độ trễ thấp',
+        'Quản lý & giám sát 1 máy in',
+        'Đầy đủ tính năng in ấn cơ bản',
         'Quản lý cuộn nhựa Spoolman',
         'Hàng đợi in cơ bản (Basic Queue)',
       ],
@@ -49,17 +50,17 @@ export function UpgradeModal() {
     {
       id: 'hobby',
       name: 'Hobby',
-      printers: '2 – 5 máy',
+      printers: '1 – 5 máy',
       priceMonth: '69.000 đ',
       priceYear: '690.000 đ',
       periodMonth: '/ tháng',
       periodYear: '/ năm',
       badge: 'Phổ biến nhất',
       features: [
-        'Auto Swap PEI gạt bàn in liên tục 24/7',
-        'Smart Power tự tắt nguồn sau khi in',
-        'Skip Objects bỏ qua chi tiết lỗi trên bàn',
-        'XiaoZhi AI Voice thông báo giọng nói',
+        'Quản lý từ 1 đến 5 máy in',
+        'Full BeE Pro: Auto Swap PEI gạt bàn in liên tục 24/7',
+        'Full BeE Pro: Smart Power tự ngắt nguồn an toàn',
+        'Hỗ trợ kỹ thuật qua nhóm Zalo',
       ],
       current: planName.includes('Hobby'),
       highlight: true,
@@ -73,9 +74,9 @@ export function UpgradeModal() {
       periodMonth: '/ tháng',
       periodYear: '/ năm',
       features: [
-        'Toàn bộ tính năng gói Hobby',
-        'Hàng đợi thông minh tự chia việc sang máy rảnh',
-        'Thống kê chi phí điện & tiêu hao nhựa chi tiết',
+        'Quản lý từ 6 đến 15 máy in',
+        'Full BeE Pro cho toàn bộ máy in trong xưởng',
+        'Tối ưu hóa hiệu năng cho xưởng in quy mô vừa',
         'Ưu tiên hỗ trợ kỹ thuật qua Zalo',
       ],
       current: planName.includes('Farm Pro'),
@@ -90,9 +91,9 @@ export function UpgradeModal() {
       periodMonth: '/ tháng',
       periodYear: '/ năm',
       features: [
-        'Toàn bộ tính năng gói Farm Pro',
-        'Tối ưu hóa tối đa trên 1 máy chủ Pi / Mini PC',
-        'Giám sát cụm máy lớn mượt mà',
+        'Quản lý từ 16 đến 30 máy in',
+        'Full BeE Pro kịch trần trên 1 Pi / Mini PC',
+        'Tối ưu hóa luồng dữ liệu & camera cụm máy lớn',
         'Hỗ trợ kỹ thuật 1-1 chuyên sâu',
       ],
       current: planName.includes('Farm Max'),
@@ -354,7 +355,7 @@ export function UpgradeModal() {
                 <h3 className="text-xl font-extrabold text-white mt-1">
                   Gói{' '}
                   {selectedPlan === 'hobby'
-                    ? 'Hobby (2–5 máy)'
+                    ? 'Hobby (1–5 máy)'
                     : selectedPlan === 'farm_pro'
                     ? 'Farm Pro (6–15 máy)'
                     : 'Farm Max (16–30 máy)'}
