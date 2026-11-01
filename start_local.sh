@@ -14,7 +14,21 @@ CYAN='\033[0;36m'
 BOLD='\033[1m'
 NC='\033[0m'
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# Xác định chính xác thư mục gốc ROOT_DIR bất kể chạy trực tiếp hay qua symlink
+TARGET_FILE="${BASH_SOURCE[0]}"
+while [ -L "$TARGET_FILE" ]; do
+    TARGET_DIR="$(cd -P "$(dirname "$TARGET_FILE")" && pwd)"
+    TARGET_FILE="$(readlink "$TARGET_FILE")"
+    [[ "$TARGET_FILE" != /* ]] && TARGET_FILE="$TARGET_DIR/$TARGET_FILE"
+done
+SCRIPT_DIR="$(cd -P "$(dirname "$TARGET_FILE")" && pwd)"
+
+if [ -d "$SCRIPT_DIR/core" ]; then
+    ROOT_DIR="$SCRIPT_DIR"
+else
+    ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+fi
+
 CORE_DIR="$ROOT_DIR/core"
 FRONTEND_DIR="$CORE_DIR/frontend"
 
@@ -101,3 +115,4 @@ echo ""
 
 # Chờ tiến trình nền
 wait
+
