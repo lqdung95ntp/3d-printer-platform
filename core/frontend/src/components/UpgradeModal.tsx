@@ -70,8 +70,8 @@ export function UpgradeModal() {
       id: 'hobby',
       name: 'Hobby',
       printers: '1 – 5 printers',
-      priceMonth: isVnd ? '69,000 ₫' : '$2.99',
-      priceYear: isVnd ? '690,000 ₫' : '$29.90',
+      priceMonth: isVnd ? '69,000 ₫' : '$4.99',
+      priceYear: isVnd ? '690,000 ₫' : '$49',
       periodMonth: '/ month',
       periodYear: '/ year',
       badge: 'Most Popular',
@@ -88,8 +88,8 @@ export function UpgradeModal() {
       id: 'farm_pro',
       name: 'Farm Pro',
       printers: '6 – 15 printers',
-      priceMonth: isVnd ? '169,000 ₫' : '$7.99',
-      priceYear: isVnd ? '1,690,000 ₫' : '$79.90',
+      priceMonth: isVnd ? '169,000 ₫' : '$12.99',
+      priceYear: isVnd ? '1,690,000 ₫' : '$129',
       periodMonth: '/ month',
       periodYear: '/ year',
       features: [
@@ -105,8 +105,8 @@ export function UpgradeModal() {
       id: 'farm_max',
       name: 'Farm Max',
       printers: '16 – 30 printers',
-      priceMonth: isVnd ? '349,000 ₫' : '$15.99',
-      priceYear: isVnd ? '3,490,000 ₫' : '$159.90',
+      priceMonth: isVnd ? '349,000 ₫' : '$29.99',
+      priceYear: isVnd ? '3,490,000 ₫' : '$299',
       periodMonth: '/ month',
       periodYear: '/ year',
       features: [
@@ -136,9 +136,9 @@ export function UpgradeModal() {
   };
 
   const getUsdAmount = () => {
-    if (selectedPlan === 'hobby') return billingCycle === 'month' ? '$2.99' : '$29.90';
-    if (selectedPlan === 'farm_pro') return billingCycle === 'month' ? '$7.99' : '$79.90';
-    return billingCycle === 'month' ? '$15.99' : '$159.90';
+    if (selectedPlan === 'hobby') return billingCycle === 'month' ? '$4.99' : '$49';
+    if (selectedPlan === 'farm_pro') return billingCycle === 'month' ? '$12.99' : '$129';
+    return billingCycle === 'month' ? '$29.99' : '$299';
   };
 
   const getOrderDescription = () => {

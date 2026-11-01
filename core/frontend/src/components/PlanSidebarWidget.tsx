@@ -17,7 +17,7 @@ export function PlanSidebarWidget({ isExpanded }: PlanSidebarWidgetProps) {
   });
 
   const isVND = (settings?.currency || 'USD').toUpperCase() === 'VND';
-  const priceDisplay = isVND ? '69k' : '$2.99';
+  const priceDisplay = isVND ? '69k' : '$4.99';
 
   if (!isExpanded) {
     return (
