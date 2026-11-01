@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   X,
   Check,
@@ -10,7 +10,10 @@ import {
   ExternalLink,
   PhoneCall,
   Clock,
+  Globe,
 } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { api } from '../api/client';
 import { useProLicense } from '../contexts/ProLicenseContext';
 
 export function UpgradeModal() {
@@ -23,20 +26,36 @@ export function UpgradeModal() {
     planName,
   } = useProLicense();
 
+  const { data: settings } = useQuery({
+    queryKey: ['settings'],
+    queryFn: api.getSettings,
+    staleTime: 60 * 1000,
+  });
+
   const [activeTab, setActiveTab] = useState<'plans' | 'qr' | 'key'>('plans');
   const [selectedPlan, setSelectedPlan] = useState<'hobby' | 'farm_pro' | 'farm_max'>('hobby');
   const [billingCycle, setBillingCycle] = useState<'month' | 'year'>('month');
+  const [currency, setCurrency] = useState<'USD' | 'VND'>('USD');
   const [licenseKeyInput, setLicenseKeyInput] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
 
+  // Auto-detect currency from settings
+  useEffect(() => {
+    if (settings?.currency) {
+      setCurrency(settings.currency.toUpperCase() === 'VND' ? 'VND' : 'USD');
+    }
+  }, [settings?.currency]);
+
   if (!isUpgradeModalOpen) return null;
+
+  const isVnd = currency === 'VND';
 
   const plans = [
     {
       id: 'beginner',
       name: 'Beginner',
       printers: '1 printer',
-      price: '0 đ',
+      price: isVnd ? '0 ₫' : '$0',
       period: 'lifetime',
       features: [
         'Manage & monitor 1 printer',
@@ -51,8 +70,8 @@ export function UpgradeModal() {
       id: 'hobby',
       name: 'Hobby',
       printers: '1 – 5 printers',
-      priceMonth: '69,000 đ',
-      priceYear: '690,000 đ',
+      priceMonth: isVnd ? '69,000 ₫' : '$2.99',
+      priceYear: isVnd ? '690,000 ₫' : '$29.90',
       periodMonth: '/ month',
       periodYear: '/ year',
       badge: 'Most Popular',
@@ -69,8 +88,8 @@ export function UpgradeModal() {
       id: 'farm_pro',
       name: 'Farm Pro',
       printers: '6 – 15 printers',
-      priceMonth: '169,000 đ',
-      priceYear: '1,690,000 đ',
+      priceMonth: isVnd ? '169,000 ₫' : '$7.99',
+      priceYear: isVnd ? '1,690,000 ₫' : '$79.90',
       periodMonth: '/ month',
       periodYear: '/ year',
       features: [
@@ -86,8 +105,8 @@ export function UpgradeModal() {
       id: 'farm_max',
       name: 'Farm Max',
       printers: '16 – 30 printers',
-      priceMonth: '349,000 đ',
-      priceYear: '3,490,000 đ',
+      priceMonth: isVnd ? '349,000 ₫' : '$15.99',
+      priceYear: isVnd ? '3,490,000 ₫' : '$159.90',
       periodMonth: '/ month',
       periodYear: '/ year',
       features: [
@@ -110,10 +129,16 @@ export function UpgradeModal() {
     }
   };
 
-  const getPriceAmount = () => {
-    if (selectedPlan === 'hobby') return billingCycle === 'month' ? '69000' : '690000';
-    if (selectedPlan === 'farm_pro') return billingCycle === 'month' ? '169000' : '1690000';
-    return billingCycle === 'month' ? '349000' : '3490000';
+  const getVndAmount = () => {
+    if (selectedPlan === 'hobby') return billingCycle === 'month' ? 69000 : 690000;
+    if (selectedPlan === 'farm_pro') return billingCycle === 'month' ? 169000 : 1690000;
+    return billingCycle === 'month' ? 349000 : 3490000;
+  };
+
+  const getUsdAmount = () => {
+    if (selectedPlan === 'hobby') return billingCycle === 'month' ? '$2.99' : '$29.90';
+    if (selectedPlan === 'farm_pro') return billingCycle === 'month' ? '$7.99' : '$79.90';
+    return billingCycle === 'month' ? '$15.99' : '$159.90';
   };
 
   const getOrderDescription = () => {
@@ -122,7 +147,7 @@ export function UpgradeModal() {
   };
 
   // VietQR QuickLink format (MBBank: 970422 / MB)
-  const qrUrl = `https://img.vietqr.io/image/MB-0355444983-compact2.png?amount=${getPriceAmount()}&addInfo=${encodeURIComponent(
+  const qrUrl = `https://img.vietqr.io/image/MB-0355444983-compact2.png?amount=${getVndAmount()}&addInfo=${encodeURIComponent(
     getOrderDescription()
   )}&accountName=LE%20QUANG%20DUNG`;
 
@@ -205,28 +230,58 @@ export function UpgradeModal() {
         {/* TAB 1: PRICING PLANS */}
         {activeTab === 'plans' && (
           <div className="space-y-6">
-            {/* Billing Toggle */}
-            <div className="flex items-center justify-center gap-3 text-sm">
-              <span className={billingCycle === 'month' ? 'text-white font-bold' : 'text-bambu-gray'}>
-                Monthly billing
-              </span>
-              <button
-                type="button"
-                onClick={() => setBillingCycle(billingCycle === 'month' ? 'year' : 'month')}
-                className="relative inline-flex h-6 w-11 items-center rounded-full bg-bambu-dark-tertiary transition-colors"
-              >
-                <span
-                  className={`inline-block h-4 w-4 transform rounded-full bg-bambu-green transition-transform ${
-                    billingCycle === 'year' ? 'translate-x-6' : 'translate-x-1'
-                  }`}
-                />
-              </button>
-              <span className={billingCycle === 'year' ? 'text-white font-bold' : 'text-bambu-gray'}>
-                Annual billing{' '}
-                <span className="text-xs px-2 py-0.5 rounded bg-bambu-green/20 text-bambu-green font-bold">
-                  Save 2 months
+            {/* Controls: Billing Toggle & Currency Switcher */}
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 text-sm">
+              {/* Monthly / Annual Toggle */}
+              <div className="flex items-center gap-3">
+                <span className={billingCycle === 'month' ? 'text-white font-bold' : 'text-bambu-gray'}>
+                  Monthly
                 </span>
-              </span>
+                <button
+                  type="button"
+                  onClick={() => setBillingCycle(billingCycle === 'month' ? 'year' : 'month')}
+                  className="relative inline-flex h-6 w-11 items-center rounded-full bg-bambu-dark-tertiary transition-colors"
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-bambu-green transition-transform ${
+                      billingCycle === 'year' ? 'translate-x-6' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
+                <span className={billingCycle === 'year' ? 'text-white font-bold' : 'text-bambu-gray'}>
+                  Annual{' '}
+                  <span className="text-xs px-2 py-0.5 rounded bg-bambu-green/20 text-bambu-green font-bold">
+                    Save 2 months
+                  </span>
+                </span>
+              </div>
+
+              {/* Currency Toggle */}
+              <div className="flex items-center gap-1 bg-bambu-dark p-1 rounded-lg border border-bambu-dark-tertiary">
+                <Globe className="w-3.5 h-3.5 text-bambu-gray ml-1" />
+                <button
+                  type="button"
+                  onClick={() => setCurrency('USD')}
+                  className={`px-2 py-0.5 rounded text-xs font-bold transition-all ${
+                    currency === 'USD'
+                      ? 'bg-bambu-green text-white shadow-sm'
+                      : 'text-bambu-gray hover:text-white'
+                  }`}
+                >
+                  USD ($)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCurrency('VND')}
+                  className={`px-2 py-0.5 rounded text-xs font-bold transition-all ${
+                    currency === 'VND'
+                      ? 'bg-bambu-green text-white shadow-sm'
+                      : 'text-bambu-gray hover:text-white'
+                  }`}
+                >
+                  VND (₫)
+                </button>
+              </div>
             </div>
 
             {/* Grid 4 Plans */}
@@ -256,7 +311,7 @@ export function UpgradeModal() {
 
                     <div className="mt-3 mb-4">
                       {p.id === 'beginner' ? (
-                        <div className="text-2xl font-black text-white whitespace-nowrap">0 đ</div>
+                        <div className="text-2xl font-black text-white whitespace-nowrap">{p.price}</div>
                       ) : (
                         <div className="flex items-baseline gap-1.5 flex-wrap">
                           <span className="text-2xl font-black text-white whitespace-nowrap">
@@ -361,9 +416,9 @@ export function UpgradeModal() {
                     : 'Farm Max (16–30 printers)'}
                 </h3>
                 <div className="text-2xl font-black text-amber-400 mt-1">
-                  {Number(getPriceAmount()).toLocaleString('vi-VN')} VNĐ
-                  <span className="text-xs text-bambu-gray font-normal ml-1">
-                    {billingCycle === 'month' ? '/ 1 month' : '/ 1 year'}
+                  {getVndAmount().toLocaleString('vi-VN')} VNĐ
+                  <span className="text-xs text-bambu-gray font-normal ml-2">
+                    (~{getUsdAmount()} USD {billingCycle === 'month' ? '/ mo' : '/ yr'})
                   </span>
                 </div>
               </div>
@@ -371,13 +426,13 @@ export function UpgradeModal() {
               <div className="space-y-2 text-xs">
                 <div>
                   <label className="block text-bambu-gray mb-1">
-                    Phone number to receive key (Zalo / SMS):
+                    Phone number to receive key (Zalo / SMS / WhatsApp):
                   </label>
                   <input
                     type="tel"
                     value={customerPhone}
                     onChange={(e) => setCustomerPhone(e.target.value)}
-                    placeholder="e.g. 0912345678"
+                    placeholder="e.g. 0912345678 or +84..."
                     className="w-full px-3 py-2 bg-bambu-dark border border-bambu-dark-tertiary rounded-lg text-white placeholder-bambu-gray focus:outline-none focus:border-bambu-green"
                   />
                 </div>
@@ -395,7 +450,7 @@ export function UpgradeModal() {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-bambu-gray">Bank:</span>
-                    <span className="font-bold text-white">MB Bank</span>
+                    <span className="font-bold text-white">MB Bank (Vietnam)</span>
                   </div>
                 </div>
               </div>
@@ -403,7 +458,10 @@ export function UpgradeModal() {
               <div className="text-xs text-bambu-gray space-y-1">
                 <p className="flex items-center gap-1.5 text-bambu-green-light">
                   <Clock className="w-3.5 h-3.5 shrink-0" />
-                  After transferring, your license key will be activated or sent via Zalo/SMS within minutes.
+                  After transferring, your license key will be activated or sent within minutes.
+                </p>
+                <p className="text-[11px] text-amber-400/90">
+                  🌐 For international payments (PayPal, Stripe, Card), please contact us via support@beestemsolutions.com.vn.
                 </p>
                 <p>
                   Already have a key file?{' '}

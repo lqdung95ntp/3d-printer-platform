@@ -1,8 +1,18 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { UpgradeModal } from '../../components/UpgradeModal';
 import * as ProLicenseContext from '../../contexts/ProLicenseContext';
+
+function renderWithQueryClient(ui: React.ReactElement) {
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: { retry: false },
+    },
+  });
+  return render(<QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>);
+}
 
 describe('UpgradeModal', () => {
   it('does not render when isUpgradeModalOpen is false', () => {
@@ -22,7 +32,7 @@ describe('UpgradeModal', () => {
       isActivating: false,
     });
 
-    const { container } = render(<UpgradeModal />);
+    const { container } = renderWithQueryClient(<UpgradeModal />);
     expect(container.firstChild).toBeNull();
   });
 
@@ -44,7 +54,7 @@ describe('UpgradeModal', () => {
     });
 
     const user = userEvent.setup();
-    render(<UpgradeModal />);
+    renderWithQueryClient(<UpgradeModal />);
 
     // Verify modal header & feature highlight
     expect(screen.getByText(/ELEVATE YOUR 3D PRINTING AUTOMATION/i)).toBeInTheDocument();
@@ -55,6 +65,10 @@ describe('UpgradeModal', () => {
     expect(screen.getByText('Farm Pro')).toBeInTheDocument();
     expect(screen.getByText('Farm Max')).toBeInTheDocument();
     expect(screen.getByText(/Large Farm \/ Enterprise/i)).toBeInTheDocument();
+
+    // Verify currency switcher buttons
+    expect(screen.getByRole('button', { name: /USD \(\$\)/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /VND \(₫\)/i })).toBeInTheDocument();
 
     // Switch to VietQR tab
     const qrTab = screen.getByRole('button', { name: /VietQR Payment/i });
@@ -86,7 +100,7 @@ describe('UpgradeModal', () => {
     });
 
     const user = userEvent.setup();
-    render(<UpgradeModal />);
+    renderWithQueryClient(<UpgradeModal />);
 
     // Navigate to activate tab
     const activateTab = screen.getByRole('button', { name: /Activate License Key/i });

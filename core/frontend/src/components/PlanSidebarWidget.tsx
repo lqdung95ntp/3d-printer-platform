@@ -1,4 +1,6 @@
 import { Zap, Crown, Sparkles } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { api } from '../api/client';
 import { useProLicense } from '../contexts/ProLicenseContext';
 
 interface PlanSidebarWidgetProps {
@@ -7,6 +9,15 @@ interface PlanSidebarWidgetProps {
 
 export function PlanSidebarWidget({ isExpanded }: PlanSidebarWidgetProps) {
   const { isPro, isTrial, planName, maxPrinters, openUpgradeModal } = useProLicense();
+
+  const { data: settings } = useQuery({
+    queryKey: ['settings'],
+    queryFn: api.getSettings,
+    staleTime: 60 * 1000,
+  });
+
+  const isVND = (settings?.currency || 'USD').toUpperCase() === 'VND';
+  const priceDisplay = isVND ? '69k' : '$2.99';
 
   if (!isExpanded) {
     return (
@@ -64,7 +75,7 @@ export function PlanSidebarWidget({ isExpanded }: PlanSidebarWidgetProps) {
         }`}
       >
         <Zap className="w-3.5 h-3.5 fill-current shrink-0" />
-        <span>{isPro ? 'Manage License' : 'Upgrade Pro (69k)'}</span>
+        <span>{isPro ? 'Manage License' : `Upgrade Pro (${priceDisplay})`}</span>
       </button>
     </div>
   );
