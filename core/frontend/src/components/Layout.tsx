@@ -17,6 +17,7 @@ import { Card, CardHeader, CardContent } from './Card';
 import { parseUTCDate } from '../utils/date';
 import { Button } from './Button';
 import { appAssetPath } from '../utils/assetPaths';
+import { PlanSidebarWidget } from './PlanSidebarWidget';
 
 interface NavItem {
   id: string;
@@ -698,6 +699,9 @@ export function Layout() {
             })}
           </ul>
         </nav>
+
+        {/* Plan & License Widget */}
+        <PlanSidebarWidget isExpanded={isSidebarCompact || sidebarExpanded} />
 
         {/* Collapse / hide toggles */}
         {!isSidebarCompact && (

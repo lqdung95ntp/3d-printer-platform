@@ -5,6 +5,7 @@ import { Loader2, Save, Send } from 'lucide-react';
 import { Button } from './Button';
 import { useToast } from '../contexts/ToastContext';
 import { api, type Printer as ClientPrinter, type PrinterStatus } from '../api/client';
+import { ProBadge } from './ProBadge';
 
 export interface PrinterSwapPeiConfigProps {
   printer: ClientPrinter;
@@ -59,8 +60,9 @@ export function PrinterSwapPeiConfig({ printer, onSave, isSaving }: PrinterSwapP
       </div>
 
       <div className="flex items-center justify-between">
-        <label htmlFor={`auto_swap_${printer.id}`} className="text-xs text-bambu-gray cursor-pointer select-none">
-          Enable Auto Swap PEI option for this printer
+        <label htmlFor={`auto_swap_${printer.id}`} className="text-xs text-bambu-gray cursor-pointer select-none flex items-center gap-2">
+          <span>Enable Auto Swap PEI option for this printer</span>
+          <ProBadge feature="Auto Swap PEI" />
         </label>
         <label className="relative inline-flex items-center cursor-pointer">
           <input

@@ -52,6 +52,7 @@ import { registerSettingsSearch, getSettingsSearchEntries } from '../lib/setting
 import type { UsersSubTab } from '../lib/settingsSearch';
 import { getPandaBreathDevices, parsePandaBreathAssignments, stringifyPandaBreathAssignments } from '../utils/pandaBreath';
 import { PrinterSwapPeiConfig } from '../components/PrinterSwapPeiConfig';
+import { ProBadge } from '../components/ProBadge';
 
 const validTabs = ['general', 'plugs', 'notifications', 'queue', 'filament', 'network', 'apikeys', 'virtual-printer', 'failure-detection', 'users', 'backup', 'swap-pei'] as const;
 type TabType = typeof validTabs[number];
@@ -1676,6 +1677,7 @@ export function SettingsPage() {
         >
           <Layers className="w-4 h-4" />
           {t('settings.tabs.swapPei', 'Swap PEI')}
+          <ProBadge feature="Auto Swap PEI" className="ml-1" />
         </button>
       </nav>
       <div className="flex-1 min-w-0">
@@ -6564,6 +6566,7 @@ export function SettingsPage() {
               <h3 className="text-base font-semibold text-white flex items-center gap-2">
                 <RefreshCw className="w-4 h-4 text-bambu-green" />
                 {t('settings.swapPei.title', 'Swap PEI Configuration')}
+                <ProBadge feature="Auto Swap PEI" className="ml-2" />
               </h3>
             </CardHeader>
             <CardContent>

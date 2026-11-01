@@ -103,6 +103,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "../contexts/ThemeContext";
 import { useAuth } from "../contexts/AuthContext";
+import { ProBadge } from "../components/ProBadge";
+import { useProLicense } from "../contexts/ProLicenseContext";
 import {
 	Plus,
 	Link,
@@ -3015,6 +3017,7 @@ function PrinterCard({
 	const prusaLinkWebUrl = getPrusaLinkWebUrl(printer);
 	const [droppedPrusaFile, setDroppedPrusaFile] = useState<File | null>(null);
 	const { hasPermission, canModify } = useAuth();
+	const { isPro, openUpgradeModal } = useProLicense();
 
 	const { t } = useTranslation();
 	const queryClient = useQueryClient();
@@ -12325,6 +12328,25 @@ function PrinterCard({
 									{/* Swap PEI button - placed directly to the left of Print button */}
 									{printer.auto_swap &&
 										(() => {
+											if (!isPro) {
+												return (
+													<Button
+														variant="secondary"
+														size="sm"
+														onClick={() =>
+															openUpgradeModal(
+																"Auto Swap PEI",
+															)
+														}
+														title="Nâng cấp Pro để sử dụng tính năng Auto Swap PEI"
+														className={`${footerActionButtonClass} !text-amber-400 !border-amber-500/30 hover:!bg-amber-500/10 flex items-center gap-1.5`}
+													>
+														<RefreshCw className="w-[var(--pc-i4,1rem)] h-[var(--pc-i4,1rem)] text-amber-400" />
+														<span>Swap PEI</span>
+														<ProBadge showIcon={false} />
+													</Button>
+												);
+											}
 											const canSwap =
 												!!status?.connected &&
 												(status.state === "IDLE" ||
@@ -15259,10 +15281,13 @@ export function AddPrinterModal({
 								/>
 								<label
 									htmlFor="auto_swap"
-									className="text-sm text-bambu-gray"
+									className="text-sm text-bambu-gray flex items-center gap-1.5 cursor-pointer"
 								>
-									{t("printers.modal.autoSwapLabel") ||
-										"Enable Auto Swap PEI option"}
+									<span>
+										{t("printers.modal.autoSwapLabel") ||
+											"Enable Auto Swap PEI option"}
+									</span>
+									<ProBadge feature="Auto Swap PEI" />
 								</label>
 							</div>
 							<div className="flex items-center gap-2">
@@ -16285,10 +16310,13 @@ function EditPrinterModal({
 							/>
 							<label
 								htmlFor="edit_auto_swap"
-								className="text-sm text-bambu-gray"
+								className="text-sm text-bambu-gray flex items-center gap-1.5 cursor-pointer"
 							>
-								{t("printers.modal.autoSwapLabel") ||
-									"Enable Auto Swap PEI option"}
+								<span>
+									{t("printers.modal.autoSwapLabel") ||
+										"Enable Auto Swap PEI option"}
+								</span>
+								<ProBadge feature="Auto Swap PEI" />
 							</label>
 						</div>
 						<div className="flex items-center gap-2">
@@ -16608,6 +16636,7 @@ export function PrintersPage() {
 	const queryClient = useQueryClient();
 	const { showToast } = useToast();
 	const { hasPermission } = useAuth();
+	const { isPro, maxPrinters, openUpgradeModal } = useProLicense();
 	// Which way the camera buttons open a stream. Chosen per click from the
 	// button's own menu; null until this browser has made a choice, so the
 	// stored setting below can act as the default a fresh browser starts from.
@@ -17797,7 +17826,15 @@ export function PrintersPage() {
 				</div>
 			)}
 			<Button
-				onClick={() => setShowAddModal(true)}
+				onClick={() => {
+					if (!isPro && printers && printers.length >= maxPrinters) {
+						openUpgradeModal(
+							`Thêm máy in thứ ${printers.length + 1} (Gói hiện tại giới hạn ${maxPrinters} máy)`,
+						);
+						return;
+					}
+					setShowAddModal(true);
+				}}
 				disabled={!hasPermission("printers:create")}
 				title={
 					!hasPermission("printers:create")

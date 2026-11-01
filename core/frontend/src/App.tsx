@@ -37,6 +37,8 @@ import { ToastProvider } from './contexts/ToastContext';
 import { SliceJobTrackerProvider } from './contexts/SliceJobTrackerContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ColorCatalogProvider } from './contexts/ColorCatalogContext';
+import { ProLicenseProvider } from './contexts/ProLicenseContext';
+import { UpgradeModal } from './components/UpgradeModal';
 class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null; errorInfo: ErrorInfo | null }> {
   state = { error: null as Error | null, errorInfo: null as ErrorInfo | null };
 
@@ -170,11 +172,13 @@ function App() {
       <ToastProvider>
         <QueryClientProvider client={queryClient}>
           <AuthProvider>
+            <ProLicenseProvider>
             <ColorCatalogProvider>
             <SliceJobTrackerProvider>
             <StreamTokenSync />
             <FarmBrandingSync />
             <BrowserRouter basename={appBasePath() || undefined}>
+              <UpgradeModal />
               <Routes>
                 {/* Setup page - only accessible if auth not enabled */}
                 <Route path="/setup" element={<SetupRoute><SetupPage /></SetupRoute>} />
@@ -221,6 +225,7 @@ function App() {
             </BrowserRouter>
             </SliceJobTrackerProvider>
             </ColorCatalogProvider>
+            </ProLicenseProvider>
           </AuthProvider>
         </QueryClientProvider>
       </ToastProvider>
