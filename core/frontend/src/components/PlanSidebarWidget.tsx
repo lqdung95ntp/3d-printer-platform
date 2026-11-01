@@ -14,7 +14,7 @@ export function PlanSidebarWidget({ isExpanded }: PlanSidebarWidgetProps) {
         <button
           type="button"
           onClick={() => openUpgradeModal()}
-          title={`Gói hiện tại: ${planName} — Nhấn để nâng cấp hoặc quản lý gói`}
+          title={`Current Plan: ${planName} — Click to upgrade or manage`}
           className="p-2.5 rounded-xl bg-gradient-to-tr from-amber-500/20 to-orange-500/20 hover:from-amber-500/30 hover:to-orange-500/30 border border-amber-500/40 text-amber-300 transition-all hover:scale-105 active:scale-95 shadow-md group relative"
         >
           {isPro ? (
@@ -22,7 +22,7 @@ export function PlanSidebarWidget({ isExpanded }: PlanSidebarWidgetProps) {
           ) : (
             <Zap className="w-5 h-5 text-amber-400 fill-amber-400 animate-pulse" />
           )}
-          <span className="sr-only">Nâng cấp Pro</span>
+          <span className="sr-only">Upgrade to Pro</span>
         </button>
       </div>
     );
@@ -33,15 +33,15 @@ export function PlanSidebarWidget({ isExpanded }: PlanSidebarWidgetProps) {
       <div className="flex items-center justify-between mb-2">
         <span className="text-[11px] font-bold uppercase tracking-wider text-bambu-gray flex items-center gap-1.5">
           <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-          Gói Dịch Vụ
+          Plan & License
         </span>
         {isPro ? (
           <span className="px-1.5 py-0.5 rounded text-[10px] font-extrabold bg-bambu-green/20 text-bambu-green border border-bambu-green/30">
-            PRO ({maxPrinters === -1 ? '∞' : maxPrinters} máy)
+            PRO ({maxPrinters === -1 ? '∞' : maxPrinters} {maxPrinters === 1 ? 'printer' : 'printers'})
           </span>
         ) : isTrial ? (
           <span className="px-1.5 py-0.5 rounded text-[10px] font-extrabold bg-blue-500/20 text-blue-400 border border-blue-500/30">
-            TRIAL 7 NGÀY
+            7-DAY TRIAL
           </span>
         ) : (
           <span className="px-1.5 py-0.5 rounded text-[10px] font-extrabold bg-bambu-gray/20 text-bambu-gray border border-bambu-dark-tertiary">
@@ -64,9 +64,8 @@ export function PlanSidebarWidget({ isExpanded }: PlanSidebarWidgetProps) {
         }`}
       >
         <Zap className="w-3.5 h-3.5 fill-current shrink-0" />
-        <span>{isPro ? 'Quản Lý Bản Quyền' : 'Nâng Cấp Pro (69k)'}</span>
+        <span>{isPro ? 'Manage License' : 'Upgrade Pro (69k)'}</span>
       </button>
     </div>
   );
 }
-

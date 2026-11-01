@@ -53,3 +53,4 @@ describe('ProBadge', () => {
     expect(openUpgradeModal).toHaveBeenCalledWith('Auto Swap PEI');
   });
 });
+

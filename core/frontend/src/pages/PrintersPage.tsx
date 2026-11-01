@@ -12338,7 +12338,7 @@ function PrinterCard({
 																"Auto Swap PEI",
 															)
 														}
-														title="Nâng cấp Pro để sử dụng tính năng Auto Swap PEI"
+														title="Upgrade to Pro to enable Auto Swap PEI"
 														className={`${footerActionButtonClass} !text-amber-400 !border-amber-500/30 hover:!bg-amber-500/10 flex items-center gap-1.5`}
 													>
 														<RefreshCw className="w-[var(--pc-i4,1rem)] h-[var(--pc-i4,1rem)] text-amber-400" />
@@ -17829,7 +17829,7 @@ export function PrintersPage() {
 				onClick={() => {
 					if (!isPro && printers && printers.length >= maxPrinters) {
 						openUpgradeModal(
-							`Thêm máy in thứ ${printers.length + 1} (Gói hiện tại giới hạn ${maxPrinters} máy)`,
+							`Add printer #${printers.length + 1} (Current plan limited to ${maxPrinters} ${maxPrinters === 1 ? "printer" : "printers"})`,
 						);
 						return;
 					}

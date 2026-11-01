@@ -36,12 +36,12 @@ export function ProLicenseProvider({ children }: { children: ReactNode }) {
   const activateMutation = useMutation({
     mutationFn: activateLicenseKey,
     onSuccess: (data) => {
-      showToast(data.message || 'Kích hoạt bản quyền Pro thành công!', 'success');
+      showToast(data.message || 'Pro license activated successfully!', 'success');
       queryClient.invalidateQueries({ queryKey: ['proStatus'] });
       setIsUpgradeModalOpen(false);
     },
     onError: (err: Error) => {
-      showToast(err.message || 'Kích hoạt bản quyền thất bại', 'error');
+      showToast(err.message || 'Failed to activate license key', 'error');
     },
   });
 
@@ -54,13 +54,13 @@ export function ProLicenseProvider({ children }: { children: ReactNode }) {
   const maxPrinters = license?.max_printers ?? 1;
   const expiresAt = license?.expires_at ?? 0;
 
-  // Human readable plan name
+  // Human readable plan name in English
   let planName = 'Beginner (Free)';
-  if (plan === 'hobby') planName = 'Hobby Pro (1–5 máy)';
-  else if (plan === 'farm' || plan === 'farm_pro') planName = 'Farm Pro (6–15 máy)';
-  else if (plan === 'farm_max') planName = 'Farm Max (16–30 máy)';
+  if (plan === 'hobby') planName = 'Hobby Pro (1–5 printers)';
+  else if (plan === 'farm' || plan === 'farm_pro') planName = 'Farm Pro (6–15 printers)';
+  else if (plan === 'farm_max') planName = 'Farm Max (16–30 printers)';
   else if (plan === 'enterprise') planName = 'Enterprise';
-  else if (isTrial) planName = 'Dùng thử Pro 7 ngày';
+  else if (isTrial) planName = '7-Day Pro Trial';
   else if (isPro) planName = 'BeE Pro';
 
   const openUpgradeModal = (featureName?: string) => {
@@ -125,4 +125,3 @@ export function useProLicense(): ProLicenseContextType {
   const context = useContext(ProLicenseContext);
   return context || defaultProContext;
 }
-

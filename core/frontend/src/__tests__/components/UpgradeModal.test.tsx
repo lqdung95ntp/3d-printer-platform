@@ -47,22 +47,22 @@ describe('UpgradeModal', () => {
     render(<UpgradeModal />);
 
     // Verify modal header & feature highlight
-    expect(screen.getByText(/Nâng Cấp Gói Bản Quyền/i)).toBeInTheDocument();
+    expect(screen.getByText(/ELEVATE YOUR 3D PRINTING AUTOMATION/i)).toBeInTheDocument();
     expect(screen.getAllByText(/Auto Swap PEI/i).length).toBeGreaterThan(0);
 
     // Verify plans exist on plans tab
     expect(screen.getByText('Hobby')).toBeInTheDocument();
     expect(screen.getByText('Farm Pro')).toBeInTheDocument();
     expect(screen.getByText('Farm Max')).toBeInTheDocument();
-    expect(screen.getByText(/Xưởng Lớn \/ Doanh Nghiệp/i)).toBeInTheDocument();
+    expect(screen.getByText(/Large Farm \/ Enterprise/i)).toBeInTheDocument();
 
     // Switch to VietQR tab
-    const qrTab = screen.getByRole('button', { name: /Thanh Toán VietQR/i });
+    const qrTab = screen.getByRole('button', { name: /VietQR Payment/i });
     await user.click(qrTab);
-    expect(screen.getByText(/Thông Tin Thanh Toán Tự Động/i)).toBeInTheDocument();
+    expect(screen.getByText(/Automated Payment Details/i)).toBeInTheDocument();
 
     // Switch to Activate Key tab
-    const activateTab = screen.getByRole('button', { name: /Nhập Mã Kích Hoạt/i });
+    const activateTab = screen.getByRole('button', { name: /Activate License Key/i });
     await user.click(activateTab);
     expect(screen.getByPlaceholderText(/bee_license\.key/i)).toBeInTheDocument();
   });
@@ -89,13 +89,13 @@ describe('UpgradeModal', () => {
     render(<UpgradeModal />);
 
     // Navigate to activate tab
-    const activateTab = screen.getByRole('button', { name: /Nhập Mã Kích Hoạt/i });
+    const activateTab = screen.getByRole('button', { name: /Activate License Key/i });
     await user.click(activateTab);
 
     const input = screen.getByPlaceholderText(/bee_license\.key/i);
     await user.type(input, 'BEE-PRO-1234-5678-ABCD');
 
-    const activateBtn = screen.getByRole('button', { name: /Kích Hoạt Ngay/i });
+    const activateBtn = screen.getByRole('button', { name: /Activate Now/i });
     await user.click(activateBtn);
 
     expect(activateKey).toHaveBeenCalledWith('BEE-PRO-1234-5678-ABCD');

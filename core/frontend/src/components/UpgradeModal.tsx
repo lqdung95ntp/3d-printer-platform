@@ -1,13 +1,13 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import {
   X,
-  Zap,
   Check,
+  Zap,
+  ShieldCheck,
+  Sparkles,
   QrCode,
   KeyRound,
-  ShieldCheck,
   ExternalLink,
-  Sparkles,
   PhoneCall,
   Clock,
 } from 'lucide-react';
@@ -18,9 +18,9 @@ export function UpgradeModal() {
     isUpgradeModalOpen,
     closeUpgradeModal,
     selectedFeature,
-    planName,
     activateKey,
     isActivating,
+    planName,
   } = useProLicense();
 
   const [activeTab, setActiveTab] = useState<'plans' | 'qr' | 'key'>('plans');
@@ -35,14 +35,14 @@ export function UpgradeModal() {
     {
       id: 'beginner',
       name: 'Beginner',
-      printers: '1 máy',
+      printers: '1 printer',
       price: '0 đ',
-      period: 'trọn đời',
+      period: 'lifetime',
       features: [
-        'Quản lý & giám sát 1 máy in',
-        'Đầy đủ tính năng in ấn cơ bản',
-        'Quản lý cuộn nhựa Spoolman',
-        'Hàng đợi in cơ bản (Basic Queue)',
+        'Manage & monitor 1 printer',
+        'Full core printing features',
+        'Spoolman filament management',
+        'Basic print queue',
       ],
       current: planName.includes('Beginner'),
       highlight: false,
@@ -50,17 +50,17 @@ export function UpgradeModal() {
     {
       id: 'hobby',
       name: 'Hobby',
-      printers: '1 – 5 máy',
-      priceMonth: '69.000 đ',
-      priceYear: '690.000 đ',
-      periodMonth: '/ tháng',
-      periodYear: '/ năm',
-      badge: 'Phổ biến nhất',
+      printers: '1 – 5 printers',
+      priceMonth: '69,000 đ',
+      priceYear: '690,000 đ',
+      periodMonth: '/ month',
+      periodYear: '/ year',
+      badge: 'Most Popular',
       features: [
-        'Quản lý từ 1 đến 5 máy in',
-        'Full BeE Pro: Auto Swap PEI gạt bàn in liên tục 24/7',
-        'Full BeE Pro: Smart Power tự ngắt nguồn an toàn',
-        'Hỗ trợ kỹ thuật qua nhóm Zalo',
+        'Manage 1 to 5 printers',
+        'Full BeE Pro: Continuous 24/7 Auto Swap PEI',
+        'Full BeE Pro: Smart Power auto shutoff',
+        'Technical support via Zalo',
       ],
       current: planName.includes('Hobby'),
       highlight: true,
@@ -68,16 +68,16 @@ export function UpgradeModal() {
     {
       id: 'farm_pro',
       name: 'Farm Pro',
-      printers: '6 – 15 máy',
-      priceMonth: '169.000 đ',
-      priceYear: '1.690.000 đ',
-      periodMonth: '/ tháng',
-      periodYear: '/ năm',
+      printers: '6 – 15 printers',
+      priceMonth: '169,000 đ',
+      priceYear: '1,690,000 đ',
+      periodMonth: '/ month',
+      periodYear: '/ year',
       features: [
-        'Quản lý từ 6 đến 15 máy in',
-        'Full BeE Pro cho toàn bộ máy in trong xưởng',
-        'Tối ưu hóa hiệu năng cho xưởng in quy mô vừa',
-        'Ưu tiên hỗ trợ kỹ thuật qua Zalo',
+        'Manage 6 to 15 printers',
+        'Full BeE Pro for all farm printers',
+        'Optimized performance for medium farms',
+        'Priority technical support via Zalo',
       ],
       current: planName.includes('Farm Pro'),
       highlight: false,
@@ -85,16 +85,16 @@ export function UpgradeModal() {
     {
       id: 'farm_max',
       name: 'Farm Max',
-      printers: '16 – 30 máy',
-      priceMonth: '349.000 đ',
-      priceYear: '3.490.000 đ',
-      periodMonth: '/ tháng',
-      periodYear: '/ năm',
+      printers: '16 – 30 printers',
+      priceMonth: '349,000 đ',
+      priceYear: '3,490,000 đ',
+      periodMonth: '/ month',
+      periodYear: '/ year',
       features: [
-        'Quản lý từ 16 đến 30 máy in',
-        'Full BeE Pro kịch trần trên 1 Pi / Mini PC',
-        'Tối ưu hóa luồng dữ liệu & camera cụm máy lớn',
-        'Hỗ trợ kỹ thuật 1-1 chuyên sâu',
+        'Manage 16 to 30 printers',
+        'Full BeE Pro maxed out on single Pi / Mini PC',
+        'Optimized MQTT & camera streaming',
+        'Dedicated 1-on-1 technical support',
       ],
       current: planName.includes('Farm Max'),
       highlight: false,
@@ -104,8 +104,8 @@ export function UpgradeModal() {
   const handleActivate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!licenseKeyInput.trim()) return;
-    const ok = await activateKey(licenseKeyInput.trim());
-    if (ok) {
+    const success = await activateKey(licenseKeyInput.trim());
+    if (success) {
       setLicenseKeyInput('');
     }
   };
@@ -117,11 +117,11 @@ export function UpgradeModal() {
   };
 
   const getOrderDescription = () => {
-    const phone = customerPhone.trim() || 'KHACH';
+    const phone = customerPhone.trim() || 'GUEST';
     return `BEE ${selectedPlan.toUpperCase()} ${phone}`;
   };
 
-  // VietQR QuickLink format (Mã ngân hàng MBBank: 970422 / MB)
+  // VietQR QuickLink format (MBBank: 970422 / MB)
   const qrUrl = `https://img.vietqr.io/image/MB-0355444983-compact2.png?amount=${getPriceAmount()}&addInfo=${encodeURIComponent(
     getOrderDescription()
   )}&accountName=LE%20QUANG%20DUNG`;
@@ -147,18 +147,18 @@ export function UpgradeModal() {
         <div className="text-center space-y-2">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-semibold">
             <Sparkles className="w-4 h-4" />
-            <span>NÂNG TẦM TRẢI NGHIỆM IN 3D TỰ ĐỘNG</span>
+            <span>ELEVATE YOUR 3D PRINTING AUTOMATION</span>
           </div>
           <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight">
-            Nâng Cấp Gói Bản Quyền <span className="text-bambu-green-light">3D Printer Platform PRO</span>
+            Upgrade to <span className="text-bambu-green-light">3D Printer Platform PRO</span>
           </h2>
           <p className="text-sm text-bambu-gray max-w-2xl mx-auto">
-            Biến máy in của bạn thành dây chuyền sản xuất 24/7: Tự động gạt bàn PEI xuyên đêm, ngắt điện thông minh và giám sát mượt mà không lo gián đoạn.
+            Transform your printers into a 24/7 automated production line: Continuous overnight Auto Swap PEI, smart power shutoff, and smooth uninterrupted monitoring.
           </p>
 
           {selectedFeature && (
             <div className="inline-block mt-2 px-3 py-1.5 rounded-lg bg-bambu-green/10 border border-bambu-green/30 text-bambu-green-light text-xs font-medium">
-              ⚡ Tính năng <span className="font-bold underline">{selectedFeature}</span> yêu cầu gói trả phí Pro.
+              ⚡ The <span className="font-bold underline">{selectedFeature}</span> feature requires a PRO subscription.
             </div>
           )}
         </div>
@@ -175,7 +175,7 @@ export function UpgradeModal() {
               }`}
             >
               <Zap className="w-4 h-4" />
-              <span>Bảng Giá & Các Gói</span>
+              <span>Pricing & Plans</span>
             </button>
             <button
               onClick={() => setActiveTab('qr')}
@@ -186,7 +186,7 @@ export function UpgradeModal() {
               }`}
             >
               <QrCode className="w-4 h-4" />
-              <span>Thanh Toán VietQR</span>
+              <span>VietQR Payment</span>
             </button>
             <button
               onClick={() => setActiveTab('key')}
@@ -197,18 +197,18 @@ export function UpgradeModal() {
               }`}
             >
               <KeyRound className="w-4 h-4" />
-              <span>Nhập Mã Kích Hoạt</span>
+              <span>Activate License Key</span>
             </button>
           </div>
         </div>
 
-        {/* TAB 1: BẢNG GIÁ */}
+        {/* TAB 1: PRICING PLANS */}
         {activeTab === 'plans' && (
           <div className="space-y-6">
             {/* Billing Toggle */}
             <div className="flex items-center justify-center gap-3 text-sm">
               <span className={billingCycle === 'month' ? 'text-white font-bold' : 'text-bambu-gray'}>
-                Thanh toán theo tháng
+                Monthly billing
               </span>
               <button
                 type="button"
@@ -222,9 +222,9 @@ export function UpgradeModal() {
                 />
               </button>
               <span className={billingCycle === 'year' ? 'text-white font-bold' : 'text-bambu-gray'}>
-                Thanh toán theo năm{' '}
+                Annual billing{' '}
                 <span className="text-xs px-2 py-0.5 rounded bg-bambu-green/20 text-bambu-green font-bold">
-                  Tiết kiệm 2 tháng
+                  Save 2 months
                 </span>
               </span>
             </div>
@@ -285,7 +285,7 @@ export function UpgradeModal() {
                         disabled
                         className="w-full py-2 px-3 rounded-lg bg-bambu-dark-tertiary/50 text-bambu-gray text-xs font-semibold cursor-default"
                       >
-                        Gói Mặc Định (1 Máy)
+                        Default (1 Printer)
                       </button>
                     ) : (
                       <button
@@ -299,7 +299,7 @@ export function UpgradeModal() {
                             : 'bg-white/10 hover:bg-white/20 text-white'
                         }`}
                       >
-                        Nâng Cấp Gói {p.name}
+                        Upgrade to {p.name}
                       </button>
                     )}
                   </div>
@@ -312,10 +312,10 @@ export function UpgradeModal() {
               <div>
                 <h4 className="font-bold text-sm text-white flex items-center gap-2">
                   <ShieldCheck className="w-4 h-4 text-bambu-green" />
-                  Xưởng Lớn / Doanh Nghiệp (Trên 30 máy in)
+                  Large Farm / Enterprise (30+ printers)
                 </h4>
                 <p className="text-xs text-bambu-gray mt-0.5">
-                  Tư vấn kiến trúc cụm máy phân tán (Multi-node), cài đặt tận nơi, hỗ trợ SLA 1-1 riêng và xuất hóa đơn VAT.
+                  Distributed multi-node architecture consulting, on-site setup, dedicated SLA support & VAT invoicing.
                 </p>
               </div>
               <a
@@ -325,24 +325,24 @@ export function UpgradeModal() {
                 className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-bambu-dark-tertiary hover:bg-bambu-gray/20 text-white text-xs font-semibold transition-colors shrink-0"
               >
                 <PhoneCall className="w-3.5 h-3.5 text-bambu-green" />
-                <span>Liên Hệ Doanh Nghiệp</span>
+                <span>Contact Enterprise</span>
               </a>
             </div>
           </div>
         )}
 
-        {/* TAB 2: THANH TOÁN VIETQR */}
+        {/* TAB 2: VIETQR PAYMENT */}
         {activeTab === 'qr' && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
             {/* Left: QR Image */}
             <div className="flex flex-col items-center justify-center p-4 bg-white rounded-2xl shadow-xl">
               <img
                 src={qrUrl}
-                alt="VietQR Chuyển Khoản Nhanh"
+                alt="VietQR Instant Transfer"
                 className="w-64 h-64 object-contain rounded-lg"
               />
               <p className="text-black text-xs font-bold mt-2 text-center">
-                Quét bằng mọi ứng dụng Ngân hàng (MB, VCB, Tech, MoMo...)
+                Scan with any mobile banking app (MB, VCB, Tech, MoMo...)
               </p>
             </div>
 
@@ -350,20 +350,20 @@ export function UpgradeModal() {
             <div className="space-y-4 text-left">
               <div>
                 <span className="text-xs font-semibold text-bambu-green uppercase tracking-wider">
-                  Thông Tin Thanh Toán Tự Động
+                  Automated Payment Details
                 </span>
                 <h3 className="text-xl font-extrabold text-white mt-1">
-                  Gói{' '}
+                  Plan:{' '}
                   {selectedPlan === 'hobby'
-                    ? 'Hobby (1–5 máy)'
+                    ? 'Hobby (1–5 printers)'
                     : selectedPlan === 'farm_pro'
-                    ? 'Farm Pro (6–15 máy)'
-                    : 'Farm Max (16–30 máy)'}
+                    ? 'Farm Pro (6–15 printers)'
+                    : 'Farm Max (16–30 printers)'}
                 </h3>
                 <div className="text-2xl font-black text-amber-400 mt-1">
                   {Number(getPriceAmount()).toLocaleString('vi-VN')} VNĐ
                   <span className="text-xs text-bambu-gray font-normal ml-1">
-                    {billingCycle === 'month' ? '/ 1 tháng' : '/ 1 năm'}
+                    {billingCycle === 'month' ? '/ 1 month' : '/ 1 year'}
                   </span>
                 </div>
               </div>
@@ -371,31 +371,31 @@ export function UpgradeModal() {
               <div className="space-y-2 text-xs">
                 <div>
                   <label className="block text-bambu-gray mb-1">
-                    Số điện thoại nhận key (Zalo / SMS):
+                    Phone number to receive key (Zalo / SMS):
                   </label>
                   <input
                     type="tel"
                     value={customerPhone}
                     onChange={(e) => setCustomerPhone(e.target.value)}
-                    placeholder="Ví dụ: 0912345678"
+                    placeholder="e.g. 0912345678"
                     className="w-full px-3 py-2 bg-bambu-dark border border-bambu-dark-tertiary rounded-lg text-white placeholder-bambu-gray focus:outline-none focus:border-bambu-green"
                   />
                 </div>
 
                 <div className="p-3 bg-bambu-dark rounded-lg border border-bambu-dark-tertiary space-y-1">
                   <div className="flex justify-between">
-                    <span className="text-bambu-gray">Nội dung chuyển khoản:</span>
+                    <span className="text-bambu-gray">Transfer Memo:</span>
                     <span className="font-mono font-bold text-white select-all">
                       {getOrderDescription()}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-bambu-gray">Chủ tài khoản:</span>
+                    <span className="text-bambu-gray">Account Holder:</span>
                     <span className="font-bold text-white">LE QUANG DUNG</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-bambu-gray">Ngân hàng:</span>
-                    <span className="font-bold text-white">MB Bank (Quân Đội)</span>
+                    <span className="text-bambu-gray">Bank:</span>
+                    <span className="font-bold text-white">MB Bank</span>
                   </div>
                 </div>
               </div>
@@ -403,15 +403,15 @@ export function UpgradeModal() {
               <div className="text-xs text-bambu-gray space-y-1">
                 <p className="flex items-center gap-1.5 text-bambu-green-light">
                   <Clock className="w-3.5 h-3.5 shrink-0" />
-                  Sau khi chuyển khoản, hệ thống sẽ kích hoạt hoặc gửi key qua Zalo trong vài phút.
+                  After transferring, your license key will be activated or sent via Zalo/SMS within minutes.
                 </p>
                 <p>
-                  Đã có file key?{' '}
+                  Already have a key file?{' '}
                   <button
                     onClick={() => setActiveTab('key')}
                     className="text-amber-400 font-semibold underline hover:text-amber-300"
                   >
-                    Bấm vào đây để dán mã kích hoạt
+                    Click here to paste activation key
                   </button>
                 </p>
               </div>
@@ -419,19 +419,19 @@ export function UpgradeModal() {
           </div>
         )}
 
-        {/* TAB 3: NHẬP KEY */}
+        {/* TAB 3: ACTIVATE KEY */}
         {activeTab === 'key' && (
           <form onSubmit={handleActivate} className="space-y-4 max-w-lg mx-auto text-left">
             <div>
               <label className="block text-sm font-semibold text-white mb-2">
-                Dán mã bản quyền License Key của bạn:
+                Paste your License Key:
               </label>
               <textarea
                 rows={5}
                 required
                 value={licenseKeyInput}
                 onChange={(e) => setLicenseKeyInput(e.target.value)}
-                placeholder="Dán toàn bộ nội dung file bee_license.key vào đây..."
+                placeholder="Paste the full content of bee_license.key here..."
                 className="w-full p-3 bg-bambu-dark border border-bambu-dark-tertiary rounded-xl font-mono text-xs text-white placeholder-bambu-gray focus:outline-none focus:ring-2 focus:ring-bambu-green"
               />
             </div>
@@ -441,7 +441,7 @@ export function UpgradeModal() {
               disabled={isActivating || !licenseKeyInput.trim()}
               className="w-full py-3 px-4 bg-bambu-green hover:bg-bambu-green-light text-white font-bold rounded-xl shadow-lg shadow-bambu-green/20 disabled:opacity-50 transition-all cursor-pointer"
             >
-              {isActivating ? 'Đang xác thực bản quyền...' : 'Kích Hoạt Ngay'}
+              {isActivating ? 'Verifying license...' : 'Activate Now'}
             </button>
 
             <div className="text-center pt-2">
@@ -451,7 +451,7 @@ export function UpgradeModal() {
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1 text-xs text-bambu-gray hover:text-bambu-green transition-colors"
               >
-                <span>Hỗ trợ kỹ thuật: BeE STEM Solutions</span>
+                <span>Technical Support: BeE STEM Solutions</span>
                 <ExternalLink className="w-3 h-3" />
               </a>
             </div>
@@ -461,4 +461,3 @@ export function UpgradeModal() {
     </div>
   );
 }
-
