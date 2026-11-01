@@ -627,7 +627,7 @@ export function LoginPage() {
                 </div>
               ) : (
                 <div className="text-2xl font-extrabold tracking-tight text-white">
-                  Print<span className="text-bambu-green-light">buddy</span>
+                  3D Printer <span className="text-bambu-green-light">Platform</span>
                 </div>
               )}
               <div className="mt-1 max-w-[18rem] text-xs font-semibold leading-snug tracking-[0.02em] text-bambu-gray">
@@ -741,6 +741,19 @@ export function LoginPage() {
           </div>
         )}
 
+        <div className="text-center pt-2">
+          <p className="text-xs text-bambu-gray">
+            Powered by{' '}
+            <a
+              href="https://beestemsolutions.com.vn"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-semibold text-white/90 hover:text-bambu-green transition-colors"
+            >
+              BeE STEM Solutions
+            </a>
+          </p>
+        </div>
       </div>
 
       {/* Forgot Password Modal */}

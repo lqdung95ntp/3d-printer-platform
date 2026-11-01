@@ -2592,8 +2592,8 @@ export default {
 
   // Setup page
   setup: {
-    title: 'Configuration Printbuddy',
-    subtitle: 'Configurez l\'authentification',
+    title: 'Farm Setup',
+    subtitle: 'Configurez l\'authentification pour votre instance d\'imprimantes',
     enableAuth: 'Activer l\'authentification',
     adminAccount: 'Compte Admin',
     adminAccountDesc: 'Si des admins existent, ils seront utilisés. Sinon, créez-en un ci-dessous.',

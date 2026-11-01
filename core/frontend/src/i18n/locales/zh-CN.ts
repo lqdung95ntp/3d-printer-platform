@@ -2590,8 +2590,8 @@ export default {
 
   // Setup page
   setup: {
-    title: 'Printbuddy 设置',
-    subtitle: '为您的 Printbuddy 实例配置身份验证',
+    title: 'Farm Setup',
+    subtitle: '为您的打印机实例配置身份验证',
     enableAuth: '启用身份验证',
     adminAccount: '管理员账户',
     adminAccountDesc: '如果管理员用户已存在，将使用现有管理员账户启用身份验证。如需使用现有管理员，请将下方字段留空，或输入新凭据创建新管理员用户。',

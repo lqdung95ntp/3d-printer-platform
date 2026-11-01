@@ -2603,8 +2603,8 @@ export default {
 
   // Setup page
   setup: {
-    title: 'Printbuddy セットアップ',
-    subtitle: 'Printbuddyインスタンスの認証を設定',
+    title: 'Farm Setup',
+    subtitle: 'プリンターインスタンスの認証を設定',
     enableAuth: '認証を有効化',
     adminAccount: '管理者アカウント',
     adminAccountDesc: '既に管理者ユーザーが存在する場合、既存の管理者アカウントを使用して認証が有効化されます。既存の管理者を使用する場合は下のフィールドを空のままにするか、新しい認証情報を入力して新しい管理者ユーザーを作成してください。',

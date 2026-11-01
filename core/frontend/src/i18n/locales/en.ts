@@ -2615,8 +2615,8 @@ export default {
 
   // Setup page
   setup: {
-    title: 'Printbuddy Setup',
-    subtitle: 'Configure authentication for your Printbuddy instance',
+    title: 'Farm Setup',
+    subtitle: 'Configure authentication for your printers instance',
     enableAuth: 'Enable Authentication',
     adminAccount: 'Admin Account',
     adminAccountDesc: 'If admin users already exist, authentication will be enabled using the existing admin accounts. Leave the fields below empty to use existing admins, or enter new credentials to create a new admin user.',

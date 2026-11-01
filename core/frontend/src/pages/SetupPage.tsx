@@ -76,7 +76,7 @@ export function SetupPage() {
     <div className="min-h-screen flex items-center justify-center bg-bambu-dark p-4">
       <div className="max-w-md w-full space-y-8 p-8 bg-gradient-to-br from-bambu-card to-bambu-dark-secondary rounded-xl border border-bambu-dark-tertiary shadow-lg">
         <div className="text-center">
-          <div className="flex items-center justify-center gap-3 mb-6" aria-label="Printbuddy">
+          <div className="flex items-center justify-center gap-3 mb-6" aria-label="3D Printer Platform">
             <img
               src={appAssetPath('/img/printbuddy_icon.png')}
               alt="Printbuddy app icon"
@@ -84,7 +84,7 @@ export function SetupPage() {
             />
             <div className="text-left leading-none">
               <div className="text-2xl font-extrabold tracking-tight text-white">
-                Print<span className="text-bambu-green-light">buddy</span>
+                3D Printer <span className="text-bambu-green-light">Platform</span>
               </div>
               <div className="mt-1 text-[0.55rem] font-semibold uppercase tracking-[0.22em] text-bambu-gray">
                 Bambu Lab · Klipper · Mainsail
@@ -190,6 +190,20 @@ export function SetupPage() {
             </button>
           </div>
         </form>
+
+        <div className="text-center pt-2">
+          <p className="text-xs text-bambu-gray">
+            Powered by{' '}
+            <a
+              href="https://beestemsolutions.com.vn"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-semibold text-white/90 hover:text-bambu-green transition-colors"
+            >
+              BeE STEM Solutions
+            </a>
+          </p>
+        </div>
       </div>
     </div>
   );
