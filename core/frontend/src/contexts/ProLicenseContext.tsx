@@ -105,11 +105,24 @@ export function ProLicenseProvider({ children }: { children: ReactNode }) {
   );
 }
 
-export function useProLicense() {
+const defaultProContext: ProLicenseContextType = {
+  proStatus: undefined,
+  isLoading: false,
+  isPro: false,
+  isTrial: false,
+  planName: 'Beginner (Free)',
+  maxPrinters: 1,
+  expiresAt: 0,
+  openUpgradeModal: () => {},
+  closeUpgradeModal: () => {},
+  isUpgradeModalOpen: false,
+  selectedFeature: null,
+  activateKey: async () => false,
+  isActivating: false,
+};
+
+export function useProLicense(): ProLicenseContextType {
   const context = useContext(ProLicenseContext);
-  if (!context) {
-    throw new Error('useProLicense must be used within a ProLicenseProvider');
-  }
-  return context;
+  return context || defaultProContext;
 }
 

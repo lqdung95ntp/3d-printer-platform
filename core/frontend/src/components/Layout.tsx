@@ -705,7 +705,7 @@ export function Layout() {
 
         {/* Collapse / hide toggles */}
         {!isSidebarCompact && (
-          <div className="mx-2 mb-2 grid grid-cols-2 gap-1">
+          <div className={`mx-2 mb-2 ${sidebarExpanded ? 'grid grid-cols-2 gap-1' : 'flex flex-col gap-1'}`}>
             <button
               onClick={() => setSidebarExpanded(!sidebarExpanded)}
               className="p-2 rounded-lg hover:bg-bambu-dark-tertiary transition-colors text-bambu-gray-light hover:text-white flex items-center justify-center"
