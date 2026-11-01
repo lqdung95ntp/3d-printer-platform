@@ -131,7 +131,7 @@ export function UpgradeModal() {
       onClick={closeUpgradeModal}
     >
       <div
-        className="relative w-full max-w-4xl bg-gradient-to-br from-bambu-card to-bambu-dark-secondary border border-bambu-dark-tertiary rounded-2xl shadow-2xl p-6 md:p-8 space-y-6 text-white my-8 max-h-[90vh] overflow-y-auto"
+        className="relative w-full max-w-6xl xl:max-w-7xl bg-gradient-to-br from-bambu-card to-bambu-dark-secondary border border-bambu-dark-tertiary rounded-2xl shadow-2xl p-6 md:p-8 space-y-6 text-white my-8 max-h-[92vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Close Button */}
@@ -229,39 +229,39 @@ export function UpgradeModal() {
             </div>
 
             {/* Grid 4 Plans */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5">
               {plans.map((p) => (
                 <div
                   key={p.id}
-                  className={`relative flex flex-col justify-between p-5 rounded-xl border transition-all ${
+                  className={`relative flex flex-col justify-between p-5 xl:p-6 rounded-xl border transition-all ${
                     p.highlight
                       ? 'bg-gradient-to-b from-bambu-green/10 to-bambu-dark-secondary border-bambu-green shadow-lg shadow-bambu-green/10'
                       : 'bg-bambu-dark-secondary/70 border-bambu-dark-tertiary hover:border-bambu-gray/50'
                   }`}
                 >
                   {p.badge && (
-                    <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded-full bg-amber-500 text-black text-[10px] font-black uppercase tracking-wider shadow">
+                    <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full bg-amber-500 text-black text-[10px] font-black uppercase tracking-wider shadow whitespace-nowrap">
                       {p.badge}
                     </span>
                   )}
 
                   <div>
-                    <div className="flex items-center justify-between">
-                      <h3 className="font-bold text-lg text-white">{p.name}</h3>
-                      <span className="text-xs text-bambu-gray bg-bambu-dark px-2 py-0.5 rounded">
+                    <div className="flex items-center justify-between gap-2">
+                      <h3 className="font-bold text-lg text-white whitespace-nowrap">{p.name}</h3>
+                      <span className="text-xs text-bambu-gray bg-bambu-dark px-2.5 py-1 rounded whitespace-nowrap shrink-0">
                         {p.printers}
                       </span>
                     </div>
 
                     <div className="mt-3 mb-4">
                       {p.id === 'beginner' ? (
-                        <div className="text-2xl font-black text-white">0 đ</div>
+                        <div className="text-2xl font-black text-white whitespace-nowrap">0 đ</div>
                       ) : (
-                        <div className="flex items-baseline gap-1">
-                          <span className="text-2xl font-black text-white">
+                        <div className="flex items-baseline gap-1.5 flex-wrap">
+                          <span className="text-2xl font-black text-white whitespace-nowrap">
                             {billingCycle === 'month' ? p.priceMonth : p.priceYear}
                           </span>
-                          <span className="text-xs text-bambu-gray">
+                          <span className="text-xs text-bambu-gray whitespace-nowrap">
                             {billingCycle === 'month' ? p.periodMonth : p.periodYear}
                           </span>
                         </div>
