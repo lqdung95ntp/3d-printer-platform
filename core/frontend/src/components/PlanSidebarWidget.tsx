@@ -1,4 +1,4 @@
-import { Zap, Crown, Sparkles } from 'lucide-react';
+import { Zap, Crown } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../api/client';
 import { useProLicense } from '../contexts/ProLicenseContext';
@@ -18,6 +18,24 @@ export function PlanSidebarWidget({ isExpanded }: PlanSidebarWidgetProps) {
 
   const isVND = (settings?.currency || 'USD').toUpperCase() === 'VND';
   const priceDisplay = isVND ? '69k' : '$4.99';
+
+  const planShortName = isPro
+    ? planName.includes('Hobby')
+      ? 'Hobby Pro'
+      : planName.includes('Farm Max')
+      ? 'Farm Max'
+      : planName.includes('Farm Pro')
+      ? 'Farm Pro'
+      : planName.includes('Enterprise')
+      ? 'Enterprise'
+      : isTrial
+      ? '7-Day Trial'
+      : 'BeE Pro'
+    : isTrial
+    ? '7-Day Trial'
+    : 'Beginner';
+
+  const printerQuota = maxPrinters === -1 ? 'Unlimited' : maxPrinters === 1 ? '1 printer' : `1–${maxPrinters} printers`;
 
   if (!isExpanded) {
     return (
@@ -40,29 +58,34 @@ export function PlanSidebarWidget({ isExpanded }: PlanSidebarWidgetProps) {
   }
 
   return (
-    <div className="mx-2 mb-2 p-3 rounded-xl bg-gradient-to-br from-bambu-dark to-bambu-dark-secondary border border-bambu-dark-tertiary shadow-sm text-left">
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-[11px] font-bold uppercase tracking-wider text-bambu-gray flex items-center gap-1.5">
-          <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-          Plan & License
-        </span>
-        {isPro ? (
-          <span className="px-1.5 py-0.5 rounded text-[10px] font-extrabold bg-bambu-green/20 text-bambu-green border border-bambu-green/30">
-            PRO ({maxPrinters === -1 ? '∞' : maxPrinters} {maxPrinters === 1 ? 'printer' : 'printers'})
-          </span>
-        ) : isTrial ? (
-          <span className="px-1.5 py-0.5 rounded text-[10px] font-extrabold bg-blue-500/20 text-blue-400 border border-blue-500/30">
-            7-DAY TRIAL
-          </span>
-        ) : (
-          <span className="px-1.5 py-0.5 rounded text-[10px] font-extrabold bg-bambu-gray/20 text-bambu-gray border border-bambu-dark-tertiary">
-            BEGINNER
-          </span>
-        )}
-      </div>
-
-      <div className="text-xs font-semibold text-white truncate mb-2">
-        {planName}
+    <div className="mx-2 mb-2 p-2.5 rounded-xl bg-gradient-to-br from-bambu-dark to-bambu-dark-secondary border border-bambu-dark-tertiary/70 shadow-sm text-left">
+      <div className="flex items-center justify-between gap-2 mb-2">
+        <div className="flex items-center gap-2 min-w-0">
+          <div
+            className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
+              isPro
+                ? 'bg-bambu-green/15 text-bambu-green border border-bambu-green/30'
+                : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+            }`}
+          >
+            {isPro ? (
+              <Crown className="w-4 h-4 fill-current" />
+            ) : (
+              <Zap className="w-4 h-4 fill-current" />
+            )}
+          </div>
+          <div className="min-w-0">
+            <div className="text-xs font-bold text-white truncate flex items-center gap-1.5">
+              <span>{planShortName}</span>
+              {isPro && (
+                <span className="w-1.5 h-1.5 rounded-full bg-bambu-green animate-pulse shrink-0" />
+              )}
+            </div>
+            <div className="text-[11px] text-bambu-gray truncate">
+              {printerQuota}
+            </div>
+          </div>
+        </div>
       </div>
 
       <button
@@ -70,7 +93,7 @@ export function PlanSidebarWidget({ isExpanded }: PlanSidebarWidgetProps) {
         onClick={() => openUpgradeModal()}
         className={`w-full py-1.5 px-2.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-sm ${
           isPro
-            ? 'bg-bambu-dark-tertiary hover:bg-bambu-gray/20 text-white'
+            ? 'bg-bambu-dark-tertiary hover:bg-bambu-gray/20 text-bambu-gray hover:text-white border border-bambu-dark-tertiary'
             : 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-black shadow-amber-500/10'
         }`}
       >

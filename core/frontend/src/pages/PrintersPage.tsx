@@ -16636,7 +16636,7 @@ export function PrintersPage() {
 	const queryClient = useQueryClient();
 	const { showToast } = useToast();
 	const { hasPermission } = useAuth();
-	const { isPro, maxPrinters, openUpgradeModal } = useProLicense();
+	const { maxPrinters, openUpgradeModal } = useProLicense();
 	// Which way the camera buttons open a stream. Chosen per click from the
 	// button's own menu; null until this browser has made a choice, so the
 	// stored setting below can act as the default a fresh browser starts from.
@@ -16958,6 +16958,15 @@ export function PrintersPage() {
 			setShowAddModal(false);
 		},
 		onError: (error: Error) => {
+			if (
+				error instanceof ApiError &&
+				error.code === "printer_quota_exceeded"
+			) {
+				openUpgradeModal(
+					`Add printer #${(printers?.length || 0) + 1} (Current plan limited to ${maxPrinters} ${maxPrinters === 1 ? "printer" : "printers"})`,
+				);
+				return;
+			}
 			// Localized message when the backend returns a stable error code;
 			// the raw message is an English fallback for non-UI clients.
 			if (
@@ -17827,7 +17836,7 @@ export function PrintersPage() {
 			)}
 			<Button
 				onClick={() => {
-					if (!isPro && printers && printers.length >= maxPrinters) {
+					if (maxPrinters !== -1 && printers && printers.length >= maxPrinters) {
 						openUpgradeModal(
 							`Add printer #${printers.length + 1} (Current plan limited to ${maxPrinters} ${maxPrinters === 1 ? "printer" : "printers"})`,
 						);
@@ -18326,7 +18335,16 @@ export function PrintersPage() {
 			{showAddModal && (
 				<AddPrinterModal
 					onClose={() => setShowAddModal(false)}
-					onAdd={(data) => addMutation.mutate(data)}
+					onAdd={(data) => {
+						if (maxPrinters !== -1 && printers && printers.length >= maxPrinters) {
+							setShowAddModal(false);
+							openUpgradeModal(
+								`Add printer #${printers.length + 1} (Current plan limited to ${maxPrinters} ${maxPrinters === 1 ? "printer" : "printers"})`,
+							);
+							return;
+						}
+						addMutation.mutate(data);
+					}}
 					existingSerials={
 						printers?.map((p) => p.serial_number) || []
 					}

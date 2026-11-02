@@ -15,18 +15,26 @@ export function ProBadge({ feature, className = '', showIcon = true }: ProBadgeP
   }
 
   return (
-    <button
-      type="button"
+    <span
+      role="button"
+      tabIndex={0}
       onClick={(e) => {
         e.preventDefault();
         e.stopPropagation();
         openUpgradeModal(feature);
       }}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          e.stopPropagation();
+          openUpgradeModal(feature);
+        }
+      }}
       title={`PRO Feature ${feature ? `(${feature})` : ''} - Click to upgrade or start free trial`}
-      className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-black tracking-wider uppercase bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-300 border border-amber-500/40 hover:border-amber-400 hover:text-amber-200 hover:scale-105 active:scale-95 transition-all shadow-sm cursor-pointer ${className}`}
+      className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-black tracking-wider uppercase bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-300 border border-amber-500/40 hover:border-amber-400 hover:text-amber-200 hover:scale-105 active:scale-95 transition-all shadow-sm cursor-pointer select-none ${className}`}
     >
       {showIcon && <Zap className="w-2.5 h-2.5 fill-amber-400 text-amber-400" />}
       <span>PRO</span>
-    </button>
+    </span>
   );
 }

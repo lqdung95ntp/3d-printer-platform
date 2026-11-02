@@ -52,9 +52,10 @@ import { registerSettingsSearch, getSettingsSearchEntries } from '../lib/setting
 import type { UsersSubTab } from '../lib/settingsSearch';
 import { getPandaBreathDevices, parsePandaBreathAssignments, stringifyPandaBreathAssignments } from '../utils/pandaBreath';
 import { PrinterSwapPeiConfig } from '../components/PrinterSwapPeiConfig';
+import { SmartPowerConfig } from '../components/SmartPowerConfig';
 import { ProBadge } from '../components/ProBadge';
 
-const validTabs = ['general', 'plugs', 'notifications', 'queue', 'filament', 'network', 'apikeys', 'virtual-printer', 'failure-detection', 'users', 'backup', 'swap-pei'] as const;
+const validTabs = ['general', 'plugs', 'notifications', 'queue', 'filament', 'network', 'apikeys', 'virtual-printer', 'failure-detection', 'users', 'backup', 'swap-pei', 'smart-power'] as const;
 type TabType = typeof validTabs[number];
 
 function inferExternalCameraType(url: string): string {
@@ -1678,6 +1679,18 @@ export function SettingsPage() {
           <Layers className="w-4 h-4" />
           {t('settings.tabs.swapPei', 'Swap PEI')}
           <ProBadge feature="Auto Swap PEI" className="ml-1" />
+        </button>
+        <button
+          onClick={() => handleTabChange('smart-power')}
+          className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px lg:border-b-0 lg:border-l-2 lg:-ml-px lg:mb-0 lg:justify-start flex items-center gap-2 ${
+            activeTab === 'smart-power'
+              ? 'text-bambu-green border-bambu-green'
+              : 'text-bambu-gray hover:text-gray-900 dark:hover:text-white border-transparent'
+          }`}
+        >
+          <Zap className="w-4 h-4 text-emerald-400" />
+          {t('settings.tabs.smartPower', 'Smart Power')}
+          <ProBadge feature="Smart Power" className="ml-1" />
         </button>
       </nav>
       <div className="flex-1 min-w-0">
@@ -6590,6 +6603,13 @@ export function SettingsPage() {
               )}
             </CardContent>
           </Card>
+        </div>
+      )}
+
+      {/* Smart Power Tab */}
+      {activeTab === 'smart-power' && (
+        <div className="space-y-4" id="card-smart-power">
+          <SmartPowerConfig printers={printers || []} smartPlugs={smartPlugs || []} />
         </div>
       )}
 

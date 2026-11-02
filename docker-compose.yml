@@ -1,13 +1,12 @@
 services:
   # =========================================================================
   # BeE Printer Platform - Open Source Core (AGPLv3)
-  # Multi-brand farm management for Bambu Lab, Klipper, Prusa & Elegoo
+  # Multi-brand management for Bambu Lab, Klipper, Prusa & Elegoo printers
   # =========================================================================
   core:
     build:
       context: ./core
       dockerfile: Dockerfile
-    image: ghcr.io/lqdung95ntp/bee-core:latest
     container_name: bee-platform-core
     restart: unless-stopped
     ports:
@@ -17,7 +16,7 @@ services:
       - PYTHONUNBUFFERED=1
       - TZ=${TZ:-Asia/Ho_Chi_Minh}
     volumes:
-      - ${DATA_PATH:-./data}:/app/data
+      - ./core/data:/app/data
     tmpfs:
       - /tmp:size=64M
       - /app/logs:size=32M
@@ -30,11 +29,13 @@ services:
       - bee-network
 
   # =========================================================================
-  # BeE Printer Platform - Commercial Pro Sidecar (Compiled Native Binary)
-  # Isolated service handling Auto Swap PEI, Smart Power & Skip Objects
+  # BeE Printer Platform - Commercial Pro Sidecar (Proprietary / Closed Source)
+  # Isolated service handling Auto Swap PEI, Smart Power & Xiaozhi AI Voice
   # =========================================================================
   pro:
-    image: ghcr.io/lqdung95ntp/bee-pro:latest
+    build:
+      context: ./pro
+      dockerfile: Dockerfile
     container_name: bee-platform-pro
     restart: unless-stopped
     ports:
@@ -46,7 +47,7 @@ services:
       - PYTHONUNBUFFERED=1
       - TZ=${TZ:-Asia/Ho_Chi_Minh}
     volumes:
-      - ${DATA_PATH:-./data}:/app/data
+      - ./pro/data:/app/data
     tmpfs:
       - /tmp:size=32M
     logging:
