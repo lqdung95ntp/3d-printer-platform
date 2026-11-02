@@ -151,7 +151,7 @@ fi
 
 echo -e "${BLUE}Thư mục triển khai: ${BOLD}${WORKDIR}${NC}"
 
-mkdir -p "${WORKDIR}/data" "${WORKDIR}/logs"
+mkdir -p "${WORKDIR}/data/core" "${WORKDIR}/data/pro" "${WORKDIR}/logs"
 
 if [ ! -f "${WORKDIR}/.env" ]; then
     if [ -f "${WORKDIR}/.env.example" ]; then
@@ -176,6 +176,8 @@ if [ -z "$BEE_PORT" ]; then
 fi
 
 # 6. Launch System via Docker Compose
+echo -e "${CYAN}Đang tải container images mới nhất từ GitHub Packages...${NC}"
+$COMPOSE_CMD pull
 echo -e "${CYAN}Đang khởi động hệ thống BeE Printer Platform (Core & Pro Sidecar)...${NC}"
 $COMPOSE_CMD up -d
 

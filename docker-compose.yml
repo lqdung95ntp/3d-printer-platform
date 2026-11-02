@@ -4,9 +4,7 @@ services:
   # Multi-brand management for Bambu Lab, Klipper, Prusa & Elegoo printers
   # =========================================================================
   core:
-    build:
-      context: ./core
-      dockerfile: Dockerfile
+    image: ghcr.io/lqdung95ntp/bee-core:latest
     container_name: bee-platform-core
     restart: unless-stopped
     ports:
@@ -17,7 +15,7 @@ services:
       - PYTHONUNBUFFERED=1
       - TZ=${TZ:-Asia/Ho_Chi_Minh}
     volumes:
-      - ./core/data:/app/data
+      - ${DATA_PATH:-./data}/core:/app/data
     tmpfs:
       - /tmp:size=64M
       - /app/logs:size=32M
@@ -34,13 +32,11 @@ services:
   # Isolated service handling Auto Swap PEI, Smart Power & Xiaozhi AI Voice
   # =========================================================================
   pro:
-    build:
-      context: ./pro
-      dockerfile: Dockerfile
+    image: ghcr.io/lqdung95ntp/bee-pro:latest
     container_name: bee-platform-pro
     restart: unless-stopped
     ports:
-      - "8001:8001"
+      - "${BEE_PRO_PORT:-8001}:8001"
     environment:
       - BEE_PRO_CORE_API_URL=http://core:8000
       - BEE_PRO_DATA_DIR=/app/data
@@ -48,7 +44,7 @@ services:
       - PYTHONUNBUFFERED=1
       - TZ=${TZ:-Asia/Ho_Chi_Minh}
     volumes:
-      - ./pro/data:/app/data
+      - ${DATA_PATH:-./data}/pro:/app/data
     tmpfs:
       - /tmp:size=32M
     logging:
