@@ -57,13 +57,11 @@ export function UpgradeModal() {
 		queryKey: ["paymentConfig"],
 		queryFn: async () => {
 			try {
-				const res = await fetch(
-					"https://beestemsolutions.com.vn/api/product/payment-config/",
-				);
+				const res = await fetch("/api/v1/pro/payments/config");
 				if (res.ok) return await res.json();
 			} catch (e) {
 				console.warn(
-					"Could not fetch public payment config, falling back to defaults:",
+					"Could not fetch payment config, falling back to defaults:",
 					e,
 				);
 			}
@@ -75,6 +73,29 @@ export function UpgradeModal() {
 		},
 		staleTime: 5 * 60 * 1000,
 	});
+
+	const { data: deviceData } = useQuery({
+		queryKey: ["proDeviceId"],
+		queryFn: async () => {
+			try {
+				const res = await fetch("/api/v1/pro/device-id");
+				if (res.ok) {
+					const json = await res.json();
+					return json.device_id || "";
+				}
+			} catch (e) {
+				console.warn("Could not fetch device id:", e);
+			}
+			return "";
+		},
+		staleTime: 60 * 60 * 1000,
+	});
+
+	const deviceId =
+		deviceData ||
+		(proStatus as any)?.device_id ||
+		(proStatus?.license as any)?.device_id ||
+		"";
 
 	// Derive current & next plan
 	const rawPlan = (proStatus?.license?.plan || "").toLowerCase();
@@ -327,12 +348,16 @@ export function UpgradeModal() {
 	const accountName = paymentConfig?.account_name || "LE QUANG DUNG";
 	const orderMemo = getOrderDescription();
 
-	// VietQR QuickLink format
-	const qrUrl = `https://img.vietqr.io/image/${bankCode}-${accountNo}-compact2.png?amount=${getVndAmount()}&addInfo=${encodeURIComponent(
-		orderMemo,
-	)}&accountName=${encodeURIComponent(accountName)}`;
+	// VietQR format served via local proxy to comply with SPA Content Security Policy
+	const qrUrl = `/api/v1/pro/payments/qr-code?bank_code=${encodeURIComponent(
+		bankCode,
+	)}&account_no=${encodeURIComponent(
+		accountNo,
+	)}&account_name=${encodeURIComponent(
+		accountName,
+	)}&amount=${getVndAmount()}&memo=${encodeURIComponent(orderMemo)}`;
 
-	// Polling payment status via SePay / bee-stem-solutions
+	// Polling payment status via local proxy to comply with SPA Content Security Policy
 	useEffect(() => {
 		if (activeTab !== "qr" || !isUpgradeModalOpen || isPaymentSuccess)
 			return;
@@ -340,17 +365,21 @@ export function UpgradeModal() {
 		const checkOrder = async () => {
 			try {
 				const memo = getOrderDescription();
+				const devParam = deviceId
+					? `&device_id=${encodeURIComponent(deviceId)}`
+					: "";
 				const res = await fetch(
-					`https://beestemsolutions.com.vn/api/product/payments/check-order/?code=${encodeURIComponent(
+					`/api/v1/pro/payments/check-order?code=${encodeURIComponent(
 						memo,
-					)}&farm_id=${encodeURIComponent(farmId)}`,
+					)}&farm_id=${encodeURIComponent(farmId)}${devParam}`,
 				);
 				if (res.ok) {
 					const data = await res.json();
-					if (data.paid && data.license_key) {
+					const tokenToUse = data.license_token || data.license_key;
+					if (data.paid && tokenToUse) {
 						setIsPaymentSuccess(true);
-						setActivatedKeyResult(data.license_key);
-						await activateKey(data.license_key);
+						setActivatedKeyResult(tokenToUse);
+						await activateKey(tokenToUse);
 					}
 				}
 			} catch {
@@ -366,6 +395,7 @@ export function UpgradeModal() {
 		isPaymentSuccess,
 		selectedPlan,
 		farmId,
+		deviceId,
 		activateKey,
 		isVietinBank,
 	]);
@@ -442,7 +472,7 @@ export function UpgradeModal() {
 				</div>
 
 				{/* Tab Switcher */}
-				<div className="flex justify-center border-b border-bambu-dark-tertiary pb-4">
+				<div className="flex flex-col items-center border-b border-bambu-dark-tertiary pb-4 gap-2.5">
 					<div className="flex bg-bambu-dark-secondary rounded-xl p-1 border border-bambu-dark-tertiary">
 						<button
 							onClick={() => setActiveTab("plans")}
@@ -478,6 +508,18 @@ export function UpgradeModal() {
 							<span>Activate License Key</span>
 						</button>
 					</div>
+					{deviceId && (
+						<div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-bambu-dark/80 border border-bambu-dark-tertiary text-xs font-mono text-bambu-gray">
+							<ShieldCheck className="w-3.5 h-3.5 text-bambu-green" />
+							<span>
+								Mã máy (Device ID):{" "}
+								<strong className="text-white">{deviceId}</strong>
+							</span>
+							<span className="text-[10px] px-1.5 py-0.2 rounded bg-bambu-green/15 text-bambu-green font-semibold">
+								1 Machine Lock
+							</span>
+						</div>
+					)}
 				</div>
 
 				{/* TAB 1: PRICING PLANS */}
@@ -1085,6 +1127,16 @@ export function UpgradeModal() {
 											{farmId}
 										</span>
 									</div>
+									{deviceId && (
+										<div className="flex justify-between">
+											<span className="text-bambu-gray">
+												Device ID:
+											</span>
+											<span className="font-mono font-semibold text-bambu-green text-xs">
+												{deviceId}
+											</span>
+										</div>
+									)}
 								</div>
 
 								<div>
@@ -1145,6 +1197,23 @@ export function UpgradeModal() {
 								className="w-full p-3 bg-bambu-dark border border-bambu-dark-tertiary rounded-xl font-mono text-xs text-white placeholder-bambu-gray focus:outline-none focus:ring-2 focus:ring-bambu-green"
 							/>
 						</div>
+
+						{deviceId && (
+							<div className="p-3 rounded-xl bg-bambu-dark/70 border border-bambu-dark-tertiary text-xs text-bambu-gray space-y-1.5">
+								<div className="flex items-center gap-1.5 font-semibold text-white">
+									<ShieldCheck className="w-4 h-4 text-bambu-green" />
+									<span>Chữ ký số & Khóa thiết bị (Device Binding)</span>
+								</div>
+								<p>
+									Bản quyền sẽ được ký số và gắn kết độc quyền với máy này (
+									<strong className="text-white font-mono">{deviceId}</strong>
+									). Một license chỉ dùng cho 1 máy duy nhất.
+								</p>
+								<p className="text-bambu-green font-medium">
+									✅ Sau khi kích hoạt thành công, hệ thống hoạt động hoàn toàn Offline không cần Internet mỗi khi khởi động.
+								</p>
+							</div>
+						)}
 
 						<button
 							type="submit"
