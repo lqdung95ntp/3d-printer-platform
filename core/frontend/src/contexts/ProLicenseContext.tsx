@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, type ReactNode } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { fetchProStatus, activateLicenseKey, type ProStatusResponse } from '../api/beePro';
+import { fetchProStatus, activateLicenseKey, activateTrialLicense, type ProStatusResponse } from '../api/beePro';
 import { useToast } from './ToastContext';
 
 interface ProLicenseContextType {
@@ -17,6 +17,8 @@ interface ProLicenseContextType {
   selectedFeature: string | null;
   activateKey: (key: string) => Promise<boolean>;
   isActivating: boolean;
+  activateTrial: () => Promise<boolean>;
+  isActivatingTrial: boolean;
 }
 
 const ProLicenseContext = createContext<ProLicenseContextType | undefined>(undefined);
@@ -42,6 +44,18 @@ export function ProLicenseProvider({ children }: { children: ReactNode }) {
     },
     onError: (err: Error) => {
       showToast(err.message || 'Failed to activate license key', 'error');
+    },
+  });
+
+  const trialMutation = useMutation({
+    mutationFn: () => activateTrialLicense(),
+    onSuccess: (data) => {
+      showToast(data.message || 'Kích hoạt thành công 7 ngày dùng thử miễn phí!', 'success');
+      queryClient.invalidateQueries({ queryKey: ['proStatus'] });
+      setIsUpgradeModalOpen(false);
+    },
+    onError: (err: Error) => {
+      showToast(err.message || 'Không thể kích hoạt dùng thử', 'error');
     },
   });
 
@@ -82,6 +96,15 @@ export function ProLicenseProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const activateTrial = async (): Promise<boolean> => {
+    try {
+      await trialMutation.mutateAsync();
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
   return (
     <ProLicenseContext.Provider
       value={{
@@ -98,6 +121,8 @@ export function ProLicenseProvider({ children }: { children: ReactNode }) {
         selectedFeature,
         activateKey,
         isActivating: activateMutation.isPending,
+        activateTrial,
+        isActivatingTrial: trialMutation.isPending,
       }}
     >
       {children}
@@ -119,6 +144,8 @@ const defaultProContext: ProLicenseContextType = {
   selectedFeature: null,
   activateKey: async () => false,
   isActivating: false,
+  activateTrial: async () => false,
+  isActivatingTrial: false,
 };
 
 export function useProLicense(): ProLicenseContextType {

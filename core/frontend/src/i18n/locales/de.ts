@@ -410,6 +410,7 @@ export default {
       locationGroup: 'Standort / Gruppe (optional)',
       locationPlaceholder: 'z.B. Werkstatt, Büro, Keller',
       autoArchiveLabel: 'Abgeschlossene Drucke automatisch archivieren',
+      autoSwapLabel: 'Auto Swap PEI Option aktivieren',
       deleteAfterPrintLabel: 'Datei nach Abschluss des Drucks vom Drucker löschen',
       fromPrinterSettings: 'Aus Druckereinstellungen',
       modelOptional: 'Modell (optional)',

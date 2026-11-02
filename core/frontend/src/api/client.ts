@@ -316,6 +316,7 @@ export interface Printer {
   location: string | null;  // Group/location name
   nozzle_count: number;  // 1 or 2, auto-detected from MQTT
   is_active: boolean;
+  is_locked?: boolean;
   auto_archive: boolean;
   reconnect_interval_seconds?: number;
   external_camera_url: string | null;

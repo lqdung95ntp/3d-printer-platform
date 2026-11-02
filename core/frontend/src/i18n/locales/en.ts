@@ -414,6 +414,7 @@ export default {
       locationGroup: 'Location / Group (optional)',
       locationPlaceholder: 'e.g., Workshop, Office, Basement',
       autoArchiveLabel: 'Auto-archive completed prints',
+      autoSwapLabel: 'Enable Auto Swap PEI option',
       deleteAfterPrintLabel: 'Delete file from printer after print completion',
       fromPrinterSettings: 'From printer settings',
       modelOptional: 'Model (optional)',

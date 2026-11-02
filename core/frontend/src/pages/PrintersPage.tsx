@@ -122,6 +122,8 @@ import {
 	Terminal,
 	Power,
 	Zap,
+	Lock,
+	ArrowUpRight,
 	Wrench,
 	ChevronDown,
 	EyeOff,
@@ -2953,12 +2955,14 @@ function PrinterCard({
 	aiDetectionEnabled = false,
 	aiDetection,
 	aiLastError = null,
+	isLocked = false,
 }: {
 	printer: Printer;
 	hideIfDisconnected?: boolean;
 	maintenanceInfo?: PrinterMaintenanceInfo;
 	viewMode?: ViewMode;
 	cardSize?: number;
+	isLocked?: boolean;
 	amsThresholds?: {
 		humidityGood: number;
 		humidityFair: number;
@@ -3018,6 +3022,7 @@ function PrinterCard({
 	const [droppedPrusaFile, setDroppedPrusaFile] = useState<File | null>(null);
 	const { hasPermission, canModify } = useAuth();
 	const { isPro, openUpgradeModal } = useProLicense();
+	const effectiveIsLocked = printer.is_locked ?? isLocked;
 
 	const { t } = useTranslation();
 	const queryClient = useQueryClient();
@@ -5043,7 +5048,9 @@ function PrinterCard({
 	// uploaded and then rejected by the queue, leaving it stranded. The Print
 	// button below has always checked this pair.
 	const canDrop =
-		hasPermission("library:upload") && hasPermission("queue:create");
+		!effectiveIsLocked &&
+		hasPermission("library:upload") &&
+		hasPermission("queue:create");
 
 	// Drives the wording alone. Shared with the PrintModal so the card's promise
 	// and the modal's own "will start later" toast cannot disagree.
@@ -5661,6 +5668,24 @@ function PrinterCard({
 										>
 											{printer.name}
 										</h3>
+										{effectiveIsLocked && (
+											<span
+												role="button"
+												tabIndex={0}
+												onClick={(e) => {
+													e.preventDefault();
+													e.stopPropagation();
+													openUpgradeModal(
+														"Multi-Printer Fleet Management (Từ 2 máy)",
+													);
+												}}
+												title="Máy in đang ở chế độ Chỉ đọc (Read-only). Bấm để nâng cấp gói Hobby 69k/tháng mở khóa điều khiển!"
+												className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-black tracking-wider uppercase bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-300 border border-amber-500/40 hover:border-amber-400 hover:text-amber-200 hover:scale-105 active:scale-95 transition-all cursor-pointer shadow-sm select-none"
+											>
+												<Zap className="w-2.5 h-2.5 fill-amber-400 text-amber-400" />
+												<span>PRO</span>
+											</span>
+										)}
 										{/* Connection indicator dot for compact mode */}
 										{viewMode === "compact" &&
 											(() => {
@@ -5786,6 +5811,25 @@ function PrinterCard({
 					{/* Badges row - only in expanded mode */}
 					{viewMode === "expanded" && (
 						<div className="mt-2">
+							{effectiveIsLocked && (
+								<div
+									onClick={() =>
+										openUpgradeModal(
+											"Multi-Printer Fleet Management (Từ 2 máy)",
+										)
+									}
+									className="mb-2 px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-between text-xs text-amber-300 hover:bg-amber-500/20 transition-all cursor-pointer group shadow-sm"
+								>
+									<span className="flex items-center gap-1.5 font-medium">
+										<Lock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+										<span>Tạm khóa điều khiển (Chế độ Chỉ đọc)</span>
+									</span>
+									<span className="text-[11px] font-bold text-amber-400 flex items-center gap-1 group-hover:underline">
+										Mở khóa 69k/tháng{" "}
+										<ArrowUpRight className="w-3 h-3" />
+									</span>
+								</div>
+							)}
 							<div className="flex flex-wrap items-center gap-2">
 								{/* Connection status badge (or Maintenance pill when out of service).
                   Defensive: only swap when is_active is EXPLICITLY false. An
@@ -14159,8 +14203,18 @@ export function AddPrinterModal({
 			.then((info) => {
 				setIsDocker(info.is_docker);
 				if (info.subnets.length > 0) {
-					setDetectedSubnets(info.subnets);
-					setSubnet(info.subnets[0]);
+					// In Docker, prefer external LAN subnets (e.g. 192.168.x.x) over internal bridge (172.x.x.x)
+					const sortedSubnets = info.is_docker
+						? [...info.subnets].sort((a, b) => {
+								const aIsBridge = a.startsWith("172.");
+								const bIsBridge = b.startsWith("172.");
+								if (aIsBridge && !bIsBridge) return 1;
+								if (!aIsBridge && bIsBridge) return -1;
+								return 0;
+							})
+						: info.subnets;
+					setDetectedSubnets(sortedSubnets);
+					setSubnet(sortedSubnets[0]);
 				}
 			})
 			.catch(() => {
@@ -15264,30 +15318,6 @@ export function AddPrinterModal({
 									className="text-sm text-bambu-gray"
 								>
 									{t("printers.modal.autoArchiveLabel")}
-								</label>
-							</div>
-							<div className="flex items-center gap-2">
-								<input
-									type="checkbox"
-									id="auto_swap"
-									checked={form.auto_swap}
-									onChange={(e) =>
-										setForm({
-											...form,
-											auto_swap: e.target.checked,
-										})
-									}
-									className="rounded border-bambu-dark-tertiary bg-bambu-dark text-bambu-green focus:ring-bambu-green"
-								/>
-								<label
-									htmlFor="auto_swap"
-									className="text-sm text-bambu-gray flex items-center gap-1.5 cursor-pointer"
-								>
-									<span>
-										{t("printers.modal.autoSwapLabel") ||
-											"Enable Auto Swap PEI option"}
-									</span>
-									<ProBadge feature="Auto Swap PEI" />
 								</label>
 							</div>
 							<div className="flex items-center gap-2">
@@ -16636,7 +16666,8 @@ export function PrintersPage() {
 	const queryClient = useQueryClient();
 	const { showToast } = useToast();
 	const { hasPermission } = useAuth();
-	const { maxPrinters, openUpgradeModal } = useProLicense();
+	const { maxPrinters, openUpgradeModal, isPro } = useProLicense();
+
 	// Which way the camera buttons open a stream. Chosen per click from the
 	// button's own menu; null until this browser has made a choice, so the
 	// stored setting below can act as the default a fresh browser starts from.
@@ -16679,6 +16710,15 @@ export function PrintersPage() {
 		queryKey: ["printers"],
 		queryFn: api.getPrinters,
 	});
+
+	// Compute active printer IDs according to license quota
+	const allowedPrinterIds = useMemo(() => {
+		if (!printers || printers.length === 0) return new Set<number>();
+		if (isPro && maxPrinters > 1) {
+			return new Set(printers.slice(0, maxPrinters).map((p) => p.id));
+		}
+		return new Set(printers.length > 0 ? [printers[0].id] : []);
+	}, [printers, isPro, maxPrinters]);
 
 	// Fetch the UI-rendering subset of settings. Uses /ui-preferences (not /settings)
 	// so users with printers:read but no settings:read still get the values needed
@@ -18103,6 +18143,7 @@ export function PrintersPage() {
 										<PrinterCard
 											key={printer.id}
 											printer={printer}
+											isLocked={!allowedPrinterIds.has(printer.id)}
 											hideIfDisconnected={
 												hideDisconnected
 											}
@@ -18237,6 +18278,7 @@ export function PrintersPage() {
 						<PrinterCard
 							key={printer.id}
 							printer={printer}
+							isLocked={!allowedPrinterIds.has(printer.id)}
 							hideIfDisconnected={hideDisconnected}
 							maintenanceInfo={maintenanceByPrinter[printer.id]}
 							viewMode={viewMode}

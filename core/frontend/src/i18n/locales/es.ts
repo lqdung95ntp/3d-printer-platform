@@ -410,6 +410,7 @@ export default {
       locationGroup: 'Ubicación / Grupo (opcional)',
       locationPlaceholder: 'p. ej., Taller, Oficina, Sótano',
       autoArchiveLabel: 'Archivar automáticamente las impresiones completadas',
+      autoSwapLabel: 'Habilitar opción Auto Swap PEI',
       deleteAfterPrintLabel: 'Eliminar archivo de la impresora tras completar la impresión',
       fromPrinterSettings: 'Desde los ajustes de la impresora',
       modelOptional: 'Modelo (opcional)',

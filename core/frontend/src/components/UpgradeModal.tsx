@@ -42,6 +42,8 @@ export function UpgradeModal() {
 		selectedFeature,
 		activateKey,
 		isActivating,
+		activateTrial,
+		isActivatingTrial,
 		planName,
 		proStatus,
 		isPro,
@@ -518,6 +520,31 @@ export function UpgradeModal() {
 							<span className="text-[10px] px-1.5 py-0.2 rounded bg-bambu-green/15 text-bambu-green font-semibold">
 								1 Machine Lock
 							</span>
+						</div>
+					)}
+
+					{!isPro && (
+						<div className="flex flex-col sm:flex-row items-center justify-between gap-3 w-full max-w-2xl px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500/15 via-amber-500/5 to-bambu-green/15 border border-amber-500/40 text-xs shadow-lg">
+							<div className="flex items-center gap-2.5 text-amber-200 text-left">
+								<Sparkles className="w-5 h-5 text-amber-400 shrink-0" />
+								<div>
+									<span className="font-bold text-amber-300 block">
+										Dùng thử 7 ngày miễn phí đầy đủ tính năng PRO
+									</span>
+									<span className="text-[11px] text-bambu-gray">
+										Mở khóa Auto Swap PEI, Smart Power, AI Voice cho 5 máy in. Khóa cứng theo Mã máy (1 lần duy nhất).
+									</span>
+								</div>
+							</div>
+							<button
+								type="button"
+								onClick={() => activateTrial()}
+								disabled={isActivatingTrial}
+								className="shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-black font-extrabold text-xs shadow-md transition-all disabled:opacity-50 cursor-pointer"
+							>
+								<Sparkles className="w-3.5 h-3.5" />
+								<span>{isActivatingTrial ? "Đang kích hoạt..." : "Kích hoạt Dùng thử ngay"}</span>
+							</button>
 						</div>
 					)}
 				</div>

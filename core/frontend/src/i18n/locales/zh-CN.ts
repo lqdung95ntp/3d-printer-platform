@@ -410,6 +410,7 @@ export default {
       locationGroup: '位置 / 分组（可选）',
       locationPlaceholder: '例如：工作室、办公室、地下室',
       autoArchiveLabel: '自动归档已完成的打印',
+      autoSwapLabel: '启用自动更换热床 (Auto Swap PEI)',
       deleteAfterPrintLabel: '打印完成后从打印机删除文件',
       fromPrinterSettings: '来自打印机设置',
       modelOptional: '型号（可选）',

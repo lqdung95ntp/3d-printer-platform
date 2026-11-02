@@ -410,6 +410,7 @@ export default {
       locationGroup: 'Posizione / Gruppo (opzionale)',
       locationPlaceholder: 'es. Officina, Ufficio, Cantina',
       autoArchiveLabel: 'Archivia automaticamente stampe completate',
+      autoSwapLabel: 'Abilita opzione Auto Swap PEI',
       deleteAfterPrintLabel: 'Elimina file dalla stampante al termine della stampa',
       fromPrinterSettings: 'Dalle impostazioni della stampante',
       modelOptional: 'Modello (opzionale)',

@@ -409,6 +409,7 @@ export default {
       locationGroup: 'ロケーション / グループ',
       locationPlaceholder: '例: 工房、オフィス、地下室',
       autoArchiveLabel: '完了した印刷を自動アーカイブ',
+      autoSwapLabel: 'Auto Swap PEI オプションを有効にする',
       deleteAfterPrintLabel: '印刷完了後にプリンターからファイルを削除',
       fromPrinterSettings: 'プリンターの設定から取得',
       modelOptional: 'モデル（任意）',
