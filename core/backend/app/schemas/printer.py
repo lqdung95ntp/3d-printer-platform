@@ -229,6 +229,7 @@ class PrinterUpdate(BaseModel):
 class PrinterResponse(PrinterBase):
     id: int
     is_active: bool
+    is_locked: bool = False  # True when printer exceeds active license quota (Read-Only)
     nozzle_count: int = 1  # 1 or 2, auto-detected from MQTT
     print_hours_offset: float = 0.0
     external_camera_url: str | None = None

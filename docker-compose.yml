@@ -13,6 +13,7 @@ services:
       - "${BEE_PORT:-8000}:8000"
     environment:
       - BEE_PRO_URL=http://pro:8001
+      - DISCOVERY_EXTRA_SUBNETS=${DISCOVERY_EXTRA_SUBNETS:-192.168.1.0/24}
       - PYTHONUNBUFFERED=1
       - TZ=${TZ:-Asia/Ho_Chi_Minh}
     volumes:

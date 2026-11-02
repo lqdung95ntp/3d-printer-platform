@@ -50,18 +50,23 @@ def parse_extra_subnets(raw: str | None = None) -> list[str]:
 
 
 def get_discovery_subnets() -> list[str]:
-    """Return local interface subnets plus any DISCOVERY_EXTRA_SUBNETS entries.
+    """Return configured extra subnets first, followed by local interface subnets.
 
-    Extra subnets let operators scan printer VLANs that are reachable via
-    routing but not present as local interface addresses (e.g. host on
-    10.2.0.0/24 scanning printers on 10.0.0.0/24).
+    Placing extra subnets (e.g. DISCOVERY_EXTRA_SUBNETS) first ensures that
+    user-configured printer subnets (like 192.168.1.0/24) are prioritized as
+    the default choice over Docker container-internal bridge subnets (like 172.19.0.0/16).
     """
-    subnets = [iface["subnet"] for iface in get_network_interfaces()]
-    seen = set(subnets)
+    subnets: list[str] = []
+    seen: set[str] = set()
     for network in parse_extra_subnets():
         if network not in seen:
             seen.add(network)
             subnets.append(network)
+    for iface in get_network_interfaces():
+        subnet = iface["subnet"]
+        if subnet not in seen:
+            seen.add(subnet)
+            subnets.append(subnet)
     return subnets
 
 

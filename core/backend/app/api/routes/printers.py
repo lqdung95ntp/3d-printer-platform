@@ -1,6 +1,7 @@
 import asyncio
 import json
 import logging
+import os
 import re
 import tempfile
 import zipfile
@@ -251,14 +252,54 @@ def _provider_for_printer(printer: Printer):
     return create_printer_client(printer)
 
 
+async def _get_license_max_printers() -> int:
+    """Return max allowed active printers under the current license."""
+    bee_pro_url = os.environ.get("BEE_PRO_URL", "http://localhost:8001").rstrip("/")
+    try:
+        async with httpx.AsyncClient(timeout=1.5) as client:
+            res = await client.get(f"{bee_pro_url}/pro/api/v1/status")
+            if res.status_code == 200:
+                data = res.json()
+                lic = data.get("license", {})
+                if lic.get("is_active", False):
+                    return int(lic.get("max_printers", 1))
+    except Exception:
+        pass
+    return 1
+
+
+async def verify_printer_quota_permission(printer_id: int, db: AsyncSession) -> None:
+    """Verify printer is active and not locked under current license quota (Read-Only)."""
+    all_res = await db.execute(select(Printer.id).order_by(Printer.id))
+    all_ids = [row[0] for row in all_res.all()]
+    max_printers = await _get_license_max_printers()
+    try:
+        idx = all_ids.index(printer_id)
+        if idx >= max_printers:
+            raise HTTPException(
+                status_code=403,
+                detail="Máy in này đang ở chế độ Chỉ đọc (Read-only) do vượt hạn mức gói hiện tại. Vui lòng nâng cấp gói Hobby (69.000đ/tháng) để điều khiển.",
+            )
+    except ValueError:
+        pass
+
+
 @router.get("/", response_model=list[PrinterResponse])
 async def list_printers(
     _=RequirePermissionIfAuthEnabled(Permission.PRINTERS_READ),
     db: AsyncSession = Depends(get_db),
 ):
-    """List all configured printers."""
-    result = await db.execute(select(Printer).order_by(Printer.name))
-    return list(result.scalars().all())
+    """List all configured printers with dynamic lock status based on license quota."""
+    result = await db.execute(select(Printer).order_by(Printer.id))
+    printers = list(result.scalars().all())
+    max_printers = await _get_license_max_printers()
+
+    responses = []
+    for idx, p in enumerate(printers):
+        resp = PrinterResponse.model_validate(p)
+        resp.is_locked = idx >= max_printers
+        responses.append(resp)
+    return responses
 
 
 @router.post("/", response_model=PrinterResponse)
@@ -279,6 +320,49 @@ async def create_printer(
     result = await db.execute(select(Printer).where(Printer.serial_number == printer_data.serial_number))
     if result.scalar_one_or_none():
         raise HTTPException(400, "Printer with this serial number already exists")
+
+    # Check printer quota limit based on Pro License / Community Plan
+    result_count = await db.execute(select(func.count(Printer.id)))
+    current_printer_count = result_count.scalar_one()
+
+    bee_pro_url = os.environ.get("BEE_PRO_URL", "http://localhost:8001").rstrip("/")
+    max_printers = None
+    try:
+        async with httpx.AsyncClient(timeout=2.0) as client:
+            res = await client.get(f"{bee_pro_url}/pro/api/v1/status")
+            if res.status_code == 200:
+                data = res.json()
+                lic = data.get("license", {})
+                max_printers = lic.get("max_printers")
+    except Exception:
+        pass
+
+    if max_printers is None:
+        from pathlib import Path
+        lic_file = Path("pro/data/bee_license.key")
+        if not lic_file.exists():
+            lic_file = Path("../pro/data/bee_license.key")
+        if lic_file.exists():
+            token = lic_file.read_text(encoding="utf-8").strip().upper()
+            if "MAX" in token:
+                max_printers = 30
+            elif "PRO" in token or "FARM" in token:
+                max_printers = 15
+            elif "HOBBY" in token:
+                max_printers = 5
+            elif "ENTERPRISE" in token:
+                max_printers = -1
+        if max_printers is None:
+            max_printers = 1
+
+    if max_printers != -1 and current_printer_count >= max_printers:
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "code": "printer_quota_exceeded",
+                "message": f"Printer quota exceeded. Current plan allows up to {max_printers} printers. Upgrade your plan to add more printers.",
+            },
+        )
 
     test_result = await printer_manager.test_connection(
         ip_address=printer_data.ip_address,
@@ -513,12 +597,23 @@ async def get_printer(
     _=RequirePermissionIfAuthEnabled(Permission.PRINTERS_READ),
     db: AsyncSession = Depends(get_db),
 ):
-    """Get a specific printer."""
+    """Get a specific printer with dynamic lock status."""
     result = await db.execute(select(Printer).where(Printer.id == printer_id))
     printer = result.scalar_one_or_none()
     if not printer:
         raise HTTPException(404, "Printer not found")
-    return printer
+
+    all_res = await db.execute(select(Printer.id).order_by(Printer.id))
+    all_ids = [row[0] for row in all_res.all()]
+    max_printers = await _get_license_max_printers()
+
+    resp = PrinterResponse.model_validate(printer)
+    try:
+        idx = all_ids.index(printer_id)
+        resp.is_locked = idx >= max_printers
+    except ValueError:
+        resp.is_locked = False
+    return resp
 
 
 @router.patch("/{printer_id}", response_model=PrinterResponse)
@@ -1697,6 +1792,8 @@ async def start_printer_file(
     printer = result.scalar_one_or_none()
     if not printer:
         raise HTTPException(404, "Printer not found")
+
+    await verify_printer_quota_permission(printer_id, db)
 
     provider_client = _provider_for_printer(printer)
     direct_file_info = None
@@ -3287,6 +3384,8 @@ async def stop_print(
     if not printer:
         raise HTTPException(404, "Printer not found")
 
+    await verify_printer_quota_permission(printer_id, db)
+
     client = printer_manager.get_client(printer_id)
     if not client:
         raise HTTPException(400, "Printer not connected")
@@ -3357,6 +3456,8 @@ async def pause_print(
     if not printer:
         raise HTTPException(404, "Printer not found")
 
+    await verify_printer_quota_permission(printer_id, db)
+
     client = printer_manager.get_client(printer_id)
     if not client:
         raise HTTPException(400, "Printer not connected")
@@ -3379,6 +3480,8 @@ async def resume_print(
     printer = result.scalar_one_or_none()
     if not printer:
         raise HTTPException(404, "Printer not found")
+
+    await verify_printer_quota_permission(printer_id, db)
 
     client = printer_manager.get_client(printer_id)
     if not client:
@@ -3403,6 +3506,8 @@ async def set_print_speed(
     printer = result.scalar_one_or_none()
     if not printer:
         raise HTTPException(404, "Printer not found")
+
+    await verify_printer_quota_permission(printer_id, db)
 
     client = printer_manager.get_client(printer_id)
     if not client:
@@ -3577,6 +3682,8 @@ async def bed_jog(
     if not printer:
         raise HTTPException(404, "Printer not found")
 
+    await verify_printer_quota_permission(printer_id, db)
+
     client = printer_manager.get_client(printer_id)
     if not client:
         raise HTTPException(400, "Printer not connected")
@@ -3619,6 +3726,8 @@ async def axis_jog(
     if not printer:
         raise HTTPException(404, "Printer not found")
 
+    await verify_printer_quota_permission(printer_id, db)
+
     client = printer_manager.get_client(printer_id)
     if not client:
         raise HTTPException(400, "Printer not connected")
@@ -3653,6 +3762,8 @@ async def xy_jog(
     printer = result.scalar_one_or_none()
     if not printer:
         raise HTTPException(404, "Printer not found")
+
+    await verify_printer_quota_permission(printer_id, db)
 
     client = printer_manager.get_client(printer_id)
     if not client:
@@ -3690,6 +3801,8 @@ async def extruder_jog(
     printer = result.scalar_one_or_none()
     if not printer:
         raise HTTPException(404, "Printer not found")
+
+    await verify_printer_quota_permission(printer_id, db)
 
     client = printer_manager.get_client(printer_id)
     if not client:
@@ -3825,6 +3938,8 @@ async def home_axes(
     printer = result.scalar_one_or_none()
     if not printer:
         raise HTTPException(404, "Printer not found")
+
+    await verify_printer_quota_permission(printer_id, db)
 
     client = printer_manager.get_client(printer_id)
     if not client:
