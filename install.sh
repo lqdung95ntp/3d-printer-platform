@@ -136,15 +136,24 @@ echo -e "${GREEN}✅ Docker & Compose sẵn sàng!${NC}"
 WORKDIR="$(pwd)"
 if [ ! -f "docker-compose.yml" ]; then
     INSTALL_DIR="3d-printer-platform"
-    echo -e "${CYAN}Đang tải mã nguồn BeE Printer Platform từ GitHub...${NC}"
-    if command -v git >/dev/null 2>&1; then
-        git clone https://github.com/lqdung95ntp/3d-printer-platform.git "$INSTALL_DIR"
+    if [ -d "$INSTALL_DIR" ]; then
+        echo -e "${CYAN}Thư mục ${INSTALL_DIR} đã tồn tại, đang đồng bộ phiên bản mới nhất...${NC}"
         cd "$INSTALL_DIR"
+        if command -v git >/dev/null 2>&1 && [ -d ".git" ]; then
+            git pull origin main || true
+        fi
         WORKDIR="$(pwd)"
     else
-        mkdir -p "$INSTALL_DIR" && cd "$INSTALL_DIR"
-        curl -fsSL https://github.com/lqdung95ntp/3d-printer-platform/archive/refs/heads/main.tar.gz | tar -xz --strip-components=1
-        WORKDIR="$(pwd)"
+        echo -e "${CYAN}Đang tải mã nguồn BeE Printer Platform từ GitHub...${NC}"
+        if command -v git >/dev/null 2>&1; then
+            git clone https://github.com/lqdung95ntp/3d-printer-platform.git "$INSTALL_DIR"
+            cd "$INSTALL_DIR"
+            WORKDIR="$(pwd)"
+        else
+            mkdir -p "$INSTALL_DIR" && cd "$INSTALL_DIR"
+            curl -fsSL https://github.com/lqdung95ntp/3d-printer-platform/archive/refs/heads/main.tar.gz | tar -xz --strip-components=1
+            WORKDIR="$(pwd)"
+        fi
     fi
     echo -e "${GREEN}✅ Đã chuẩn bị mã nguồn tại: ${WORKDIR}${NC}"
 fi
