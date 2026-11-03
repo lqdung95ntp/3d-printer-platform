@@ -184,6 +184,52 @@ if [ -z "$BEE_PORT" ]; then
     BEE_PORT=8000
 fi
 
+# Detect port collision on host
+is_port_in_use() {
+    local check_port="$1"
+    if command -v ss >/dev/null 2>&1; then
+        ss -tuln 2>/dev/null | grep -q -E ":${check_port}\s" && return 0
+    elif command -v netstat >/dev/null 2>&1; then
+        netstat -tuln 2>/dev/null | grep -q -E ":${check_port}\s" && return 0
+    elif command -v lsof >/dev/null 2>&1; then
+        lsof -iTCP:"${check_port}" -sTCP:LISTEN >/dev/null 2>&1 && return 0
+    fi
+    return 1
+}
+
+# Auto-reassign Web Dashboard port if occupied
+if is_port_in_use "$BEE_PORT"; then
+    echo -e "${YELLOW}⚠️  Cổng ${BEE_PORT} đang được sử dụng bởi một dịch vụ khác trên máy.${NC}"
+    for alt_port in 8080 8088 8888 9000 8008; do
+        if ! is_port_in_use "$alt_port"; then
+            echo -e "${CYAN}🔄 Tự động chuyển cổng Web sang: ${BOLD}${alt_port}${NC}"
+            BEE_PORT="$alt_port"
+            if grep -q '^BEE_PORT=' "${WORKDIR}/.env"; then
+                sed -i.bak "s/^BEE_PORT=.*/BEE_PORT=${BEE_PORT}/" "${WORKDIR}/.env" && rm -f "${WORKDIR}/.env.bak"
+            else
+                echo "BEE_PORT=${BEE_PORT}" >> "${WORKDIR}/.env"
+            fi
+            break
+        fi
+    done
+fi
+
+# Auto-reassign Pro Sidecar host port if 8001 is occupied
+BEE_PRO_PORT=$(grep -E '^BEE_PRO_PORT=' "${WORKDIR}/.env" | cut -d '=' -f2 | tr -d ' ' || echo "8001")
+if is_port_in_use "$BEE_PRO_PORT"; then
+    for alt_pro in 8002 8003 8004 8005; do
+        if ! is_port_in_use "$alt_pro"; then
+            echo -e "${CYAN}🔄 Cổng Pro Sidecar ${BEE_PRO_PORT} đã bận, tự động gán BEE_PRO_PORT=${alt_pro}${NC}"
+            if grep -q '^BEE_PRO_PORT=' "${WORKDIR}/.env"; then
+                sed -i.bak "s/^BEE_PRO_PORT=.*/BEE_PRO_PORT=${alt_pro}/" "${WORKDIR}/.env" && rm -f "${WORKDIR}/.env.bak"
+            else
+                echo "BEE_PRO_PORT=${alt_pro}" >> "${WORKDIR}/.env"
+            fi
+            break
+        fi
+    done
+fi
+
 # 6. Launch System via Docker Compose
 echo -e "${CYAN}Đang tải container images mới nhất từ GitHub Packages...${NC}"
 $COMPOSE_CMD pull
