@@ -158,6 +158,12 @@ if [ ! -f "docker-compose.yml" ]; then
     echo -e "${GREEN}✅ Đã chuẩn bị mã nguồn tại: ${WORKDIR}${NC}"
 fi
 
+# Hand off to the freshly updated local script if invoked from curl pipe
+if [ -z "$BEE_INSTALL_REEXEC" ] && [ -f "${WORKDIR}/install.sh" ]; then
+    export BEE_INSTALL_REEXEC=1
+    exec bash "${WORKDIR}/install.sh" "$@"
+fi
+
 echo -e "${BLUE}Thư mục triển khai: ${BOLD}${WORKDIR}${NC}"
 
 mkdir -p "${WORKDIR}/data/core" "${WORKDIR}/data/pro" "${WORKDIR}/logs"
