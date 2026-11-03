@@ -106,7 +106,7 @@ if (-not (Test-Path "docker-compose.yml")) {
 }
 
 # 5. Setup Directories & .env
-New-Item -ItemType Directory -Force -Path "data", "logs" | Out-Null
+New-Item -ItemType Directory -Force -Path "data/core", "data/pro", "logs" | Out-Null
 
 if (-not (Test-Path ".env")) {
     if (Test-Path ".env.example") {
@@ -122,6 +122,8 @@ DATA_PATH=./data
 }
 
 # 6. Launch System
+Write-Host "Dang tai container images tu GitHub Packages..." -ForegroundColor Cyan
+docker compose pull
 Write-Host "Dang khoi dong he thong BeE Printer Platform..." -ForegroundColor Cyan
 docker compose up -d
 
