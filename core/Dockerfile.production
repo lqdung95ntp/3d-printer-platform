@@ -1,0 +1,74 @@
+# ==============================================================================
+# BeE Printer Platform - Core Production Image (Pre-built Static Bundle)
+# Lightweight, fast build without NodeJS dependency
+# ==============================================================================
+FROM python:3.13-slim-trixie
+
+ARG PRINTBUDDY_REF=""
+ENV PRINTBUDDY_REF=${PRINTBUDDY_REF}
+
+LABEL org.opencontainers.image.title="BeE Printer Platform Core" \
+      org.opencontainers.image.description="Multi-brand 3D printer management core" \
+      org.opencontainers.image.licenses="AGPL-3.0"
+
+WORKDIR /app
+
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    ffmpeg \
+    gnupg \
+    gosu \
+    iproute2 \
+    libcap2-bin \
+    openssh-client \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Tailscale CLI
+RUN curl -fsSL https://pkgs.tailscale.com/stable/debian/trixie.noarmor.gpg \
+        -o /usr/share/keyrings/tailscale-archive-keyring.gpg \
+    && curl -fsSL https://pkgs.tailscale.com/stable/debian/trixie.tailscale-keyring.list \
+        -o /etc/apt/sources.list.d/tailscale.list \
+    && apt-get update && apt-get install -y --no-install-recommends tailscale \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN setcap cap_net_bind_service=+ep "$(readlink -f /usr/local/bin/python3)"
+
+# Install Python dependencies
+COPY requirements.txt ./
+RUN pip install --root-user-action=ignore --no-cache-dir --upgrade 'pip>=26.1' \
+ && pip install --root-user-action=ignore --no-cache-dir -r requirements.txt
+
+# Copy backend code
+COPY backend/ ./backend/
+RUN mkdir -p .git && echo "ref: refs/heads/main" > .git/HEAD
+
+# Copy pre-built static assets directly
+COPY static/ ./static
+COPY gcode_viewer/ ./gcode_viewer/
+
+# Setup directories
+RUN mkdir -p /app/data /app/logs && \
+    : >/app/data/.printbuddy && \
+    : >/app/logs/.printbuddy
+
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
+ENV PYTHONUNBUFFERED=1
+ENV DATA_DIR=/app/data
+ENV LOG_DIR=/app/logs
+ENV PORT=8000
+ENV HOME=/app
+ENV USER=printbuddy
+ENV LOGNAME=printbuddy
+ENV MPLCONFIGDIR=/tmp/matplotlib
+
+EXPOSE 8000
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
+    CMD python -c "import urllib.request, os; urllib.request.urlopen(f'http://localhost:{os.environ.get(\"PORT\", \"8000\")}/health')" || exit 1
+
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
+CMD ["sh", "-c", "uvicorn backend.app.main:app --host 0.0.0.0 --port ${PORT:-8000} --loop asyncio"]
