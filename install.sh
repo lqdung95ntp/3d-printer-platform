@@ -215,15 +215,19 @@ if is_port_in_use "$BEE_PORT"; then
 fi
 
 # Auto-reassign Pro Sidecar host port if 8001 is occupied
-BEE_PRO_PORT=$(grep -E '^BEE_PRO_PORT=' "${WORKDIR}/.env" | cut -d '=' -f2 | tr -d ' ' || echo "8001")
+BEE_PRO_PORT=$(grep -E '^BEE_PRO_PORT=' "${WORKDIR}/.env" | cut -d '=' -f2 | tr -d ' ')
+if [ -z "$BEE_PRO_PORT" ]; then
+    BEE_PRO_PORT=8001
+fi
 if is_port_in_use "$BEE_PRO_PORT"; then
     for alt_pro in 8002 8003 8004 8005; do
         if ! is_port_in_use "$alt_pro"; then
             echo -e "${CYAN}🔄 Cổng Pro Sidecar ${BEE_PRO_PORT} đã bận, tự động gán BEE_PRO_PORT=${alt_pro}${NC}"
+            BEE_PRO_PORT="$alt_pro"
             if grep -q '^BEE_PRO_PORT=' "${WORKDIR}/.env"; then
-                sed -i.bak "s/^BEE_PRO_PORT=.*/BEE_PRO_PORT=${alt_pro}/" "${WORKDIR}/.env" && rm -f "${WORKDIR}/.env.bak"
+                sed -i.bak "s/^BEE_PRO_PORT=.*/BEE_PRO_PORT=${BEE_PRO_PORT}/" "${WORKDIR}/.env" && rm -f "${WORKDIR}/.env.bak"
             else
-                echo "BEE_PRO_PORT=${alt_pro}" >> "${WORKDIR}/.env"
+                echo "BEE_PRO_PORT=${BEE_PRO_PORT}" >> "${WORKDIR}/.env"
             fi
             break
         fi
@@ -231,6 +235,7 @@ if is_port_in_use "$BEE_PRO_PORT"; then
 fi
 
 # 6. Launch System via Docker Compose
+export BEE_PORT BEE_PRO_PORT
 echo -e "${CYAN}Đang tải container images mới nhất từ GitHub Packages...${NC}"
 $COMPOSE_CMD pull
 echo -e "${CYAN}Đang khởi động hệ thống BeE Printer Platform (Core & Pro Sidecar)...${NC}"
