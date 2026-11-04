@@ -5676,10 +5676,10 @@ function PrinterCard({
 													e.preventDefault();
 													e.stopPropagation();
 													openUpgradeModal(
-														"Multi-Printer Fleet Management (Từ 2 máy)",
+														"Multi-Printer Fleet Management (2+ printers)",
 													);
 												}}
-												title="Máy in đang ở chế độ Chỉ đọc (Read-only). Bấm để nâng cấp gói Hobby 69k/tháng mở khóa điều khiển!"
+												title="Printer is in read-only mode. Upgrade to Pro to unlock full control!"
 												className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-black tracking-wider uppercase bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-300 border border-amber-500/40 hover:border-amber-400 hover:text-amber-200 hover:scale-105 active:scale-95 transition-all cursor-pointer shadow-sm select-none"
 											>
 												<Zap className="w-2.5 h-2.5 fill-amber-400 text-amber-400" />
@@ -5815,17 +5815,19 @@ function PrinterCard({
 								<div
 									onClick={() =>
 										openUpgradeModal(
-											"Multi-Printer Fleet Management (Từ 2 máy)",
+											"Multi-Printer Fleet Management (2+ printers)",
 										)
 									}
 									className="mb-2 px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-between text-xs text-amber-300 hover:bg-amber-500/20 transition-all cursor-pointer group shadow-sm"
 								>
 									<span className="flex items-center gap-1.5 font-medium">
 										<Lock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-										<span>Tạm khóa điều khiển (Chế độ Chỉ đọc)</span>
+										<span>
+											{t("printers.controlLocked")}
+										</span>
 									</span>
 									<span className="text-[11px] font-bold text-amber-400 flex items-center gap-1 group-hover:underline">
-										Mở khóa 69k/tháng{" "}
+										{t("printers.upgradeToUnlock")}{" "}
 										<ArrowUpRight className="w-3 h-3" />
 									</span>
 								</div>
@@ -6605,6 +6607,7 @@ function PrinterCard({
 																				{
 																					status.layer_num
 																				}
+
 																				/
 																				{
 																					status.total_layers
@@ -12387,7 +12390,9 @@ function PrinterCard({
 													>
 														<RefreshCw className="w-[var(--pc-i4,1rem)] h-[var(--pc-i4,1rem)] text-amber-400" />
 														<span>Swap PEI</span>
-														<ProBadge showIcon={false} />
+														<ProBadge
+															showIcon={false}
+														/>
 													</Button>
 												);
 											}
@@ -15566,10 +15571,7 @@ function FirmwareUpdateModal({
 			file.name.toLowerCase().endsWith(".bin") ||
 			file.name.toLowerCase().endsWith(".zip");
 		if (!isBinOrZip) {
-			showToast(
-				t("printers.firmwareModal.invalidBinFile"),
-				"error",
-			);
+			showToast(t("printers.firmwareModal.invalidBinFile"), "error");
 			return;
 		}
 
@@ -15585,10 +15587,7 @@ function FirmwareUpdateModal({
 
 		try {
 			await firmwareApi.uploadCustomFirmware(printer.id, file);
-			showToast(
-				t("printers.firmwareModal.uploadStarted"),
-				"info",
-			);
+			showToast(t("printers.firmwareModal.uploadStarted"), "info");
 
 			if (!pollInterval) {
 				const interval = setInterval(async () => {
@@ -15822,7 +15821,9 @@ function FirmwareUpdateModal({
 																"Download from Bambu Lab"
 															}
 														>
-															<span>Download</span>
+															<span>
+																Download
+															</span>
 															<ExternalLink className="w-3 h-3" />
 														</a>
 													)}
@@ -15835,49 +15836,48 @@ function FirmwareUpdateModal({
 						)}
 
 					{/* Manual Upload Section */}
-					{!isUploading &&
-						uploadStatus?.status !== "complete" && (
-							<div className="p-3 mb-4 rounded-lg border border-dashed border-bambu-dark-tertiary bg-bambu-dark/40 flex items-center justify-between gap-3">
-								<div className="min-w-0 flex-1">
-									<div className="text-sm font-medium text-white flex items-center gap-1.5">
-										<Upload className="w-4 h-4 text-orange-400 flex-shrink-0" />
-										<span>
-											{t(
-												"printers.firmwareModal.manualUploadTitle",
-											)}
-										</span>
-									</div>
-									<p className="text-xs text-bambu-gray mt-0.5">
+					{!isUploading && uploadStatus?.status !== "complete" && (
+						<div className="p-3 mb-4 rounded-lg border border-dashed border-bambu-dark-tertiary bg-bambu-dark/40 flex items-center justify-between gap-3">
+							<div className="min-w-0 flex-1">
+								<div className="text-sm font-medium text-white flex items-center gap-1.5">
+									<Upload className="w-4 h-4 text-orange-400 flex-shrink-0" />
+									<span>
 										{t(
-											"printers.firmwareModal.manualUploadDesc",
+											"printers.firmwareModal.manualUploadTitle",
 										)}
-									</p>
+									</span>
 								</div>
-								<input
-									type="file"
-									ref={customFileInputRef}
-									accept=".bin,.zip"
-									className="hidden"
-									onChange={handleCustomFileUpload}
-								/>
-								<Button
-									type="button"
-									variant="secondary"
-									size="sm"
-									disabled={
-										isUploading ||
-										uploadStatus?.status === "uploading"
-									}
-									onClick={() =>
-										customFileInputRef.current?.click()
-									}
-									className="flex-shrink-0"
-								>
-									<Upload className="w-3.5 h-3.5 mr-1.5" />
-									{t("printers.firmwareModal.uploadBin")}
-								</Button>
+								<p className="text-xs text-bambu-gray mt-0.5">
+									{t(
+										"printers.firmwareModal.manualUploadDesc",
+									)}
+								</p>
 							</div>
-						)}
+							<input
+								type="file"
+								ref={customFileInputRef}
+								accept=".bin,.zip"
+								className="hidden"
+								onChange={handleCustomFileUpload}
+							/>
+							<Button
+								type="button"
+								variant="secondary"
+								size="sm"
+								disabled={
+									isUploading ||
+									uploadStatus?.status === "uploading"
+								}
+								onClick={() =>
+									customFileInputRef.current?.click()
+								}
+								className="flex-shrink-0"
+							>
+								<Upload className="w-3.5 h-3.5 mr-1.5" />
+								{t("printers.firmwareModal.uploadBin")}
+							</Button>
+						</div>
+					)}
 
 					{/* Status / Progress (only when a version is selected) */}
 					{!selectedVersion ? null : isPreparing ? (
@@ -17876,7 +17876,11 @@ export function PrintersPage() {
 			)}
 			<Button
 				onClick={() => {
-					if (maxPrinters !== -1 && printers && printers.length >= maxPrinters) {
+					if (
+						maxPrinters !== -1 &&
+						printers &&
+						printers.length >= maxPrinters
+					) {
 						openUpgradeModal(
 							`Add printer #${printers.length + 1} (Current plan limited to ${maxPrinters} ${maxPrinters === 1 ? "printer" : "printers"})`,
 						);
@@ -18143,7 +18147,11 @@ export function PrintersPage() {
 										<PrinterCard
 											key={printer.id}
 											printer={printer}
-											isLocked={!allowedPrinterIds.has(printer.id)}
+											isLocked={
+												!allowedPrinterIds.has(
+													printer.id,
+												)
+											}
 											hideIfDisconnected={
 												hideDisconnected
 											}
@@ -18378,7 +18386,11 @@ export function PrintersPage() {
 				<AddPrinterModal
 					onClose={() => setShowAddModal(false)}
 					onAdd={(data) => {
-						if (maxPrinters !== -1 && printers && printers.length >= maxPrinters) {
+						if (
+							maxPrinters !== -1 &&
+							printers &&
+							printers.length >= maxPrinters
+						) {
 							setShowAddModal(false);
 							openUpgradeModal(
 								`Add printer #${printers.length + 1} (Current plan limited to ${maxPrinters} ${maxPrinters === 1 ? "printer" : "printers"})`,

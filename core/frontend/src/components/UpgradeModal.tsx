@@ -514,8 +514,10 @@ export function UpgradeModal() {
 						<div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-bambu-dark/80 border border-bambu-dark-tertiary text-xs font-mono text-bambu-gray">
 							<ShieldCheck className="w-3.5 h-3.5 text-bambu-green" />
 							<span>
-								Mã máy (Device ID):{" "}
-								<strong className="text-white">{deviceId}</strong>
+								Device ID:{" "}
+								<strong className="text-white">
+									{deviceId}
+								</strong>
 							</span>
 							<span className="text-[10px] px-1.5 py-0.2 rounded bg-bambu-green/15 text-bambu-green font-semibold">
 								1 Machine Lock
@@ -529,10 +531,12 @@ export function UpgradeModal() {
 								<Sparkles className="w-5 h-5 text-amber-400 shrink-0" />
 								<div>
 									<span className="font-bold text-amber-300 block">
-										Dùng thử 7 ngày miễn phí đầy đủ tính năng PRO
+										7-Day Free Trial with Full PRO Features
 									</span>
 									<span className="text-[11px] text-bambu-gray">
-										Mở khóa Auto Swap PEI, Smart Power, AI Voice cho 5 máy in. Khóa cứng theo Mã máy (1 lần duy nhất).
+										Unlock Auto Swap PEI, Smart Power, and
+										AI Voice for up to 5 printers. Bound to
+										Device ID (one-time trial).
 									</span>
 								</div>
 							</div>
@@ -543,7 +547,11 @@ export function UpgradeModal() {
 								className="shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-black font-extrabold text-xs shadow-md transition-all disabled:opacity-50 cursor-pointer"
 							>
 								<Sparkles className="w-3.5 h-3.5" />
-								<span>{isActivatingTrial ? "Đang kích hoạt..." : "Kích hoạt Dùng thử ngay"}</span>
+								<span>
+									{isActivatingTrial
+										? "Activating..."
+										: "Activate Free Trial"}
+								</span>
 							</button>
 						</div>
 					)}
@@ -1020,15 +1028,12 @@ export function UpgradeModal() {
 								</h3>
 								<div className="flex items-baseline gap-2 mt-1 flex-wrap">
 									<div className="text-2xl font-black text-amber-400">
-										{getVndAmount().toLocaleString("vi-VN")}{" "}
-										VNĐ
+										{getVndAmount().toLocaleString()} VND
 									</div>
 									{isProratedUpgrade && (
 										<span className="text-sm text-bambu-gray line-through">
-											{getFullVndAmount().toLocaleString(
-												"vi-VN",
-											)}{" "}
-											VNĐ
+											{getFullVndAmount().toLocaleString()}{" "}
+											VND
 										</span>
 									)}
 									<span className="text-xs text-bambu-gray font-normal">
@@ -1045,10 +1050,8 @@ export function UpgradeModal() {
 										<Check className="w-3.5 h-3.5 shrink-0" />
 										<span>
 											Prorated upgrade: Credited{" "}
-											{getCurrentCreditVnd().toLocaleString(
-												"vi-VN",
-											)}{" "}
-											VNĐ from your current{" "}
+											{getCurrentCreditVnd().toLocaleString()}{" "}
+											VND from your current{" "}
 											{currentPlanId.toUpperCase()} plan
 										</span>
 									</div>
@@ -1229,15 +1232,22 @@ export function UpgradeModal() {
 							<div className="p-3 rounded-xl bg-bambu-dark/70 border border-bambu-dark-tertiary text-xs text-bambu-gray space-y-1.5">
 								<div className="flex items-center gap-1.5 font-semibold text-white">
 									<ShieldCheck className="w-4 h-4 text-bambu-green" />
-									<span>Chữ ký số & Khóa thiết bị (Device Binding)</span>
+									<span>
+										Digital Signature & Device Binding
+									</span>
 								</div>
 								<p>
-									Bản quyền sẽ được ký số và gắn kết độc quyền với máy này (
-									<strong className="text-white font-mono">{deviceId}</strong>
-									). Một license chỉ dùng cho 1 máy duy nhất.
+									Your license is cryptographically signed and
+									bound exclusively to this machine (
+									<strong className="text-white font-mono">
+										{deviceId}
+									</strong>
+									). One license key per device.
 								</p>
 								<p className="text-bambu-green font-medium">
-									✅ Sau khi kích hoạt thành công, hệ thống hoạt động hoàn toàn Offline không cần Internet mỗi khi khởi động.
+									✅ After activation, the system runs 100%
+									offline without requiring internet access on
+									boot.
 								</p>
 							</div>
 						)}

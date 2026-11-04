@@ -110,7 +110,7 @@ export async function activateTrialLicense(
 	const data = await res.json();
 	if (!res.ok) {
 		throw new Error(
-			data.detail || data.message || "Không thể kích hoạt dùng thử",
+			data.detail || data.message || "Failed to activate trial",
 		);
 	}
 	return data;

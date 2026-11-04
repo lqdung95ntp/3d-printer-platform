@@ -39,6 +39,7 @@ services:
       - "${BEE_PRO_PORT:-8001}:8001"
     environment:
       - BEE_PRO_CORE_API_URL=http://core:8000
+      - BEE_PRO_CORE_API_KEY=${BEE_PRO_CORE_API_KEY:-}
       - BEE_PRO_DATA_DIR=/app/data
       - BEE_PRO_LICENSE_FILE=/app/data/bee_license.key
       - PYTHONUNBUFFERED=1

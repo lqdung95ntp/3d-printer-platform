@@ -128,6 +128,8 @@ export default {
 
   // Printers page
   printers: {
+    controlLocked: 'Control Locked (Read-Only Mode)',
+    upgradeToUnlock: 'Upgrade to Unlock',
     title: 'Printers',
     addPrinter: 'Add Printer',
     addPreflight: {
@@ -1475,6 +1477,7 @@ export default {
       users: 'Authentication',
       backup: 'Backup',
       swapPei: 'Swap PEI',
+      smartPower: 'Smart Power',
       emailAuth: 'Email Authentication',
       ldap: 'LDAP',
       twoFa: 'Two-Factor Auth',
@@ -2402,6 +2405,28 @@ export default {
       decryptionBrokenTitle: 'Encryption key missing',
       decryptionBrokenError: '{{count}} encrypted record(s) cannot be decrypted because the encryption key is no longer available. Restore the previous MFA_ENCRYPTION_KEY or DATA_DIR/.mfa_encryption_key to recover.',
       migrationErrorWarning: '{{count}} legacy row(s) failed to re-encrypt at startup. Check server logs and restart Printbuddy to retry.',
+    },
+    smartPower: {
+      title: 'Smart Power & Auto Energy Saver',
+      description: 'Automatically shuts down idle printers after jobs complete. Automatically powers on 3 minutes before scheduled queue prints. Prevents electrical hazards and minimizes energy costs.',
+      unlockPro: 'Upgrade to Unlock Pro',
+      globalSettings: 'Fleet Auto Power Configuration',
+      enableGlobal: 'Enable Smart Power Engine',
+      enableGlobalDesc: 'Enable idle monitoring and automatic shutdown via smart plugs.',
+      idleTimeout: 'Idle timeout before shutdown (minutes)',
+      idleTimeoutHint: 'Default: 30 minutes. The printer will not power off if jobs are queued or AMS drying is in progress.',
+      prewakeTime: 'Pre-wake power on before scheduled print (minutes)',
+      prewakeTimeHint: 'Default: 3 minutes. Powers on the printer ahead of time to reconnect Wi-Fi and preheat.',
+      fleetStatus: 'Printer Fleet Status',
+      noPrinters: 'No printers configured in the system.',
+      linkedPlug: 'Linked Plug',
+      noPlugAssigned: 'No Smart Plug linked',
+      idleStatus: 'Idle',
+      powerOn: 'Power On',
+      powerOff: 'Power Off',
+      enablePrinter: 'Enable Smart Power',
+      disablePrinter: 'Disable Smart Power',
+      saveSuccess: 'Smart Power settings saved successfully!',
     },
 
   },
