@@ -551,10 +551,10 @@ export function FilamentHoverCard({ data, children, disabled, className = '', sp
                       dismiss();
                       configureSlot.onConfigure?.();
                     }}
-                    className="w-full flex items-center justify-start gap-1.5 px-2 py-1.5 text-xs font-medium rounded transition-colors bg-bambu-blue/20 hover:bg-bambu-blue/40 text-bambu-blue"
+                    className="w-full px-2 py-1.5 text-left text-xs flex items-center gap-2 rounded transition-colors text-white hover:bg-bambu-dark-tertiary"
                     title={t('ams.configureSlot')}
                   >
-                    <Settings2 className="w-3.5 h-3.5" />
+                    <Settings2 className="w-[var(--pc-i3,0.75rem)] h-[var(--pc-i3,0.75rem)]" />
                     {t('ams.configure')}
                   </button>
                 </div>
@@ -748,10 +748,10 @@ export function EmptySlotHoverCard({ children, className = '', configureSlot, on
                       dismiss();
                       configureSlot.onConfigure?.();
                     }}
-                    className="w-full flex items-center justify-start gap-1.5 px-2 py-1.5 text-xs font-medium rounded transition-colors bg-bambu-blue/20 hover:bg-bambu-blue/40 text-bambu-blue"
+                    className="w-full px-2 py-1.5 text-left text-xs flex items-center gap-2 rounded transition-colors text-white hover:bg-bambu-dark-tertiary"
                     title={t('ams.configureSlot')}
                   >
-                    <Settings2 className="w-3.5 h-3.5" />
+                    <Settings2 className="w-[var(--pc-i3,0.75rem)] h-[var(--pc-i3,0.75rem)]" />
                     {t('ams.configure')}
                   </button>
                 )}

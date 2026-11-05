@@ -244,6 +244,7 @@ import {
 import { LinkSpoolModal } from "../components/LinkSpoolModal";
 import { AssignSpoolModal } from "../components/AssignSpoolModal";
 import { ConfigureAmsSlotModal } from "../components/ConfigureAmsSlotModal";
+import { ConfigureSlotModal } from "../components/ConfigureSlotModal";
 import { useToast } from "../contexts/ToastContext";
 import { ChamberLight } from "../components/icons/ChamberLight";
 import { PlateClearedIcon } from "../components/icons/PlateClearedIcon";
@@ -3216,6 +3217,7 @@ function PrinterCard({
 		extruderId?: number;
 		caliIdx?: number | null;
 		savedPresetId?: string;
+		slotLabel?: string;
 	} | null>(null);
 	const [showFirmwareModal, setShowFirmwareModal] = useState(false);
 	const [plateCheckResult, setPlateCheckResult] = useState<{
@@ -6456,7 +6458,9 @@ function PrinterCard({
 										// what rebuilds the list, so the print could never get it back.
 										// Exactly one object is the real nothing-to-skip case.
 										const objectCount =
-											status.printable_objects_count ?? 0;
+											(status.printable_objects_count && status.printable_objects_count > 0)
+												? status.printable_objects_count
+												: (objectsData?.objects?.length ?? 0);
 										const canSkipObjects =
 											isActivePrint &&
 											objectCount !== 1 &&
@@ -9387,13 +9391,12 @@ function PrinterCard({
 																							1
 																						}
 																					/>
-																					<div className="text-[length:var(--pc-t9,9px)] text-white font-bold truncate">
+																					<div
+																						className={`text-[length:var(--pc-t9,9px)] font-bold truncate ${isEmpty ? "text-white/40" : "text-white"}`}
+																					>
 																						{tray?.tray_type ||
 																							t(
-																								emptyKind ===
-																									"reset"
-																									? "ams.slotUnconfigured"
-																									: "ams.slotEmpty",
+																								"ams.slotEmpty",
 																							)}
 																					</div>
 																					{snapmakerLoadState ? (
@@ -9961,6 +9964,10 @@ function PrinterCard({
 																												)
 																													? slotPreset?.preset_id
 																													: undefined,
+																											slotLabel:
+																												isSnapmakerU1Unit
+																													? `Feeder ${slotIdx + 1} (U1-E${slotIdx})`
+																													: `${amsDisplayLabel} - Slot ${slotIdx + 1}`,
 																										},
 																									),
 																						}}
@@ -10009,6 +10016,10 @@ function PrinterCard({
 																													amsExtruderMap,
 																													amsSwitchInlet,
 																												),
+																											slotLabel:
+																												isSnapmakerU1Unit
+																													? `Feeder ${slotIdx + 1} (U1-E${slotIdx})`
+																													: `${amsDisplayLabel} - Slot ${slotIdx + 1}`,
 																										},
 																									),
 																						}}
@@ -10385,13 +10396,12 @@ function PrinterCard({
 																}
 																slotNumber={1}
 															/>
-															<div className="text-[length:var(--pc-t9,9px)] text-white font-bold truncate">
+															<div
+																className={`text-[length:var(--pc-t9,9px)] font-bold truncate ${isEmpty ? "text-white/40" : "text-white"}`}
+															>
 																{tray?.tray_type ||
 																	t(
-																		emptyKind ===
-																			"reset"
-																			? "ams.slotUnconfigured"
-																			: "ams.slotEmpty",
+																		"ams.slotEmpty",
 																	)}
 															</div>
 															<KValueLine
@@ -11848,6 +11858,13 @@ function PrinterCard({
 																												)
 																													? extSlotPreset?.preset_id
 																													: undefined,
+																											slotLabel:
+																												isDualNozzle
+																													? extTrayId ===
+																														254
+																														? "Ext-L"
+																														: "Ext-R"
+																													: "External Spool",
 																										},
 																									),
 																						}}
@@ -11890,6 +11907,13 @@ function PrinterCard({
 																														? 1
 																														: 0
 																													: undefined,
+																											slotLabel:
+																												isDualNozzle
+																													? extTrayId ===
+																														254
+																														? "Ext-L"
+																														: "Ext-R"
+																													: "External Spool",
 																										},
 																									),
 																						}}
@@ -13653,8 +13677,8 @@ function PrinterCard({
 				/>
 			)}
 
-			{/* Configure AMS Slot Modal */}
-			{configureSlotModal && (
+			{/* Configure AMS Slot Modal (Bambu) or Configure Slot Modal (Non-Bambu) */}
+			{configureSlotModal && isBambuModelPrinter ? (
 				<ConfigureAmsSlotModal
 					isOpen={!!configureSlotModal}
 					onClose={() => setConfigureSlotModal(null)}
@@ -13676,7 +13700,19 @@ function PrinterCard({
 						});
 					}}
 				/>
-			)}
+			) : configureSlotModal ? (
+				<ConfigureSlotModal
+					isOpen={!!configureSlotModal}
+					onClose={() => setConfigureSlotModal(null)}
+					printerId={printer.id}
+					slotInfo={configureSlotModal}
+					onSuccess={() => {
+						queryClient.invalidateQueries({
+							queryKey: ["printerStatus", printer.id],
+						});
+					}}
+				/>
+			) : null}
 
 			{/* Which hotend to feed — only asked on a printer with a Filament Track Switch */}
 			{feedDirectionRequest && (

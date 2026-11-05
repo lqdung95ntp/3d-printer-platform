@@ -3978,6 +3978,7 @@ export default {
     empty: 'Empty',
     emptySlot: 'Empty slot',
     slotEmpty: 'Empty',
+    slotUnconfigured: 'Unconfigured',
     emptySlotReset: 'No filament assigned',
     unknown: 'Unknown',
     humidity: 'Humidity',

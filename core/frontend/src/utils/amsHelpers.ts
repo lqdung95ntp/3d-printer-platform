@@ -1,11 +1,18 @@
-import type { AMSTray, AMSUnit, InventorySpool, Printer, PrinterStatus, SpoolAssignment } from '../api/client';
+import type {
+	AMSTray,
+	AMSUnit,
+	InventorySpool,
+	Printer,
+	PrinterStatus,
+	SpoolAssignment,
+} from "../api/client";
 /**
  * AMS (Automatic Material System) helper utilities for Bambu Lab printers.
  * These functions handle color normalization, slot labeling, and tray ID calculations
  * for AMS, AMS-HT, and external spool configurations.
  */
-import { parseUTCDate } from './date';
-import { colorFamily } from './colors';
+import { parseUTCDate } from "./date";
+import { colorFamily } from "./colors";
 
 /**
  * Normalize color format from various sources for CSS rendering.
@@ -17,20 +24,20 @@ import { colorFamily } from './colors';
  * still strips alpha, so type/colour matching is unaffected.
  */
 export function normalizeColor(color: string | null | undefined): string {
-  if (!color) return '#808080';
-  const clean = color.replace('#', '');
-  if (clean.length >= 8 && clean.substring(6, 8).toLowerCase() !== 'ff') {
-    return `#${clean.substring(0, 8)}`;
-  }
-  return `#${clean.substring(0, 6)}`;
+	if (!color) return "#808080";
+	const clean = color.replace("#", "");
+	if (clean.length >= 8 && clean.substring(6, 8).toLowerCase() !== "ff") {
+		return `#${clean.substring(0, 8)}`;
+	}
+	return `#${clean.substring(0, 6)}`;
 }
 
 /**
  * Normalize color for comparison (case-insensitive, strip hash and alpha).
  */
 export function normalizeColorForCompare(color: string | undefined): string {
-  if (!color) return '';
-  return color.replace('#', '').toLowerCase().substring(0, 6);
+	if (!color) return "";
+	return color.replace("#", "").toLowerCase().substring(0, 6);
 }
 
 /**
@@ -42,7 +49,7 @@ export function normalizeColorForCompare(color: string | undefined): string {
  * live. Anywhere this letter is shown next to a hover target, the tooltip names
  * the inlet outright so the two cannot be confused.
  */
-export const FTS_INLET_SIDE = { A: 'L', B: 'R' } as const;
+export const FTS_INLET_SIDE = { A: "L", B: "R" } as const;
 
 /**
  * Which extruder each switch inlet feeds. Out-A is the left hotend and Out-B the
@@ -60,19 +67,20 @@ const FTS_INLET_EXTRUDER: Record<string, number> = { A: 1, B: 0 };
  * what bound a left-nozzle profile to a slot sitting on the right.
  */
 export function resolveSlotExtruder(
-  amsId: number,
-  trayId: number,
-  amsExtruderMap: Record<string, number> | undefined,
-  amsSwitchInlet: Record<string, string> | undefined
+	amsId: number,
+	trayId: number,
+	amsExtruderMap: Record<string, number> | undefined,
+	amsSwitchInlet: Record<string, string> | undefined,
 ): number | undefined {
-  // External holder: the tray id names the side. 254/Ext-L feeds extruder 1.
-  if (amsId === 255) return trayId === 0 || trayId === 1 ? 1 - trayId : undefined;
+	// External holder: the tray id names the side. 254/Ext-L feeds extruder 1.
+	if (amsId === 255)
+		return trayId === 0 || trayId === 1 ? 1 - trayId : undefined;
 
-  const mapped = amsExtruderMap?.[String(amsId)];
-  if (mapped !== undefined) return mapped;
+	const mapped = amsExtruderMap?.[String(amsId)];
+	if (mapped !== undefined) return mapped;
 
-  const inlet = amsSwitchInlet?.[String(amsId)];
-  return inlet ? FTS_INLET_EXTRUDER[inlet.toUpperCase()] : undefined;
+	const inlet = amsSwitchInlet?.[String(amsId)];
+	return inlet ? FTS_INLET_EXTRUDER[inlet.toUpperCase()] : undefined;
 }
 
 /**
@@ -83,17 +91,17 @@ export function resolveSlotExtruder(
  * normalized HT range otherwise.
  */
 export function getAmsLabel(amsId: number | string, trayCount: number): string {
-  const id = typeof amsId === 'string' ? parseInt(amsId, 10) : amsId;
-  const safeId = isNaN(id) ? 0 : id;
-  if (safeId === 255) return 'External';
-  // A2L "AMS Lite": the backend normalises its physical unit id 16 to 6 at
-  // ingest (see a2l-am-unit-16). No regular AMS uses id 6, so this is a safe,
-  // self-scoping label for the Lite's 4-slot unit.
-  if (safeId === 6) return 'AMS Lite';
-  const isHt = trayCount === 1;
-  const normalizedId = safeId >= 128 ? safeId - 128 : safeId;
-  const letter = String.fromCharCode(65 + normalizedId);
-  return isHt ? `HT-${letter}` : `AMS-${letter}`;
+	const id = typeof amsId === "string" ? parseInt(amsId, 10) : amsId;
+	const safeId = isNaN(id) ? 0 : id;
+	if (safeId === 255) return "External";
+	// A2L "AMS Lite": the backend normalises its physical unit id 16 to 6 at
+	// ingest (see a2l-am-unit-16). No regular AMS uses id 6, so this is a safe,
+	// self-scoping label for the Lite's 4-slot unit.
+	if (safeId === 6) return "AMS Lite";
+	const isHt = trayCount === 1;
+	const normalizedId = safeId >= 128 ? safeId - 128 : safeId;
+	const letter = String.fromCharCode(65 + normalizedId);
+	return isHt ? `HT-${letter}` : `AMS-${letter}`;
 }
 
 /**
@@ -101,16 +109,14 @@ export function getAmsLabel(amsId: number | string, trayCount: number): string {
  * Types within the same group are interchangeable on the printer side
  * (e.g., Bambu Lab firmware treats PA-CF and PA12-CF as compatible).
  */
-const FILAMENT_TYPE_GROUPS: string[][] = [
-  ['PA-CF', 'PA12-CF', 'PAHT-CF'],
-];
+const FILAMENT_TYPE_GROUPS: string[][] = [["PA-CF", "PA12-CF", "PAHT-CF"]];
 
 const _equivalenceMap: Record<string, string> = {};
 for (const group of FILAMENT_TYPE_GROUPS) {
-  const canonical = group[0];
-  for (const t of group) {
-    _equivalenceMap[t.toUpperCase()] = canonical.toUpperCase();
-  }
+	const canonical = group[0];
+	for (const t of group) {
+		_equivalenceMap[t.toUpperCase()] = canonical.toUpperCase();
+	}
 }
 
 /**
@@ -118,16 +124,19 @@ for (const group of FILAMENT_TYPE_GROUPS) {
  * Types in the same group (e.g., PA-CF / PA12-CF / PAHT-CF) return the same canonical type.
  */
 export function canonicalFilamentType(type: string | undefined): string {
-  if (!type) return '';
-  const upper = type.toUpperCase();
-  return _equivalenceMap[upper] ?? upper;
+	if (!type) return "";
+	const upper = type.toUpperCase();
+	return _equivalenceMap[upper] ?? upper;
 }
 
 /**
  * Check if two filament types are compatible (same type or same equivalence group).
  */
-export function filamentTypesCompatible(a: string | undefined, b: string | undefined): boolean {
-  return canonicalFilamentType(a) === canonicalFilamentType(b);
+export function filamentTypesCompatible(
+	a: string | undefined,
+	b: string | undefined,
+): boolean {
+	return canonicalFilamentType(a) === canonicalFilamentType(b);
 }
 
 /**
@@ -138,26 +147,26 @@ export function filamentTypesCompatible(a: string | undefined, b: string | undef
  * @param threshold - Maximum difference per RGB component (default: 40)
  */
 export function colorsAreSimilar(
-  color1: string | undefined,
-  color2: string | undefined,
-  threshold = 40
+	color1: string | undefined,
+	color2: string | undefined,
+	threshold = 40,
 ): boolean {
-  const hex1 = normalizeColorForCompare(color1);
-  const hex2 = normalizeColorForCompare(color2);
-  if (!hex1 || !hex2 || hex1.length < 6 || hex2.length < 6) return false;
+	const hex1 = normalizeColorForCompare(color1);
+	const hex2 = normalizeColorForCompare(color2);
+	if (!hex1 || !hex2 || hex1.length < 6 || hex2.length < 6) return false;
 
-  const r1 = parseInt(hex1.substring(0, 2), 16);
-  const g1 = parseInt(hex1.substring(2, 4), 16);
-  const b1 = parseInt(hex1.substring(4, 6), 16);
-  const r2 = parseInt(hex2.substring(0, 2), 16);
-  const g2 = parseInt(hex2.substring(2, 4), 16);
-  const b2 = parseInt(hex2.substring(4, 6), 16);
+	const r1 = parseInt(hex1.substring(0, 2), 16);
+	const g1 = parseInt(hex1.substring(2, 4), 16);
+	const b1 = parseInt(hex1.substring(4, 6), 16);
+	const r2 = parseInt(hex2.substring(0, 2), 16);
+	const g2 = parseInt(hex2.substring(2, 4), 16);
+	const b2 = parseInt(hex2.substring(4, 6), 16);
 
-  return (
-    Math.abs(r1 - r2) <= threshold &&
-    Math.abs(g1 - g2) <= threshold &&
-    Math.abs(b1 - b2) <= threshold
-  );
+	return (
+		Math.abs(r1 - r2) <= threshold &&
+		Math.abs(g1 - g2) <= threshold &&
+		Math.abs(b1 - b2) <= threshold
+	);
 }
 
 const D65_WHITE: readonly [number, number, number] = [0.95047, 1.0, 1.08883];
@@ -171,26 +180,32 @@ const LAB_DELTA = 6 / 29;
  * counting it would stop a transparent filament matching itself.
  */
 function hexToLab(color: string | undefined): [number, number, number] | null {
-  const hex = normalizeColorForCompare(color);
-  if (!hex || hex.length < 6) return null;
+	const hex = normalizeColorForCompare(color);
+	if (!hex || hex.length < 6) return null;
 
-  const channels = [0, 2, 4].map((i) => parseInt(hex.substring(i, i + 2), 16) / 255);
-  if (channels.some(Number.isNaN)) return null;
+	const channels = [0, 2, 4].map(
+		(i) => parseInt(hex.substring(i, i + 2), 16) / 255,
+	);
+	if (channels.some(Number.isNaN)) return null;
 
-  // sRGB gamma -> linear light.
-  const [r, g, b] = channels.map((c) => (c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4));
+	// sRGB gamma -> linear light.
+	const [r, g, b] = channels.map((c) =>
+		c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4,
+	);
 
-  const xyz: [number, number, number] = [
-    0.4124564 * r + 0.3575761 * g + 0.1804375 * b,
-    0.2126729 * r + 0.7151522 * g + 0.072175 * b,
-    0.0193339 * r + 0.119192 * g + 0.9503041 * b,
-  ];
+	const xyz: [number, number, number] = [
+		0.4124564 * r + 0.3575761 * g + 0.1804375 * b,
+		0.2126729 * r + 0.7151522 * g + 0.072175 * b,
+		0.0193339 * r + 0.119192 * g + 0.9503041 * b,
+	];
 
-  const f = (t: number) =>
-    t > LAB_DELTA ** 3 ? Math.cbrt(t) : t / (3 * LAB_DELTA * LAB_DELTA) + 4 / 29;
-  const [fx, fy, fz] = xyz.map((v, i) => f(v / D65_WHITE[i]));
+	const f = (t: number) =>
+		t > LAB_DELTA ** 3
+			? Math.cbrt(t)
+			: t / (3 * LAB_DELTA * LAB_DELTA) + 4 / 29;
+	const [fx, fy, fz] = xyz.map((v, i) => f(v / D65_WHITE[i]));
 
-  return [116 * fy - 16, 500 * (fx - fy), 200 * (fy - fz)];
+	return [116 * fy - 16, 500 * (fx - fy), 200 * (fy - fz)];
 }
 
 /**
@@ -201,68 +216,73 @@ function hexToLab(color: string | undefined): [number, number, number] | null {
  * `backend/app/utils/color_utils.py` so the two can be read side by side. They
  * must agree: the dialog must not promise a spool the scheduler would not pick.
  */
-function ciede2000(lab1: [number, number, number], lab2: [number, number, number]): number {
-  const [l1, a1, b1] = lab1;
-  const [l2, a2, b2] = lab2;
-  const rad = (deg: number) => (deg * Math.PI) / 180;
+function ciede2000(
+	lab1: [number, number, number],
+	lab2: [number, number, number],
+): number {
+	const [l1, a1, b1] = lab1;
+	const [l2, a2, b2] = lab2;
+	const rad = (deg: number) => (deg * Math.PI) / 180;
 
-  const c1 = Math.hypot(a1, b1);
-  const c2 = Math.hypot(a2, b2);
-  const cBar7 = ((c1 + c2) / 2) ** 7;
-  const g = 0.5 * (1 - Math.sqrt(cBar7 / (cBar7 + 25 ** 7)));
+	const c1 = Math.hypot(a1, b1);
+	const c2 = Math.hypot(a2, b2);
+	const cBar7 = ((c1 + c2) / 2) ** 7;
+	const g = 0.5 * (1 - Math.sqrt(cBar7 / (cBar7 + 25 ** 7)));
 
-  const a1p = (1 + g) * a1;
-  const a2p = (1 + g) * a2;
-  const c1p = Math.hypot(a1p, b1);
-  const c2p = Math.hypot(a2p, b2);
+	const a1p = (1 + g) * a1;
+	const a2p = (1 + g) * a2;
+	const c1p = Math.hypot(a1p, b1);
+	const c2p = Math.hypot(a2p, b2);
 
-  const hue = (ap: number, bp: number) => {
-    if (ap === 0 && bp === 0) return 0;
-    const deg = (Math.atan2(bp, ap) * 180) / Math.PI;
-    return deg < 0 ? deg + 360 : deg;
-  };
-  const h1p = hue(a1p, b1);
-  const h2p = hue(a2p, b2);
+	const hue = (ap: number, bp: number) => {
+		if (ap === 0 && bp === 0) return 0;
+		const deg = (Math.atan2(bp, ap) * 180) / Math.PI;
+		return deg < 0 ? deg + 360 : deg;
+	};
+	const h1p = hue(a1p, b1);
+	const h2p = hue(a2p, b2);
 
-  const dlp = l2 - l1;
-  const dcp = c2p - c1p;
+	const dlp = l2 - l1;
+	const dcp = c2p - c1p;
 
-  const chromaProduct = c1p * c2p;
-  let dhp = 0;
-  if (chromaProduct !== 0) {
-    dhp = h2p - h1p;
-    if (dhp > 180) dhp -= 360;
-    else if (dhp < -180) dhp += 360;
-  }
-  const dhpBig = 2 * Math.sqrt(chromaProduct) * Math.sin(rad(dhp) / 2);
+	const chromaProduct = c1p * c2p;
+	let dhp = 0;
+	if (chromaProduct !== 0) {
+		dhp = h2p - h1p;
+		if (dhp > 180) dhp -= 360;
+		else if (dhp < -180) dhp += 360;
+	}
+	const dhpBig = 2 * Math.sqrt(chromaProduct) * Math.sin(rad(dhp) / 2);
 
-  const lBar = (l1 + l2) / 2;
-  const cBar = (c1p + c2p) / 2;
+	const lBar = (l1 + l2) / 2;
+	const cBar = (c1p + c2p) / 2;
 
-  let hBar: number;
-  if (chromaProduct === 0) hBar = h1p + h2p;
-  else if (Math.abs(h1p - h2p) <= 180) hBar = (h1p + h2p) / 2;
-  else if (h1p + h2p < 360) hBar = (h1p + h2p + 360) / 2;
-  else hBar = (h1p + h2p - 360) / 2;
+	let hBar: number;
+	if (chromaProduct === 0) hBar = h1p + h2p;
+	else if (Math.abs(h1p - h2p) <= 180) hBar = (h1p + h2p) / 2;
+	else if (h1p + h2p < 360) hBar = (h1p + h2p + 360) / 2;
+	else hBar = (h1p + h2p - 360) / 2;
 
-  const t =
-    1 -
-    0.17 * Math.cos(rad(hBar - 30)) +
-    0.24 * Math.cos(rad(2 * hBar)) +
-    0.32 * Math.cos(rad(3 * hBar + 6)) -
-    0.2 * Math.cos(rad(4 * hBar - 63));
+	const t =
+		1 -
+		0.17 * Math.cos(rad(hBar - 30)) +
+		0.24 * Math.cos(rad(2 * hBar)) +
+		0.32 * Math.cos(rad(3 * hBar + 6)) -
+		0.2 * Math.cos(rad(4 * hBar - 63));
 
-  const cBarP7 = cBar ** 7;
-  const rc = 2 * Math.sqrt(cBarP7 / (cBarP7 + 25 ** 7));
-  const sl = 1 + (0.015 * (lBar - 50) ** 2) / Math.sqrt(20 + (lBar - 50) ** 2);
-  const sc = 1 + 0.045 * cBar;
-  const sh = 1 + 0.015 * cBar * t;
-  const rt = -Math.sin(rad(2 * (30 * Math.exp(-(((hBar - 275) / 25) ** 2))))) * rc;
+	const cBarP7 = cBar ** 7;
+	const rc = 2 * Math.sqrt(cBarP7 / (cBarP7 + 25 ** 7));
+	const sl =
+		1 + (0.015 * (lBar - 50) ** 2) / Math.sqrt(20 + (lBar - 50) ** 2);
+	const sc = 1 + 0.045 * cBar;
+	const sh = 1 + 0.015 * cBar * t;
+	const rt =
+		-Math.sin(rad(2 * (30 * Math.exp(-(((hBar - 275) / 25) ** 2))))) * rc;
 
-  const dL = dlp / sl;
-  const dC = dcp / sc;
-  const dH = dhpBig / sh;
-  return Math.sqrt(dL * dL + dC * dC + dH * dH + rt * dC * dH);
+	const dL = dlp / sl;
+	const dC = dcp / sc;
+	const dH = dhpBig / sh;
+	return Math.sqrt(dL * dL + dC * dC + dH * dH + rt * dC * dH);
 }
 
 /**
@@ -282,13 +302,13 @@ function ciede2000(lab1: [number, number, number], lab2: [number, number, number
  * against an RGB threshold.
  */
 export function colorDistance(
-  color1: string | undefined,
-  color2: string | undefined,
+	color1: string | undefined,
+	color2: string | undefined,
 ): number | null {
-  const lab1 = hexToLab(color1);
-  const lab2 = hexToLab(color2);
-  if (!lab1 || !lab2) return null;
-  return ciede2000(lab1, lab2);
+	const lab1 = hexToLab(color1);
+	const lab2 = hexToLab(color2);
+	if (!lab1 || !lab2) return null;
+	return ciede2000(lab1, lab2);
 }
 
 /**
@@ -299,24 +319,25 @@ export function colorDistance(
  * 3. Same color family (e.g. both Red, both Yellow) with perceptual distance CIEDE2000 Delta-E <= 25
  */
 export function coloursMatch(
-  loadedColor: string | undefined,
-  requiredColor: string | undefined,
+	loadedColor: string | undefined,
+	requiredColor: string | undefined,
 ): boolean {
-  const required = normalizeColorForCompare(requiredColor);
-  if (!required) return true;
-  const loaded = normalizeColorForCompare(loadedColor);
-  if (loaded === required || colorsAreSimilar(loadedColor, requiredColor)) return true;
+	const required = normalizeColorForCompare(requiredColor);
+	if (!required) return true;
+	const loaded = normalizeColorForCompare(loadedColor);
+	if (loaded === required || colorsAreSimilar(loadedColor, requiredColor))
+		return true;
 
-  const reqFamily = colorFamily(requiredColor);
-  const loadedFamily = colorFamily(loadedColor);
-  if (reqFamily && loadedFamily && reqFamily === loadedFamily) {
-    const dist = colorDistance(loadedColor, requiredColor);
-    if (dist != null && dist <= 25) {
-      return true;
-    }
-  }
+	const reqFamily = colorFamily(requiredColor);
+	const loadedFamily = colorFamily(loadedColor);
+	if (reqFamily && loadedFamily && reqFamily === loadedFamily) {
+		const dist = colorDistance(loadedColor, requiredColor);
+		if (dist != null && dist <= 25) {
+			return true;
+		}
+	}
 
-  return false;
+	return false;
 }
 
 /**
@@ -334,26 +355,26 @@ export function coloursMatch(
  * tolerance", which made the winner depend on AMS slot order.
  */
 export function findNearestSimilar<T>(
-  candidates: T[],
-  requiredColor: string | undefined,
-  getColor: (candidate: T) => string | undefined,
+	candidates: T[],
+	requiredColor: string | undefined,
+	getColor: (candidate: T) => string | undefined,
 ): T | undefined {
-  let best: T | undefined;
-  let bestDistance = Infinity;
+	let best: T | undefined;
+	let bestDistance = Infinity;
 
-  for (const candidate of candidates) {
-    const color = getColor(candidate);
-    if (!coloursMatch(color, requiredColor)) continue;
-    const distance = colorDistance(color, requiredColor);
-    if (distance === null) continue;
-    // Strict <: an equally close candidate never displaces an earlier one.
-    if (distance < bestDistance) {
-      best = candidate;
-      bestDistance = distance;
-    }
-  }
+	for (const candidate of candidates) {
+		const color = getColor(candidate);
+		if (!coloursMatch(color, requiredColor)) continue;
+		const distance = colorDistance(color, requiredColor);
+		if (distance === null) continue;
+		// Strict <: an equally close candidate never displaces an earlier one.
+		if (distance < bestDistance) {
+			best = candidate;
+			bestDistance = distance;
+		}
+	}
 
-  return best;
+	return best;
 }
 
 /** Classify an empty AMS slot for UI rendering (#1322 follow-up).
@@ -370,16 +391,26 @@ export function findNearestSimilar<T>(
  *
  *  Returns null when the slot is loaded (tray_type is present).
  */
-export function getEmptySlotKind(tray: { tray_type?: string | null; state?: number | null; exists?: boolean | null } | null | undefined): 'physical' | 'reset' | null {
-  if (tray?.tray_type) return null;
-  // tray_exist_bits is firmware's authoritative presence signal: a non-RFID
-  // spool the firmware can't identify is physically present (exists === true)
-  // but carries no tray_type, so it must read as "?" (loaded, unconfigured),
-  // never "Empty" (#2527). BambuStudio draws it the same way. Only fall back to
-  // the state=9/10 heuristic when the bitmask was unavailable (exists == null).
-  if (tray?.exists === true) return 'reset';
-  if (tray?.exists === false) return 'physical';
-  return (tray?.state === 9 || tray?.state === 10) ? 'physical' : 'reset';
+export function getEmptySlotKind(
+	tray:
+		| {
+				tray_type?: string | null;
+				state?: number | null;
+				exists?: boolean | null;
+		  }
+		| null
+		| undefined,
+): "physical" | "reset" | null {
+	if (tray?.tray_type) return null;
+	// tray_exist_bits is firmware's authoritative presence signal: a non-RFID
+	// spool the firmware can't identify is physically present (exists === true)
+	// but carries no tray_type, so it must read as "?" (loaded, unconfigured),
+	// never "Empty" (#2527). BambuStudio draws it the same way. Only fall back to
+	// the state=9/10 heuristic when the bitmask was unavailable (exists == null).
+	if (tray?.exists === true) return "reset";
+	if (tray?.exists === false) return "physical";
+	const state = tray?.state != null ? Number(tray.state) : null;
+	return state === 9 || state === 10 ? "physical" : "reset";
 }
 
 /**
@@ -390,17 +421,19 @@ export function getEmptySlotKind(tray: { tray_type?: string | null; state?: numb
  * @param isExternal - Whether this is the external spool holder
  */
 export function formatSlotLabel(
-  amsId: number,
-  trayId: number,
-  isHt: boolean,
-  isExternal: boolean
+	amsId: number,
+	trayId: number,
+	isHt: boolean,
+	isExternal: boolean,
 ): string {
-  if (isExternal) return 'Ext';
-  // Convert AMS ID to letter (A, B, C, D)
-  // AMS-HT uses IDs starting at 128
-  const letter = String.fromCharCode(65 + (amsId >= 128 ? amsId - 128 : amsId));
-  if (isHt) return `HT-${letter}`;
-  return `${letter}${trayId + 1}`;
+	if (isExternal) return "Ext";
+	// Convert AMS ID to letter (A, B, C, D)
+	// AMS-HT uses IDs starting at 128
+	const letter = String.fromCharCode(
+		65 + (amsId >= 128 ? amsId - 128 : amsId),
+	);
+	if (isHt) return `HT-${letter}`;
+	return `${letter}${trayId + 1}`;
 }
 
 /**
@@ -412,14 +445,14 @@ export function formatSlotLabel(
  * @returns Global tray ID (0-15 for AMS, 128+ for AMS-HT, 254 for external)
  */
 export function getGlobalTrayId(
-  amsId: number,
-  trayId: number,
-  isExternal: boolean
+	amsId: number,
+	trayId: number,
+	isExternal: boolean,
 ): number {
-  if (isExternal) return 254 + trayId;
-  // AMS-HT units have IDs starting at 128 with a single tray — use ID directly
-  if (amsId >= 128) return amsId;
-  return amsId * 4 + trayId;
+	if (isExternal) return 254 + trayId;
+	// AMS-HT units have IDs starting at 128 with a single tray — use ID directly
+	if (amsId >= 128) return amsId;
+	return amsId * 4 + trayId;
 }
 
 /**
@@ -427,9 +460,9 @@ export function getGlobalTrayId(
  * Matches PrintersPage thresholds and Bambu Lab brand green.
  */
 export function getFillBarColor(fillLevel: number): string {
-  if (fillLevel > 50) return '#00ae42'; // Green - good
-  if (fillLevel >= 15) return '#f59e0b'; // Amber - warning (<= 50%)
-  return '#ef4444'; // Red - critical (< 15%)
+	if (fillLevel > 50) return "#00ae42"; // Green - good
+	if (fillLevel >= 15) return "#f59e0b"; // Amber - warning (<= 50%)
+	return "#ef4444"; // Red - critical (< 15%)
 }
 
 /**
@@ -437,29 +470,38 @@ export function getFillBarColor(fillLevel: number): string {
  * Used as the first source in the Spoolman → Inventory → AMS fill chain.
  */
 export function getSpoolmanFillLevel(
-  linkedSpool: { remaining_weight: number | null; filament_weight: number | null } | undefined
+	linkedSpool:
+		| { remaining_weight: number | null; filament_weight: number | null }
+		| undefined,
 ): number | null {
-  if (!linkedSpool?.remaining_weight || !linkedSpool?.filament_weight
-      || linkedSpool.filament_weight <= 0) return null;
-  return Math.min(100, Math.round(
-    (linkedSpool.remaining_weight / linkedSpool.filament_weight) * 100
-  ));
+	if (
+		!linkedSpool?.remaining_weight ||
+		!linkedSpool?.filament_weight ||
+		linkedSpool.filament_weight <= 0
+	)
+		return null;
+	return Math.min(
+		100,
+		Math.round(
+			(linkedSpool.remaining_weight / linkedSpool.filament_weight) * 100,
+		),
+	);
 }
 
-export type TrayFillSource = 'ams' | 'spoolman' | 'inventory';
+export type TrayFillSource = "ams" | "spoolman" | "inventory";
 
 export interface ResolveTrayFillLevelInput {
-  spoolmanFill: number | null;
-  slotSpoolFill: number | null;
-  inventoryFill: number | null;
-  printerRemain: number | null | undefined;
-  hasPrinterFillLevel: boolean;
-  isCfsUnit?: boolean;
+	spoolmanFill: number | null;
+	slotSpoolFill: number | null;
+	inventoryFill: number | null;
+	printerRemain: number | null | undefined;
+	hasPrinterFillLevel: boolean;
+	isCfsUnit?: boolean;
 }
 
 export interface ResolvedTrayFillLevel {
-  fillLevel: number | null;
-  fillSource: TrayFillSource | undefined;
+	fillLevel: number | null;
+	fillSource: TrayFillSource | undefined;
 }
 
 /**
@@ -472,51 +514,70 @@ export interface ResolvedTrayFillLevel {
  * physically full, so explicit inventory/Spoolman assignments stay primary.
  */
 export function resolveTrayFillLevel({
-  spoolmanFill,
-  slotSpoolFill,
-  inventoryFill,
-  printerRemain,
-  hasPrinterFillLevel,
-  isCfsUnit = false,
+	spoolmanFill,
+	slotSpoolFill,
+	inventoryFill,
+	printerRemain,
+	hasPrinterFillLevel,
+	isCfsUnit = false,
 }: ResolveTrayFillLevelInput): ResolvedTrayFillLevel {
-  const resolvedInventoryFill = (!isCfsUnit && inventoryFill === 0 && hasPrinterFillLevel && (printerRemain ?? -1) > 0)
-    ? null
-    : inventoryFill;
-  const cfsPrinterRemainLooksStaleFull = isCfsUnit && printerRemain === 100;
-  const resolvedPrinterRemain = cfsPrinterRemainLooksStaleFull ? null : (printerRemain ?? null);
-  const resolvedHasPrinterFillLevel = hasPrinterFillLevel && resolvedPrinterRemain !== null;
+	const resolvedInventoryFill =
+		!isCfsUnit &&
+		inventoryFill === 0 &&
+		hasPrinterFillLevel &&
+		(printerRemain ?? -1) > 0
+			? null
+			: inventoryFill;
+	const cfsPrinterRemainLooksStaleFull = isCfsUnit && printerRemain === 100;
+	const resolvedPrinterRemain = cfsPrinterRemainLooksStaleFull
+		? null
+		: (printerRemain ?? null);
+	const resolvedHasPrinterFillLevel =
+		hasPrinterFillLevel && resolvedPrinterRemain !== null;
 
-  const fillLevel = spoolmanFill ?? slotSpoolFill ?? resolvedInventoryFill ?? (resolvedHasPrinterFillLevel ? resolvedPrinterRemain : null);
-  const fillSource = (spoolmanFill !== null || slotSpoolFill !== null) ? 'spoolman' as const
-    : resolvedInventoryFill !== null ? 'inventory' as const
-    : resolvedHasPrinterFillLevel ? 'ams' as const
-    : undefined;
+	const fillLevel =
+		spoolmanFill ??
+		slotSpoolFill ??
+		resolvedInventoryFill ??
+		(resolvedHasPrinterFillLevel ? resolvedPrinterRemain : null);
+	const fillSource =
+		spoolmanFill !== null || slotSpoolFill !== null
+			? ("spoolman" as const)
+			: resolvedInventoryFill !== null
+				? ("inventory" as const)
+				: resolvedHasPrinterFillLevel
+					? ("ams" as const)
+					: undefined;
 
-  return { fillLevel, fillSource };
+	return { fillLevel, fillSource };
 }
 
 function toFixedHex(value: number, width: number): string {
-  const safe = Number.isFinite(value) ? Math.max(0, Math.trunc(value)) : 0;
-  return safe.toString(16).toUpperCase().padStart(width, '0').slice(-width);
+	const safe = Number.isFinite(value) ? Math.max(0, Math.trunc(value)) : 0;
+	return safe.toString(16).toUpperCase().padStart(width, "0").slice(-width);
 }
 
 // 32-bit FNV-1a hash -> 8-char hex (stable for alphanumeric serials)
 function hashSerialToHex32(serial: string): string {
-  const input = (serial || '').trim().toUpperCase();
-  let hash = 0x811c9dc5;
-  for (let i = 0; i < input.length; i++) {
-    hash ^= input.charCodeAt(i);
-    hash = Math.imul(hash, 0x01000193);
-  }
-  return (hash >>> 0).toString(16).toUpperCase().padStart(8, '0');
+	const input = (serial || "").trim().toUpperCase();
+	let hash = 0x811c9dc5;
+	for (let i = 0; i < input.length; i++) {
+		hash ^= input.charCodeAt(i);
+		hash = Math.imul(hash, 0x01000193);
+	}
+	return (hash >>> 0).toString(16).toUpperCase().padStart(8, "0");
 }
 
 /**
  * Generate a stable fallback spool tag for slots without RFID identifiers.
  * Returns a 16-char hex string derived from the printer serial + slot position.
  */
-export function getFallbackSpoolTag(printerSerial: string, amsId: number, trayId: number): string {
-  return `${hashSerialToHex32(printerSerial)}${toFixedHex(amsId, 4)}${toFixedHex(trayId, 4)}`;
+export function getFallbackSpoolTag(
+	printerSerial: string,
+	amsId: number,
+	trayId: number,
+): string {
+	return `${hashSerialToHex32(printerSerial)}${toFixedHex(amsId, 4)}${toFixedHex(trayId, 4)}`;
 }
 
 /**
@@ -524,19 +585,21 @@ export function getFallbackSpoolTag(printerSerial: string, amsId: number, trayId
  * Returns ISO string format for datetime-local input.
  */
 export function getMinDateTime(): string {
-  const now = new Date();
-  now.setMinutes(now.getMinutes() + 1);
-  return now.toISOString().slice(0, 16);
+	const now = new Date();
+	now.setMinutes(now.getMinutes() + 1);
+	return now.toISOString().slice(0, 16);
 }
 
 /**
  * Check if a scheduled time is a placeholder far-future date.
  * Placeholder dates (more than 6 months out) are treated as ASAP.
  */
-export function isPlaceholderDate(scheduledTime: string | null | undefined): boolean {
-  if (!scheduledTime) return false;
-  const sixMonthsFromNow = Date.now() + 180 * 24 * 60 * 60 * 1000;
-  return (parseUTCDate(scheduledTime)?.getTime() ?? 0) > sixMonthsFromNow;
+export function isPlaceholderDate(
+	scheduledTime: string | null | undefined,
+): boolean {
+	if (!scheduledTime) return false;
+	const sixMonthsFromNow = Date.now() + 180 * 24 * 60 * 60 * 1000;
+	return (parseUTCDate(scheduledTime)?.getTime() ?? 0) > sixMonthsFromNow;
 }
 
 /**
@@ -546,10 +609,13 @@ export function isPlaceholderDate(scheduledTime: string | null | undefined): boo
  * in `buildLoadedFilaments`) MUST NOT sort to a negative number or it would
  * beat AMS slot 0 — backend clamps to 10_000.
  */
-function slotPriority(amsId: number | undefined, trayId: number | undefined): number {
-  if (amsId == null || amsId < 0) return 10_000;
-  if (amsId >= 128) return 1_000 + (amsId - 128) * 4 + (trayId ?? 0);
-  return amsId * 4 + (trayId ?? 0);
+function slotPriority(
+	amsId: number | undefined,
+	trayId: number | undefined,
+): number {
+	if (amsId == null || amsId < 0) return 10_000;
+	if (amsId >= 128) return 1_000 + (amsId - 128) * 4 + (trayId ?? 0);
+	return amsId * 4 + (trayId ?? 0);
 }
 
 /**
@@ -567,23 +633,28 @@ function slotPriority(amsId: number | undefined, trayId: number | undefined): nu
  * sorting (preserves pre-#1766 behaviour for callers that don't yet wire it in).
  */
 export function preferLowestSortKey(
-  f: { globalTrayId: number; amsId?: number; trayId?: number; remain?: number },
-  inventoryByTrayId: Map<number, number> | undefined,
+	f: {
+		globalTrayId: number;
+		amsId?: number;
+		trayId?: number;
+		remain?: number;
+	},
+	inventoryByTrayId: Map<number, number> | undefined,
 ): [number, number, number] {
-  const slot = slotPriority(f.amsId, f.trayId);
-  if (inventoryByTrayId && inventoryByTrayId.has(f.globalTrayId)) {
-    return [0, inventoryByTrayId.get(f.globalTrayId) ?? 0, slot];
-  }
-  const remain = f.remain ?? -1;
-  return [1, remain >= 0 ? remain : 101, slot];
+	const slot = slotPriority(f.amsId, f.trayId);
+	if (inventoryByTrayId && inventoryByTrayId.has(f.globalTrayId)) {
+		return [0, inventoryByTrayId.get(f.globalTrayId) ?? 0, slot];
+	}
+	const remain = f.remain ?? -1;
+	return [1, remain >= 0 ? remain : 101, slot];
 }
 
 /** Tuple compare for `preferLowestSortKey` outputs. */
 export function compareSortKeys(
-  a: [number, number, number],
-  b: [number, number, number],
+	a: [number, number, number],
+	b: [number, number, number],
 ): number {
-  return a[0] - b[0] || a[1] - b[1] || a[2] - b[2];
+	return a[0] - b[0] || a[1] - b[1] || a[2] - b[2];
 }
 
 /**
@@ -597,11 +668,11 @@ export function compareSortKeys(
  * (unknown state, e.g. A1 family) preserves today's behaviour intentionally.
  */
 export function effectivePreferLowest(
-  setting: boolean | undefined,
-  amsFilamentBackup: boolean | null | undefined,
+	setting: boolean | undefined,
+	amsFilamentBackup: boolean | null | undefined,
 ): boolean {
-  if (!setting) return false;
-  return amsFilamentBackup !== false;
+	if (!setting) return false;
+	return amsFilamentBackup !== false;
 }
 
 /**
@@ -609,64 +680,89 @@ export function effectivePreferLowest(
  * Used by both single-printer (FilamentMapping) and multi-printer (InlineMappingEditor) paths.
  */
 export function autoMatchFilament(
-  req: { type?: string; color?: string; nozzle_id?: number | null; tray_info_idx?: string },
-  loadedFilaments: { globalTrayId: number; amsId?: number; trayId?: number; type?: string; color?: string; extruderId?: number; remain?: number; trayInfoIdx?: string }[],
-  usedTrayIds: Set<number>,
-  preferLowest?: boolean,
-  inventoryByTrayId?: Map<number, number>,
-): typeof loadedFilaments[number] | undefined {
-  let nozzleFilaments = filterFilamentsByNozzle(loadedFilaments, req.nozzle_id);
+	req: {
+		type?: string;
+		color?: string;
+		nozzle_id?: number | null;
+		tray_info_idx?: string;
+	},
+	loadedFilaments: {
+		globalTrayId: number;
+		amsId?: number;
+		trayId?: number;
+		type?: string;
+		color?: string;
+		extruderId?: number;
+		remain?: number;
+		trayInfoIdx?: string;
+	}[],
+	usedTrayIds: Set<number>,
+	preferLowest?: boolean,
+	inventoryByTrayId?: Map<number, number>,
+): (typeof loadedFilaments)[number] | undefined {
+	let nozzleFilaments = filterFilamentsByNozzle(
+		loadedFilaments,
+		req.nozzle_id,
+	);
 
-  if (preferLowest) {
-    nozzleFilaments = [...nozzleFilaments].sort((a, b) =>
-      compareSortKeys(
-        preferLowestSortKey(a, inventoryByTrayId),
-        preferLowestSortKey(b, inventoryByTrayId),
-      ),
-    );
-  }
+	if (preferLowest) {
+		nozzleFilaments = [...nozzleFilaments].sort((a, b) =>
+			compareSortKeys(
+				preferLowestSortKey(a, inventoryByTrayId),
+				preferLowestSortKey(b, inventoryByTrayId),
+			),
+		);
+	}
 
-  const reqColor = req.color;
-  const exactMatches = nozzleFilaments.filter(
-    (f) =>
-      !usedTrayIds.has(f.globalTrayId) &&
-      filamentTypesCompatible(f.type, req.type) &&
-      (!reqColor || normalizeColorForCompare(f.color) === normalizeColorForCompare(reqColor))
-  );
+	const reqColor = req.color;
+	const exactMatches = nozzleFilaments.filter(
+		(f) =>
+			!usedTrayIds.has(f.globalTrayId) &&
+			filamentTypesCompatible(f.type, req.type) &&
+			(!reqColor ||
+				normalizeColorForCompare(f.color) ===
+					normalizeColorForCompare(reqColor)),
+	);
 
-  let exactMatch: typeof loadedFilaments[number] | undefined;
-  if (exactMatches.length > 0) {
-    exactMatch = req.tray_info_idx
-      ? exactMatches.find((f) => f.trayInfoIdx === req.tray_info_idx) ?? exactMatches[0]
-      : exactMatches[0];
-  }
+	let exactMatch: (typeof loadedFilaments)[number] | undefined;
+	if (exactMatches.length > 0) {
+		exactMatch = req.tray_info_idx
+			? (exactMatches.find((f) => f.trayInfoIdx === req.tray_info_idx) ??
+				exactMatches[0])
+			: exactMatches[0];
+	}
 
-  const similarMatch = exactMatch
-    ? undefined
-    : findNearestSimilar(
-        nozzleFilaments.filter(
-          (f) => !usedTrayIds.has(f.globalTrayId) && filamentTypesCompatible(f.type, req.type),
-        ),
-        req.color,
-        (f) => f.color,
-      );
+	const similarMatch = exactMatch
+		? undefined
+		: findNearestSimilar(
+				nozzleFilaments.filter(
+					(f) =>
+						!usedTrayIds.has(f.globalTrayId) &&
+						filamentTypesCompatible(f.type, req.type),
+				),
+				req.color,
+				(f) => f.color,
+			);
 
-  const variantMatch = exactMatch || similarMatch || !req.tray_info_idx
-    ? undefined
-    : nozzleFilaments.find(
-        (f) =>
-          !usedTrayIds.has(f.globalTrayId) &&
-          filamentTypesCompatible(f.type, req.type) &&
-          f.trayInfoIdx === req.tray_info_idx
-      );
+	const variantMatch =
+		exactMatch || similarMatch || !req.tray_info_idx
+			? undefined
+			: nozzleFilaments.find(
+					(f) =>
+						!usedTrayIds.has(f.globalTrayId) &&
+						filamentTypesCompatible(f.type, req.type) &&
+						f.trayInfoIdx === req.tray_info_idx,
+				);
 
-  const typeOnlyMatch =
-    exactMatch || similarMatch || variantMatch
-      ? undefined
-      : nozzleFilaments.find(
-          (f) => !usedTrayIds.has(f.globalTrayId) && filamentTypesCompatible(f.type, req.type)
-        );
-  return exactMatch ?? similarMatch ?? variantMatch ?? typeOnlyMatch;
+	const typeOnlyMatch =
+		exactMatch || similarMatch || variantMatch
+			? undefined
+			: nozzleFilaments.find(
+					(f) =>
+						!usedTrayIds.has(f.globalTrayId) &&
+						filamentTypesCompatible(f.type, req.type),
+				);
+	return exactMatch ?? similarMatch ?? variantMatch ?? typeOnlyMatch;
 }
 
 /**
@@ -674,12 +770,12 @@ export function autoMatchFilament(
  * For single-nozzle printers (nozzle_id is null/undefined), returns all filaments.
  */
 export function filterFilamentsByNozzle<T extends { extruderId?: number }>(
-  loadedFilaments: T[],
-  nozzleId: number | undefined | null,
+	loadedFilaments: T[],
+	nozzleId: number | undefined | null,
 ): T[] {
-  return loadedFilaments.filter(
-    (f) => nozzleId == null || f.extruderId === nozzleId
-  );
+	return loadedFilaments.filter(
+		(f) => nozzleId == null || f.extruderId === nozzleId,
+	);
 }
 
 /**
@@ -695,17 +791,17 @@ export function filterFilamentsByNozzle<T extends { extruderId?: number }>(
  * status carries so it can be passed straight to `getKProfiles`.
  */
 export function installedNozzleDiameters(
-  status: { nozzles?: { nozzle_diameter?: string }[] } | null | undefined,
+	status: { nozzles?: { nozzle_diameter?: string }[] } | null | undefined,
 ): string[] {
-  const seen = new Set<string>();
-  const result: string[] = [];
-  for (const nozzle of status?.nozzles ?? []) {
-    const raw = (nozzle?.nozzle_diameter ?? '').trim();
-    if (!raw || !(parseFloat(raw) > 0) || seen.has(raw)) continue;
-    seen.add(raw);
-    result.push(raw);
-  }
-  return result;
+	const seen = new Set<string>();
+	const result: string[] = [];
+	for (const nozzle of status?.nozzles ?? []) {
+		const raw = (nozzle?.nozzle_diameter ?? "").trim();
+		if (!raw || !(parseFloat(raw) > 0) || seen.has(raw)) continue;
+		seen.add(raw);
+		result.push(raw);
+	}
+	return result;
 }
 
 /**
@@ -725,17 +821,21 @@ export function installedNozzleDiameters(
  * Diameter is the bare decimal string the status carries, e.g. "0.4" / "0.6".
  */
 export function resolveSlotNozzleDiameter(
-  status: {
-    nozzles?: { nozzle_diameter?: string }[];
-    ams_extruder_map?: Record<string, number>;
-  } | null | undefined,
-  amsId: number,
+	status:
+		| {
+				nozzles?: { nozzle_diameter?: string }[];
+				ams_extruder_map?: Record<string, number>;
+		  }
+		| null
+		| undefined,
+	amsId: number,
 ): string | undefined {
-  const nozzles = status?.nozzles;
-  if (!nozzles || nozzles.length === 0) return undefined;
-  const extruderIdx = status?.ams_extruder_map?.[String(amsId)] ?? 0;
-  const diameter = nozzles[extruderIdx]?.nozzle_diameter || nozzles[0]?.nozzle_diameter;
-  return diameter || undefined;
+	const nozzles = status?.nozzles;
+	if (!nozzles || nozzles.length === 0) return undefined;
+	const extruderIdx = status?.ams_extruder_map?.[String(amsId)] ?? 0;
+	const diameter =
+		nozzles[extruderIdx]?.nozzle_diameter || nozzles[0]?.nozzle_diameter;
+	return diameter || undefined;
 }
 
 /**
@@ -746,14 +846,20 @@ export function resolveSlotNozzleDiameter(
  * whose state is owned by the printer firmware — manual changes there would be
  * overwritten on the next RFID re-read (eye → pen icon in BambuStudio).
  */
-export function isBambuLabSpool(tray: {
-  tray_uuid?: string | null;
-  tag_uid?: string | null;
-} | null | undefined): boolean {
-  if (!tray) return false;
-  if (tray.tray_uuid && tray.tray_uuid !== '00000000000000000000000000000000') return true;
-  if (tray.tag_uid && tray.tag_uid !== '0000000000000000') return true;
-  return false;
+export function isBambuLabSpool(
+	tray:
+		| {
+				tray_uuid?: string | null;
+				tag_uid?: string | null;
+		  }
+		| null
+		| undefined,
+): boolean {
+	if (!tray) return false;
+	if (tray.tray_uuid && tray.tray_uuid !== "00000000000000000000000000000000")
+		return true;
+	if (tray.tag_uid && tray.tag_uid !== "0000000000000000") return true;
+	return false;
 }
 
 /**
@@ -781,29 +887,34 @@ export function isBambuLabSpool(tray: {
  * longer describes it.
  */
 export function slotPresetDescribesTray(
-  presetId: string | null | undefined,
-  trayInfoIdx: string | null | undefined,
-  presetTrayInfoIdx?: string | null,
+	presetId: string | null | undefined,
+	trayInfoIdx: string | null | undefined,
+	presetTrayInfoIdx?: string | null,
 ): boolean {
-  const preset = (presetId || '').split('_')[0].toUpperCase();
-  const tray = (trayInfoIdx || '').split('_')[0].toUpperCase();
-  const recorded = (presetTrayInfoIdx || '').split('_')[0].toUpperCase();
-  if (recorded && tray) return recorded === tray;
-  if (!preset.startsWith('GFS') || !tray.startsWith('GF') || tray.startsWith('GFS')) return true;
-  return `GF${preset.slice(3)}` === tray;
+	const preset = (presetId || "").split("_")[0].toUpperCase();
+	const tray = (trayInfoIdx || "").split("_")[0].toUpperCase();
+	const recorded = (presetTrayInfoIdx || "").split("_")[0].toUpperCase();
+	if (recorded && tray) return recorded === tray;
+	if (
+		!preset.startsWith("GFS") ||
+		!tray.startsWith("GF") ||
+		tray.startsWith("GFS")
+	)
+		return true;
+	return `GF${preset.slice(3)}` === tray;
 }
 
 export interface AmsTrayLike {
-  id: number;
-  tray_type: string | null | undefined;
-  tray_sub_brands: string | null | undefined;
-  tray_color: string | null | undefined;
-  tray_info_idx: string | null | undefined;
+	id: number;
+	tray_type: string | null | undefined;
+	tray_sub_brands: string | null | undefined;
+	tray_color: string | null | undefined;
+	tray_info_idx: string | null | undefined;
 }
 
 export interface AmsUnitLike {
-  id: number;
-  tray: AmsTrayLike[];
+	id: number;
+	tray: AmsTrayLike[];
 }
 
 /**
@@ -811,18 +922,18 @@ export interface AmsUnitLike {
  * (length >= 2), or a single non-empty slot with no peer (length === 1).
  */
 export interface BackupGroup {
-  /** Stable key — same across renders for the same material+extruder. */
-  key: string;
-  /** Bambu preset ID (tray_info_idx) when matched on preset; null otherwise. */
-  presetId: string | null;
-  /** 0 = right / single, 1 = left. Scoping field for dual-nozzle. */
-  extruder: number;
-  /** Display name from the first slot's tray_sub_brands (or tray_type). */
-  displayName: string;
-  /** Tray colour from the first slot, for the swatch in the modal. */
-  trayColor: string | null;
-  /** Member slots, in (ams_id, slot_idx) order. */
-  members: Array<{ amsId: number; slotIdx: number; globalTrayId: number }>;
+	/** Stable key — same across renders for the same material+extruder. */
+	key: string;
+	/** Bambu preset ID (tray_info_idx) when matched on preset; null otherwise. */
+	presetId: string | null;
+	/** 0 = right / single, 1 = left. Scoping field for dual-nozzle. */
+	extruder: number;
+	/** Display name from the first slot's tray_sub_brands (or tray_type). */
+	displayName: string;
+	/** Tray colour from the first slot, for the swatch in the modal. */
+	trayColor: string | null;
+	/** Member slots, in (ams_id, slot_idx) order. */
+	members: Array<{ amsId: number; slotIdx: number; globalTrayId: number }>;
 }
 
 /**
@@ -831,9 +942,9 @@ export interface BackupGroup {
  * the alpha channel when 8 chars long so `1A1A1AFF` matches `1A1A1A`.
  */
 function normalizeColorForId(raw: string | null | undefined): string {
-  let s = (raw || '').trim().replace(/^#/, '').toUpperCase();
-  if (s.length === 8) s = s.slice(0, 6);
-  return s;
+	let s = (raw || "").trim().replace(/^#/, "").toUpperCase();
+	if (s.length === 8) s = s.slice(0, 6);
+	return s;
 }
 
 /**
@@ -858,185 +969,266 @@ function normalizeColorForId(raw: string | null | undefined): string {
  * set.
  */
 export function computeBackupGroups(
-  amsUnits: AmsUnitLike[] | undefined,
-  amsExtruderMap: Record<string, number> | undefined,
-  isDualNozzle: boolean,
+	amsUnits: AmsUnitLike[] | undefined,
+	amsExtruderMap: Record<string, number> | undefined,
+	isDualNozzle: boolean,
 ): BackupGroup[] {
-  if (!amsUnits || amsUnits.length === 0) return [];
+	if (!amsUnits || amsUnits.length === 0) return [];
 
-  // Defensive dedup: ``status.ams`` is expected to be unique by `ams.id`, but
-  // observed in the wild to occasionally contain duplicate entries (e.g. on
-  // VP-aggregated switch printers or during MQTT partial-update merges). A
-  // duplicate would surface as "AMS-A slot 1" rendered twice with different
-  // materials, which is impossible physically and visually broken. First
-  // occurrence per `ams.id` wins.
-  const seenIds = new Set<number>();
-  const uniqueAms: AmsUnitLike[] = [];
-  for (const ams of amsUnits) {
-    if (seenIds.has(ams.id)) continue;
-    seenIds.add(ams.id);
-    uniqueAms.push(ams);
-  }
+	// Defensive dedup: ``status.ams`` is expected to be unique by `ams.id`, but
+	// observed in the wild to occasionally contain duplicate entries (e.g. on
+	// VP-aggregated switch printers or during MQTT partial-update merges). A
+	// duplicate would surface as "AMS-A slot 1" rendered twice with different
+	// materials, which is impossible physically and visually broken. First
+	// occurrence per `ams.id` wins.
+	const seenIds = new Set<number>();
+	const uniqueAms: AmsUnitLike[] = [];
+	for (const ams of amsUnits) {
+		if (seenIds.has(ams.id)) continue;
+		seenIds.add(ams.id);
+		uniqueAms.push(ams);
+	}
 
-  const byKey = new Map<string, BackupGroup>();
+	const byKey = new Map<string, BackupGroup>();
 
-  for (const ams of uniqueAms) {
-    const extruder = isDualNozzle ? Number(amsExtruderMap?.[String(ams.id)] ?? 0) : 0;
-    ams.tray.forEach((tray, slotIdx) => {
-      if (!tray?.tray_type) return; // empty slot
-      const preset = (tray.tray_info_idx || '').trim();
-      const globalTrayId = getGlobalTrayId(ams.id, slotIdx, false);
-      const member = { amsId: ams.id, slotIdx, globalTrayId };
+	for (const ams of uniqueAms) {
+		const extruder = isDualNozzle
+			? Number(amsExtruderMap?.[String(ams.id)] ?? 0)
+			: 0;
+		ams.tray.forEach((tray, slotIdx) => {
+			if (!tray?.tray_type) return; // empty slot
+			const preset = (tray.tray_info_idx || "").trim();
+			const globalTrayId = getGlobalTrayId(ams.id, slotIdx, false);
+			const member = { amsId: ams.id, slotIdx, globalTrayId };
 
-      let key: string;
-      let presetId: string | null;
-      if (preset) {
-        // Same Bambu profile is necessary but NOT sufficient — different colours
-        // of the same PETG HF profile can't back each other up. Bake the colour
-        // into the identity key, normalised to strip alpha and case.
-        const color = normalizeColorForId(tray.tray_color);
-        key = `preset:${preset}|color:${color}#${extruder}`;
-        presetId = preset;
-      } else {
-        // No preset → never group with anything else. Unique-per-slot key.
-        key = `unmatched:${ams.id}:${slotIdx}#${extruder}`;
-        presetId = null;
-      }
+			let key: string;
+			let presetId: string | null;
+			if (preset) {
+				// Same Bambu profile is necessary but NOT sufficient — different colours
+				// of the same PETG HF profile can't back each other up. Bake the colour
+				// into the identity key, normalised to strip alpha and case.
+				const color = normalizeColorForId(tray.tray_color);
+				key = `preset:${preset}|color:${color}#${extruder}`;
+				presetId = preset;
+			} else {
+				// No preset → never group with anything else. Unique-per-slot key.
+				key = `unmatched:${ams.id}:${slotIdx}#${extruder}`;
+				presetId = null;
+			}
 
-      const existing = byKey.get(key);
-      if (existing) {
-        existing.members.push(member);
-      } else {
-        byKey.set(key, {
-          key,
-          presetId,
-          extruder,
-          displayName: tray.tray_sub_brands || tray.tray_type || '',
-          trayColor: tray.tray_color ?? null,
-          members: [member],
-        });
-      }
-    });
-  }
+			const existing = byKey.get(key);
+			if (existing) {
+				existing.members.push(member);
+			} else {
+				byKey.set(key, {
+					key,
+					presetId,
+					extruder,
+					displayName: tray.tray_sub_brands || tray.tray_type || "",
+					trayColor: tray.tray_color ?? null,
+					members: [member],
+				});
+			}
+		});
+	}
 
-  // Stable sort: extruder first (so the modal can section per side on
-  // dual-nozzle), then pairs before lone slots, then by name, then by first
-  // member's global tray id for deterministic rendering.
-  return Array.from(byKey.values()).sort((a, b) => {
-    if (a.extruder !== b.extruder) return a.extruder - b.extruder;
-    const aLone = a.members.length === 1 ? 1 : 0;
-    const bLone = b.members.length === 1 ? 1 : 0;
-    if (aLone !== bLone) return aLone - bLone;
-    if (a.displayName !== b.displayName) return a.displayName.localeCompare(b.displayName);
-    return a.members[0].globalTrayId - b.members[0].globalTrayId;
-  });
+	// Stable sort: extruder first (so the modal can section per side on
+	// dual-nozzle), then pairs before lone slots, then by name, then by first
+	// member's global tray id for deterministic rendering.
+	return Array.from(byKey.values()).sort((a, b) => {
+		if (a.extruder !== b.extruder) return a.extruder - b.extruder;
+		const aLone = a.members.length === 1 ? 1 : 0;
+		const bLone = b.members.length === 1 ? 1 : 0;
+		if (aLone !== bLone) return aLone - bLone;
+		if (a.displayName !== b.displayName)
+			return a.displayName.localeCompare(b.displayName);
+		return a.members[0].globalTrayId - b.members[0].globalTrayId;
+	});
 }
 
 export interface SpoolmanSlotAssignmentLike {
-  printer_id: number;
-  printer_name?: string | null;
-  ams_id: number;
-  tray_id: number;
-  spoolman_spool_id: number;
-  ams_label?: string | null;
+	printer_id: number;
+	printer_name?: string | null;
+	ams_id: number;
+	tray_id: number;
+	spoolman_spool_id: number;
+	ams_label?: string | null;
 }
 
 export interface ResolvedLoadedFilamentInfo {
-  material: string;
-  detail: string;
-  color?: string | null;
-  remainingPct?: number | null;
-  source: 'spoolman' | 'inventory' | 'telemetry';
-  amsId: number;
-  trayId: number;
-  globalTrayId: number;
-  tray?: AMSTray | null;
-  spool?: InventorySpool | null;
+	material: string;
+	detail: string;
+	color?: string | null;
+	remainingPct?: number | null;
+	source: "spoolman" | "inventory" | "telemetry";
+	amsId: number;
+	trayId: number;
+	globalTrayId: number;
+	tray?: AMSTray | null;
+	spool?: InventorySpool | null;
 }
 
 export interface ResolveLoadedFilamentInfoInput {
-  printer: Pick<Printer, 'id' | 'serial_number'>;
-  status?: PrinterStatus;
-  localAssignments?: SpoolAssignment[];
-  getLocalAssignment?: (printerId: number, amsId: number, trayId: number) => SpoolAssignment | undefined;
-  spoolmanSpools: InventorySpool[];
-  spoolmanSlotAssignments: SpoolmanSlotAssignmentLike[];
+	printer: Pick<Printer, "id" | "serial_number">;
+	status?: PrinterStatus;
+	localAssignments?: SpoolAssignment[];
+	getLocalAssignment?: (
+		printerId: number,
+		amsId: number,
+		trayId: number,
+	) => SpoolAssignment | undefined;
+	spoolmanSpools: InventorySpool[];
+	spoolmanSlotAssignments: SpoolmanSlotAssignmentLike[];
 }
 
 function spoolLabel(spool: InventorySpool): string {
-  return [spool.brand, spool.material, spool.subtype, spool.color_name].filter(Boolean).join(' ');
+	return [spool.brand, spool.material, spool.subtype, spool.color_name]
+		.filter(Boolean)
+		.join(" ");
 }
 
 function spoolRemainingPct(spool: InventorySpool): number | null {
-  if (!spool.label_weight || spool.label_weight <= 0) return null;
-  return Math.round((Math.max(0, spool.label_weight - (spool.weight_used ?? 0)) / spool.label_weight) * 100);
+	if (!spool.label_weight || spool.label_weight <= 0) return null;
+	return Math.round(
+		(Math.max(0, spool.label_weight - (spool.weight_used ?? 0)) /
+			spool.label_weight) *
+			100,
+	);
 }
 
-function trayLabel(amsId: number, trayId: number, ams?: AMSUnit | null): string {
-  if (amsId === -1) return 'Loaded spool';
-  if (amsId === 255) return 'External spool';
-  return `${ams?.is_ams_ht ? 'AMS-HT' : 'AMS'} ${amsId} tray ${trayId}`;
+function trayLabel(
+	amsId: number,
+	trayId: number,
+	ams?: AMSUnit | null,
+): string {
+	if (amsId === -1) return "Loaded spool";
+	if (amsId === 255) return "External spool";
+	return `${ams?.is_ams_ht ? "AMS-HT" : "AMS"} ${amsId} tray ${trayId}`;
 }
 
-function trayMaterial(tray: AMSTray | null | undefined, fallback: string): string {
-  if (!tray) return fallback;
-  return [tray.tray_type, tray.tray_sub_brands].filter(Boolean).join(' ') || fallback;
+function trayMaterial(
+	tray: AMSTray | null | undefined,
+	fallback: string,
+): string {
+	if (!tray) return fallback;
+	return (
+		[tray.tray_type, tray.tray_sub_brands].filter(Boolean).join(" ") ||
+		fallback
+	);
 }
 
 function findTrayBySlot(ams: AMSUnit, trayId: number): AMSTray | undefined {
-  return ams.tray.find((tray) => tray.id === trayId) ?? ams.tray[trayId];
+	return ams.tray.find((tray) => tray.id === trayId) ?? ams.tray[trayId];
 }
 
-function activeSlotCandidates(status?: PrinterStatus): Array<{ amsId: number; trayId: number; globalTrayId: number; ams?: AMSUnit; tray?: AMSTray }> {
-  if (!status) return [];
-  const trayNow = status.tray_now;
-  const candidates: Array<{ amsId: number; trayId: number; globalTrayId: number; ams?: AMSUnit; tray?: AMSTray }> = [];
+function activeSlotCandidates(
+	status?: PrinterStatus,
+): Array<{
+	amsId: number;
+	trayId: number;
+	globalTrayId: number;
+	ams?: AMSUnit;
+	tray?: AMSTray;
+}> {
+	if (!status) return [];
+	const trayNow = status.tray_now;
+	const candidates: Array<{
+		amsId: number;
+		trayId: number;
+		globalTrayId: number;
+		ams?: AMSUnit;
+		tray?: AMSTray;
+	}> = [];
 
-  for (const ams of status.ams ?? []) {
-    for (const tray of ams.tray ?? []) {
-      const trayId = tray.id ?? 0;
-      const globalTrayId = getGlobalTrayId(ams.id, trayId, false);
-      if (globalTrayId === trayNow) {
-        candidates.push({ amsId: ams.id, trayId, globalTrayId, ams, tray });
-      }
-    }
-    if (ams.id >= 128 && ams.id === trayNow && !candidates.some((candidate) => candidate.amsId === ams.id)) {
-      const tray = findTrayBySlot(ams, 0);
-      candidates.push({ amsId: ams.id, trayId: tray?.id ?? 0, globalTrayId: ams.id, ams, tray });
-    }
-  }
+	for (const ams of status.ams ?? []) {
+		for (const tray of ams.tray ?? []) {
+			const trayId = tray.id ?? 0;
+			const globalTrayId = getGlobalTrayId(ams.id, trayId, false);
+			if (globalTrayId === trayNow) {
+				candidates.push({
+					amsId: ams.id,
+					trayId,
+					globalTrayId,
+					ams,
+					tray,
+				});
+			}
+		}
+		if (
+			ams.id >= 128 &&
+			ams.id === trayNow &&
+			!candidates.some((candidate) => candidate.amsId === ams.id)
+		) {
+			const tray = findTrayBySlot(ams, 0);
+			candidates.push({
+				amsId: ams.id,
+				trayId: tray?.id ?? 0,
+				globalTrayId: ams.id,
+				ams,
+				tray,
+			});
+		}
+	}
 
-  for (const vt of status.vt_tray ?? []) {
-    const globalTrayId = vt.id ?? 254;
-    const trayId = globalTrayId >= 254 ? globalTrayId - 254 : 0;
-    if (trayNow === globalTrayId || (trayNow === 254 && globalTrayId === 254)) {
-      candidates.push({ amsId: 255, trayId, globalTrayId, tray: vt });
-    }
-  }
+	for (const vt of status.vt_tray ?? []) {
+		const globalTrayId = vt.id ?? 254;
+		const trayId = globalTrayId >= 254 ? globalTrayId - 254 : 0;
+		if (
+			trayNow === globalTrayId ||
+			(trayNow === 254 && globalTrayId === 254)
+		) {
+			candidates.push({ amsId: 255, trayId, globalTrayId, tray: vt });
+		}
+	}
 
-  return candidates;
+	return candidates;
 }
 
-function fallbackSlotCandidates(status?: PrinterStatus): Array<{ amsId: number; trayId: number; globalTrayId: number; ams?: AMSUnit; tray?: AMSTray }> {
-  if (!status) return [];
-  const candidates: Array<{ amsId: number; trayId: number; globalTrayId: number; ams?: AMSUnit; tray?: AMSTray }> = [];
+function fallbackSlotCandidates(
+	status?: PrinterStatus,
+): Array<{
+	amsId: number;
+	trayId: number;
+	globalTrayId: number;
+	ams?: AMSUnit;
+	tray?: AMSTray;
+}> {
+	if (!status) return [];
+	const candidates: Array<{
+		amsId: number;
+		trayId: number;
+		globalTrayId: number;
+		ams?: AMSUnit;
+		tray?: AMSTray;
+	}> = [];
 
-  for (const vt of status.vt_tray ?? []) {
-    if (vt.tray_type || vt.tray_sub_brands || vt.tray_color) {
-      const globalTrayId = vt.id ?? 254;
-      candidates.push({ amsId: 255, trayId: globalTrayId >= 254 ? globalTrayId - 254 : 0, globalTrayId, tray: vt });
-    }
-  }
-  for (const ams of status.ams ?? []) {
-    for (const tray of ams.tray ?? []) {
-      if (tray.tray_type || tray.tray_sub_brands || tray.tray_color) {
-        const trayId = tray.id ?? 0;
-        candidates.push({ amsId: ams.id, trayId, globalTrayId: getGlobalTrayId(ams.id, trayId, false), ams, tray });
-      }
-    }
-  }
+	for (const vt of status.vt_tray ?? []) {
+		if (vt.tray_type || vt.tray_sub_brands || vt.tray_color) {
+			const globalTrayId = vt.id ?? 254;
+			candidates.push({
+				amsId: 255,
+				trayId: globalTrayId >= 254 ? globalTrayId - 254 : 0,
+				globalTrayId,
+				tray: vt,
+			});
+		}
+	}
+	for (const ams of status.ams ?? []) {
+		for (const tray of ams.tray ?? []) {
+			if (tray.tray_type || tray.tray_sub_brands || tray.tray_color) {
+				const trayId = tray.id ?? 0;
+				candidates.push({
+					amsId: ams.id,
+					trayId,
+					globalTrayId: getGlobalTrayId(ams.id, trayId, false),
+					ams,
+					tray,
+				});
+			}
+		}
+	}
 
-  return candidates;
+	return candidates;
 }
 
 /**
@@ -1049,110 +1241,172 @@ function fallbackSlotCandidates(status?: PrinterStatus): Array<{ amsId: number; 
  * available.
  */
 export function resolveLoadedFilamentInfo({
-  printer,
-  status,
-  localAssignments = [],
-  getLocalAssignment,
-  spoolmanSpools,
-  spoolmanSlotAssignments,
+	printer,
+	status,
+	localAssignments = [],
+	getLocalAssignment,
+	spoolmanSpools,
+	spoolmanSlotAssignments,
 }: ResolveLoadedFilamentInfoInput): ResolvedLoadedFilamentInfo | null {
-  const slotCandidates = [...activeSlotCandidates(status), ...fallbackSlotCandidates(status)];
-  const seen = new Set<string>();
+	const slotCandidates = [
+		...activeSlotCandidates(status),
+		...fallbackSlotCandidates(status),
+	];
+	const seen = new Set<string>();
 
-  for (const candidate of slotCandidates) {
-    const key = `${candidate.amsId}:${candidate.trayId}`;
-    if (seen.has(key)) continue;
-    seen.add(key);
+	for (const candidate of slotCandidates) {
+		const key = `${candidate.amsId}:${candidate.trayId}`;
+		if (seen.has(key)) continue;
+		seen.add(key);
 
-    const spoolmanAssignment = spoolmanSlotAssignments.find((assignment) => (
-      assignment.printer_id === printer.id && assignment.ams_id === candidate.amsId && assignment.tray_id === candidate.trayId
-    ));
-    const spoolmanSpool = spoolmanAssignment
-      ? spoolmanSpools.find((spool) => spool.id === spoolmanAssignment.spoolman_spool_id)
-      : undefined;
-    if (spoolmanSpool) {
-      return {
-        material: spoolLabel(spoolmanSpool),
-        detail: trayLabel(candidate.amsId, candidate.trayId, candidate.ams),
-        color: spoolmanSpool.rgba,
-        remainingPct: spoolRemainingPct(spoolmanSpool),
-        source: 'spoolman',
-        amsId: candidate.amsId,
-        trayId: candidate.trayId,
-        globalTrayId: candidate.globalTrayId,
-        tray: candidate.tray ?? null,
-        spool: spoolmanSpool,
-      };
-    }
+		const spoolmanAssignment = spoolmanSlotAssignments.find(
+			(assignment) =>
+				assignment.printer_id === printer.id &&
+				assignment.ams_id === candidate.amsId &&
+				assignment.tray_id === candidate.trayId,
+		);
+		const spoolmanSpool = spoolmanAssignment
+			? spoolmanSpools.find(
+					(spool) =>
+						spool.id === spoolmanAssignment.spoolman_spool_id,
+				)
+			: undefined;
+		if (spoolmanSpool) {
+			return {
+				material: spoolLabel(spoolmanSpool),
+				detail: trayLabel(
+					candidate.amsId,
+					candidate.trayId,
+					candidate.ams,
+				),
+				color: spoolmanSpool.rgba,
+				remainingPct: spoolRemainingPct(spoolmanSpool),
+				source: "spoolman",
+				amsId: candidate.amsId,
+				trayId: candidate.trayId,
+				globalTrayId: candidate.globalTrayId,
+				tray: candidate.tray ?? null,
+				spool: spoolmanSpool,
+			};
+		}
 
-    const localAssignment = getLocalAssignment?.(printer.id, candidate.amsId, candidate.trayId)
-      ?? localAssignments.find((assignment) => (
-        assignment.printer_id === printer.id && assignment.ams_id === candidate.amsId && assignment.tray_id === candidate.trayId
-      ));
-    if (localAssignment?.spool) {
-      return {
-        material: spoolLabel(localAssignment.spool),
-        detail: trayLabel(candidate.amsId, candidate.trayId, candidate.ams),
-        color: localAssignment.spool.rgba,
-        remainingPct: spoolRemainingPct(localAssignment.spool),
-        source: 'inventory',
-        amsId: candidate.amsId,
-        trayId: candidate.trayId,
-        globalTrayId: candidate.globalTrayId,
-        tray: candidate.tray ?? null,
-        spool: localAssignment.spool,
-      };
-    }
+		const localAssignment =
+			getLocalAssignment?.(
+				printer.id,
+				candidate.amsId,
+				candidate.trayId,
+			) ??
+			localAssignments.find(
+				(assignment) =>
+					assignment.printer_id === printer.id &&
+					assignment.ams_id === candidate.amsId &&
+					assignment.tray_id === candidate.trayId,
+			);
+		if (localAssignment?.spool) {
+			return {
+				material: spoolLabel(localAssignment.spool),
+				detail: trayLabel(
+					candidate.amsId,
+					candidate.trayId,
+					candidate.ams,
+				),
+				color: localAssignment.spool.rgba,
+				remainingPct: spoolRemainingPct(localAssignment.spool),
+				source: "inventory",
+				amsId: candidate.amsId,
+				trayId: candidate.trayId,
+				globalTrayId: candidate.globalTrayId,
+				tray: candidate.tray ?? null,
+				spool: localAssignment.spool,
+			};
+		}
 
-    if (candidate.tray?.tray_type || candidate.tray?.tray_sub_brands || candidate.tray?.tray_color) {
-      return {
-        material: trayMaterial(candidate.tray, candidate.amsId === 255 ? 'External filament' : trayLabel(candidate.amsId, candidate.trayId, candidate.ams)),
-        detail: trayLabel(candidate.amsId, candidate.trayId, candidate.ams),
-        color: candidate.tray.tray_color,
-        remainingPct: typeof candidate.tray.remain === 'number' && candidate.tray.remain >= 0 ? candidate.tray.remain : null,
-        source: 'telemetry',
-        amsId: candidate.amsId,
-        trayId: candidate.trayId,
-        globalTrayId: candidate.globalTrayId,
-        tray: candidate.tray,
-        spool: null,
-      };
-    }
-  }
+		if (
+			candidate.tray?.tray_type ||
+			candidate.tray?.tray_sub_brands ||
+			candidate.tray?.tray_color
+		) {
+			return {
+				material: trayMaterial(
+					candidate.tray,
+					candidate.amsId === 255
+						? "External filament"
+						: trayLabel(
+								candidate.amsId,
+								candidate.trayId,
+								candidate.ams,
+							),
+				),
+				detail: trayLabel(
+					candidate.amsId,
+					candidate.trayId,
+					candidate.ams,
+				),
+				color: candidate.tray.tray_color,
+				remainingPct:
+					typeof candidate.tray.remain === "number" &&
+					candidate.tray.remain >= 0
+						? candidate.tray.remain
+						: null,
+				source: "telemetry",
+				amsId: candidate.amsId,
+				trayId: candidate.trayId,
+				globalTrayId: candidate.globalTrayId,
+				tray: candidate.tray,
+				spool: null,
+			};
+		}
+	}
 
-  const loadedLocalAssignment = getLocalAssignment?.(printer.id, -1, 0)
-    ?? localAssignments.find((assignment) => assignment.printer_id === printer.id && assignment.ams_id === -1 && assignment.tray_id === 0);
-  if (loadedLocalAssignment?.spool) {
-    return {
-      material: spoolLabel(loadedLocalAssignment.spool),
-      detail: 'Loaded spool',
-      color: loadedLocalAssignment.spool.rgba,
-      remainingPct: spoolRemainingPct(loadedLocalAssignment.spool),
-      source: 'inventory',
-      amsId: -1,
-      trayId: 0,
-      globalTrayId: -1,
-      tray: null,
-      spool: loadedLocalAssignment.spool,
-    };
-  }
+	const loadedLocalAssignment =
+		getLocalAssignment?.(printer.id, -1, 0) ??
+		localAssignments.find(
+			(assignment) =>
+				assignment.printer_id === printer.id &&
+				assignment.ams_id === -1 &&
+				assignment.tray_id === 0,
+		);
+	if (loadedLocalAssignment?.spool) {
+		return {
+			material: spoolLabel(loadedLocalAssignment.spool),
+			detail: "Loaded spool",
+			color: loadedLocalAssignment.spool.rgba,
+			remainingPct: spoolRemainingPct(loadedLocalAssignment.spool),
+			source: "inventory",
+			amsId: -1,
+			trayId: 0,
+			globalTrayId: -1,
+			tray: null,
+			spool: loadedLocalAssignment.spool,
+		};
+	}
 
-  const loadedSpoolmanAssignment = spoolmanSlotAssignments.find((assignment) => assignment.printer_id === printer.id && assignment.ams_id === 255 && assignment.tray_id === 0);
-  const loadedSpoolman = loadedSpoolmanAssignment ? spoolmanSpools.find((spool) => spool.id === loadedSpoolmanAssignment.spoolman_spool_id) : undefined;
-  if (loadedSpoolman) {
-    return {
-      material: spoolLabel(loadedSpoolman),
-      detail: 'Loaded spool',
-      color: loadedSpoolman.rgba,
-      remainingPct: spoolRemainingPct(loadedSpoolman),
-      source: 'spoolman',
-      amsId: 255,
-      trayId: 0,
-      globalTrayId: 254,
-      tray: null,
-      spool: loadedSpoolman,
-    };
-  }
+	const loadedSpoolmanAssignment = spoolmanSlotAssignments.find(
+		(assignment) =>
+			assignment.printer_id === printer.id &&
+			assignment.ams_id === 255 &&
+			assignment.tray_id === 0,
+	);
+	const loadedSpoolman = loadedSpoolmanAssignment
+		? spoolmanSpools.find(
+				(spool) =>
+					spool.id === loadedSpoolmanAssignment.spoolman_spool_id,
+			)
+		: undefined;
+	if (loadedSpoolman) {
+		return {
+			material: spoolLabel(loadedSpoolman),
+			detail: "Loaded spool",
+			color: loadedSpoolman.rgba,
+			remainingPct: spoolRemainingPct(loadedSpoolman),
+			source: "spoolman",
+			amsId: 255,
+			trayId: 0,
+			globalTrayId: 254,
+			tray: null,
+			spool: loadedSpoolman,
+		};
+	}
 
-  return null;
+	return null;
 }

@@ -3932,6 +3932,7 @@ export default {
     empty: 'Leer',
     emptySlot: 'Leerer Slot',
     slotEmpty: 'Leer',
+    slotUnconfigured: 'Nicht konfiguriert',
     emptySlotReset: 'Keine Spule zugewiesen',
     unknown: 'Unbekannt',
     humidity: 'Luftfeuchtigkeit',

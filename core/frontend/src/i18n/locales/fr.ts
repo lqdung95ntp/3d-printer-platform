@@ -3921,6 +3921,7 @@ export default {
     empty: 'Vide',
     emptySlot: 'Slot vide',
     slotEmpty: 'Vide',
+    slotUnconfigured: 'Non configuré',
     emptySlotReset: 'Aucune bobine assignée',
     unknown: 'Inconnu',
     humidity: 'Humidité',

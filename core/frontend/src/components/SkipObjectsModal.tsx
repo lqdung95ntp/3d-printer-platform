@@ -381,6 +381,16 @@ export function SkipObjectsModal({ printerId, isOpen, onClose }: SkipObjectsModa
               <p className="text-sm">{t('printers.noObjectsFound')}</p>
               <p className="mt-1 text-xs opacity-70">{t('printers.objectsLoadedOnPrintStart')}</p>
             </div>
+          ) : objectsData.objects.length === 1 ? (
+            <div className="px-6 py-12 text-center flex flex-col items-center justify-center max-w-md mx-auto">
+              <Box className="w-12 h-12 text-bambu-gray mb-3 opacity-60" />
+              <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                {t('printers.skipObjects.singleObjectTitle', 'Single Object Print')}
+              </p>
+              <p className="text-xs mt-2 text-gray-500 dark:text-bambu-gray leading-relaxed text-center">
+                {t('printers.skipObjects.requiresMultiple', 'Skip objects requires at least 2 objects on the plate. To stop this print, please cancel the print instead.')}
+              </p>
+            </div>
           ) : (
             <>
               {(status?.layer_num ?? 0) <= 1 && (
