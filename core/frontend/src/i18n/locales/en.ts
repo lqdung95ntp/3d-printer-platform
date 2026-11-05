@@ -4717,6 +4717,8 @@ export default {
     delayMinutes: 'Delay (minutes)',
     tempThreshold: 'Temperature threshold (°C)',
     tempThresholdDescription: 'Turns off when nozzle cools below this temperature',
+    smartPowerNoticeTitle: 'Smart Power Optimizer',
+    smartPowerNoticeDesc: 'Bee Pro Smart Power can optimize fleet shutdowns based on queue jobs, Auto Swap PEI, and scheduled pre-wakes. Configure it in the Smart Power sub-tab.',
     edit: 'Edit',
     deleteConfirm: 'Are you sure you want to delete "{{name}}"? This cannot be undone.',
     turnOnConfirm: 'Are you sure you want to turn on "{{name}}"?',

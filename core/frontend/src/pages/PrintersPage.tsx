@@ -11,6 +11,7 @@ import { compareFwVersions } from "../utils/firmwareVersion";
 import { mapModelCode } from "../utils/printerModel";
 import { formatPrintName } from "../utils/printName";
 import { isBedSlinger } from "../utils/bedSlinger";
+import { isSupportedSwapPeiPrinter } from "../components/PrinterSwapPeiConfig";
 import {
 	computePopoverPosition,
 	type PopoverPosition,
@@ -6458,9 +6459,11 @@ function PrinterCard({
 										// what rebuilds the list, so the print could never get it back.
 										// Exactly one object is the real nothing-to-skip case.
 										const objectCount =
-											(status.printable_objects_count && status.printable_objects_count > 0)
+											status.printable_objects_count &&
+											status.printable_objects_count > 0
 												? status.printable_objects_count
-												: (objectsData?.objects?.length ?? 0);
+												: (objectsData?.objects
+														?.length ?? 0);
 										const canSkipObjects =
 											isActivePrint &&
 											objectCount !== 1 &&
@@ -12398,6 +12401,9 @@ function PrinterCard({
 									</Button>
 									{/* Swap PEI button - placed directly to the left of Print button */}
 									{printer.auto_swap &&
+										isSupportedSwapPeiPrinter(
+											printer.model,
+										) &&
 										(() => {
 											if (!isPro) {
 												return (
