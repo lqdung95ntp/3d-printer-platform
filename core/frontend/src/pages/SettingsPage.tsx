@@ -144,7 +144,10 @@ import {
 	parsePandaBreathAssignments,
 	stringifyPandaBreathAssignments,
 } from "../utils/pandaBreath";
-import { PrinterSwapPeiConfig } from "../components/PrinterSwapPeiConfig";
+import {
+	PrinterSwapPeiConfig,
+	isSupportedSwapPeiPrinter,
+} from "../components/PrinterSwapPeiConfig";
 import { SmartPowerConfig } from "../components/SmartPowerConfig";
 import { ProBadge } from "../components/ProBadge";
 
@@ -2353,7 +2356,11 @@ export function SettingsPage() {
 							{t("settings.title")}
 						</h1>
 						<p className="text-bambu-gray mt-1">
-							{t("settings.configurePrintbuddy")}
+							{t("settings.configurePrintbuddy", {
+								farmName:
+									(localSettings?.farm_name ?? settings?.farm_name)?.trim() ||
+									"Printbuddy",
+							})}
 						</p>
 					</div>
 					{/* Cross-tab search */}
@@ -4660,54 +4667,6 @@ export function SettingsPage() {
 											</h2>
 										</CardHeader>
 										<CardContent className="space-y-3">
-											<p className="text-xs font-medium text-bambu-gray uppercase tracking-wider">
-												{t("settings.printerFirmware")}
-											</p>
-											<div className="flex items-center justify-between">
-												<div>
-													<div className="flex flex-wrap items-center gap-2">
-														<p className="text-white">
-															{t(
-																"settings.checkPrinterFirmware",
-															)}
-														</p>
-														<BambuScopeBadge />
-													</div>
-													<p className="text-sm text-bambu-gray">
-														{t(
-															"settings.checkFirmwareDescription",
-														)}{" "}
-														Bambu firmware metadata
-														only; other printer
-														providers are ignored.
-													</p>
-												</div>
-												<label className="relative inline-flex items-center cursor-pointer">
-													<input
-														type="checkbox"
-														checked={
-															localSettings.check_printer_firmware ??
-															true
-														}
-														onChange={(e) =>
-															updateSetting(
-																"check_printer_firmware",
-																e.target
-																	.checked,
-															)
-														}
-														className="sr-only peer"
-													/>
-													<div className="w-11 h-6 bg-bambu-dark-tertiary peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-bambu-green"></div>
-												</label>
-											</div>
-											<div className="border-t border-bambu-dark-tertiary pt-4">
-												<p className="text-xs font-medium text-bambu-gray uppercase tracking-wider mb-4">
-													{t(
-														"settings.printbuddySoftware",
-													)}
-												</p>
-											</div>
 											<div className="flex items-center justify-between">
 												<div>
 													<p className="text-white">
@@ -4733,43 +4692,6 @@ export function SettingsPage() {
 																e.target
 																	.checked,
 															)
-														}
-														className="sr-only peer"
-													/>
-													<div className="w-11 h-6 bg-bambu-dark-tertiary peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-bambu-green"></div>
-												</label>
-											</div>
-											<div
-												className={`flex items-center justify-between ${!localSettings.check_updates ? "opacity-50" : ""}`}
-											>
-												<div>
-													<p className="text-white">
-														{t(
-															"settings.includeBetaUpdates",
-														)}
-													</p>
-													<p className="text-sm text-bambu-gray">
-														{t(
-															"settings.includeBetaUpdatesDesc",
-														)}
-													</p>
-												</div>
-												<label className="relative inline-flex items-center cursor-pointer">
-													<input
-														type="checkbox"
-														checked={
-															localSettings.include_beta_updates ??
-															false
-														}
-														onChange={(e) =>
-															updateSetting(
-																"include_beta_updates",
-																e.target
-																	.checked,
-															)
-														}
-														disabled={
-															!localSettings.check_updates
 														}
 														className="sr-only peer"
 													/>
@@ -6201,6 +6123,7 @@ export function SettingsPage() {
 																				{
 																					mqttStatus.broker
 																				}
+
 																				:
 																				{
 																					mqttStatus.port
@@ -12216,35 +12139,56 @@ export function SettingsPage() {
 											)}
 										</p>
 
-										{printers && printers.length > 0 ? (
-											<div className="grid grid-cols-1 gap-4">
-												{printers.map((p) => (
-													<PrinterSwapPeiConfig
-														key={p.id}
-														printer={p}
-														onSave={(
-															autoSwap,
-															gcode,
-														) =>
-															handleSaveSwapPei(
-																p.id,
-																autoSwap,
-																gcode,
-															)
-														}
-														isSaving={
-															!!savingPrinters[
-																p.id
-															]
-														}
-													/>
-												))}
-											</div>
-										) : (
-											<p className="text-xs text-bambu-gray italic">
-												No printers configured.
-											</p>
-										)}
+										{(() => {
+											const supportedPrinters = (
+												printers || []
+											).filter((p) =>
+												isSupportedSwapPeiPrinter(
+													p.model,
+												),
+											);
+
+											if (
+												supportedPrinters.length === 0
+											) {
+												return (
+													<p className="text-xs text-bambu-gray italic">
+														{t(
+															"settings.swapPei.noSupportedPrinters",
+															"No supported printers found. Auto Swap PEI is currently available for Bambu Lab A1.",
+														)}
+													</p>
+												);
+											}
+
+											return (
+												<div className="grid grid-cols-1 gap-4">
+													{supportedPrinters.map(
+														(p) => (
+															<PrinterSwapPeiConfig
+																key={p.id}
+																printer={p}
+																onSave={(
+																	autoSwap,
+																	gcode,
+																) =>
+																	handleSaveSwapPei(
+																		p.id,
+																		autoSwap,
+																		gcode,
+																	)
+																}
+																isSaving={
+																	!!savingPrinters[
+																		p.id
+																	]
+																}
+															/>
+														),
+													)}
+												</div>
+											);
+										})()}
 									</CardContent>
 								</Card>
 							</div>

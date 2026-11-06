@@ -576,5 +576,31 @@ describe('FilamentMapping — Bambu Studio visual cards', () => {
     expect(cards.length).toBeGreaterThan(0);
     expect(cards[0]).toBeInTheDocument();
   });
+
+  it('shows slots unassigned warning when multi-color print has unassigned slots', async () => {
+    const multiColorReqs = {
+      filaments: [
+        { slot_id: 1, type: 'PETG', color: '#FF0000', used_grams: 25, nozzle_id: 0 },
+        { slot_id: 2, type: 'ABS', color: '#0000FF', used_grams: 25, nozzle_id: 0 },
+      ],
+    };
+
+    render(
+      <FilamentMapping
+        printerId={1}
+        filamentReqs={multiColorReqs}
+        manualMappings={{}}
+        onManualMappingChange={() => {}}
+        currencySymbol="$"
+        defaultCostPerKg={0}
+        defaultExpanded
+      />,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText(/Slots unassigned/i)).toBeInTheDocument();
+      expect(screen.getByText(/All required colors must be assigned to a slot before printing/i)).toBeInTheDocument();
+    });
+  });
 });
 

@@ -575,7 +575,7 @@ export function PrintModal({
 	});
 
 	// Get AMS mapping from hook (only when single printer selected)
-	const { amsMapping } = useFilamentMapping(
+	const { amsMapping, filamentComparison } = useFilamentMapping(
 		effectiveFilamentReqs,
 		printerStatus,
 		manualMappings,
@@ -898,6 +898,68 @@ export function PrintModal({
 	const willUseStagger =
 		scheduleOptions.staggerEnabled && selectedPrinters.length > 1;
 
+	// Show filament mapping when:
+	// - Single printer selected
+	// - For archives: plate is selected (for multi-plate) or not required (single-plate)
+	// - For library files: always show (no plate selection)
+	const showFilamentMapping =
+		effectivePrinterId &&
+		selectedPlates.size <= 1 &&
+		(isLibraryFile || (isMultiPlate ? selectedPlate !== null : true));
+
+	const isMultiColor = useMemo(() => {
+		const reqs = (effectiveFilamentReqs?.filaments ?? []).filter(
+			(f) =>
+				f.used_in_plate !== false &&
+				(f.used_grams == null || f.used_grams > 0),
+		);
+		return reqs.length > 1;
+	}, [effectiveFilamentReqs]);
+
+	const hasUnassignedMultiColorSlots = useMemo(() => {
+		if (assignmentMode !== "printer" || selectedPrinters.length === 0) {
+			return false;
+		}
+		if (!isMultiColor) {
+			return false;
+		}
+
+		const reqs = (effectiveFilamentReqs?.filaments ?? []).filter(
+			(f) =>
+				f.used_in_plate !== false &&
+				(f.used_grams == null || f.used_grams > 0),
+		);
+
+		if (selectedPrinters.length === 1) {
+			if (!showFilamentMapping) return false;
+			if (!filamentComparison || filamentComparison.length === 0) {
+				return true;
+			}
+			return reqs.some((req) => {
+				const comp = filamentComparison.find((c) => c.slot_id === req.slot_id);
+				return !comp || !comp.loaded;
+			});
+		}
+
+		// Multi-printer: check each selected printer
+		return selectedPrinters.some((printerId) => {
+			const mapping = multiPrinterMapping.getFinalMapping(printerId);
+			if (!mapping) return true;
+			return reqs.some((req) => {
+				const slotIdx = (req.slot_id ?? 1) - 1;
+				return mapping[slotIdx] === undefined || mapping[slotIdx] < 0;
+			});
+		});
+	}, [
+		assignmentMode,
+		selectedPrinters,
+		isMultiColor,
+		effectiveFilamentReqs,
+		showFilamentMapping,
+		filamentComparison,
+		multiPrinterMapping,
+	]);
+
 	const handleSubmit = async (
 		e?: React.FormEvent,
 		options?: {
@@ -1018,6 +1080,16 @@ export function PrintModal({
 		}
 
 		// Validate printer/model selection
+		if (hasUnassignedMultiColorSlots) {
+			showToast(
+				t(
+					"printModal.unassignedMultiColorSlots",
+					"Please assign all filament slots before printing multi-color.",
+				),
+				"error",
+			);
+			return;
+		}
 		if (hasAllObjectsSkipped) {
 			showToast(
 				t(
@@ -1477,6 +1549,9 @@ export function PrintModal({
 		// For multi-plate files, need at least one plate selected
 		if (isMultiPlate && selectedPlates.size === 0) return false;
 
+		// Block multi-color print if required slots are not assigned
+		if (hasUnassignedMultiColorSlots) return false;
+
 		return true;
 	}, [
 		selectedPrinters.length,
@@ -1486,6 +1561,7 @@ export function PrintModal({
 		isMultiPlate,
 		selectedPlates.size,
 		isPending,
+		hasUnassignedMultiColorSlots,
 	]);
 
 	// Quantity only applies for single-printer or model-based assignment (not multi-printer)
@@ -1572,15 +1648,6 @@ export function PrintModal({
 	const modalConfig = getModalConfig();
 	const TitleIcon = modalConfig.icon;
 	const SubmitIcon = modalConfig.submitIcon;
-
-	// Show filament mapping when:
-	// - Single printer selected
-	// - For archives: plate is selected (for multi-plate) or not required (single-plate)
-	// - For library files: always show (no plate selection)
-	const showFilamentMapping =
-		effectivePrinterId &&
-		selectedPlates.size <= 1 &&
-		(isLibraryFile || (isMultiPlate ? selectedPlate !== null : true));
 
 	return (
 		<div
@@ -2220,6 +2287,14 @@ export function PrintModal({
 								type="submit"
 								disabled={!canSubmit}
 								className="flex-1"
+								title={
+									hasUnassignedMultiColorSlots
+										? t(
+												"printModal.unassignedMultiColorSlots",
+												"Please assign all filament slots before printing multi-color.",
+											)
+										: undefined
+								}
 							>
 								{isPending ? (
 									<>

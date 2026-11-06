@@ -3167,6 +3167,17 @@ function PrinterCard({
 	const [dryStartWatch, setDryStartWatch] = useState<{
 		amsId: number;
 	} | null>(null);
+	// Tracking pending AMS load / unload completion to display success toast once hardware operation completes
+	const [pendingLoadWatch, setPendingLoadWatch] = useState<{
+		trayId: number;
+		timestamp: number;
+		startedChange?: boolean;
+	} | null>(null);
+	const [pendingUnloadWatch, setPendingUnloadWatch] = useState<{
+		initialTray?: number;
+		timestamp: number;
+		startedChange?: boolean;
+	} | null>(null);
 	const [isDraggingFile, setIsDraggingFile] = useState(false);
 	const [isDropUploading, setIsDropUploading] = useState(false);
 	const printerActionsMenuRef = useRef<HTMLDivElement>(null);
@@ -3571,6 +3582,95 @@ function PrinterCard({
 		}, DRY_START_CONFIRM_MS);
 		return () => clearTimeout(timer);
 	}, [dryStartWatch, showToast, t]);
+
+	// Watch for AMS load completion:
+	// When pendingLoadWatch is active and status.tray_now matches target trayId,
+	// the filament has successfully loaded into the toolhead.
+	useEffect(() => {
+		if (!pendingLoadWatch) return;
+
+		const currentTray = status?.tray_now;
+		const amsMain = status?.ams_status_main;
+
+		if (
+			amsMain === 1 ||
+			(currentTray !== undefined &&
+				currentTray !== pendingLoadWatch.trayId)
+		) {
+			pendingLoadWatch.startedChange = true;
+		}
+
+		const elapsed = Date.now() - pendingLoadWatch.timestamp;
+		const isTargetLoaded = currentTray === pendingLoadWatch.trayId;
+		const isIdleOrDone = amsMain === 0 || amsMain === undefined;
+
+		if (
+			isTargetLoaded &&
+			(pendingLoadWatch.startedChange || elapsed > 3000) &&
+			isIdleOrDone
+		) {
+			setPendingLoadWatch(null);
+			showToast(t("printers.toast.loadSuccess"), "success");
+		}
+	}, [
+		pendingLoadWatch,
+		status?.tray_now,
+		status?.ams_status_main,
+		showToast,
+		t,
+	]);
+
+	useEffect(() => {
+		if (!pendingLoadWatch) return;
+		const timer = setTimeout(() => {
+			setPendingLoadWatch(null);
+		}, 300000);
+		return () => clearTimeout(timer);
+	}, [pendingLoadWatch]);
+
+	// Watch for AMS unload completion:
+	// When pendingUnloadWatch is active and status.tray_now becomes 255 (or empty),
+	// the filament has successfully unloaded from the toolhead.
+	useEffect(() => {
+		if (!pendingUnloadWatch) return;
+
+		const currentTray = status?.tray_now;
+		const amsMain = status?.ams_status_main;
+
+		if (amsMain === 1) {
+			pendingUnloadWatch.startedChange = true;
+		}
+
+		const elapsed = Date.now() - pendingUnloadWatch.timestamp;
+		const isUnloaded =
+			currentTray === 255 ||
+			currentTray === undefined ||
+			currentTray === null;
+		const isIdleOrDone = amsMain === 0 || amsMain === undefined;
+
+		if (
+			isUnloaded &&
+			(pendingUnloadWatch.startedChange || elapsed > 3000) &&
+			isIdleOrDone
+		) {
+			setPendingUnloadWatch(null);
+			showToast(t("printers.toast.unloadSuccess"), "success");
+		}
+	}, [
+		pendingUnloadWatch,
+		status?.tray_now,
+		status?.ams_status_main,
+		showToast,
+		t,
+	]);
+
+	useEffect(() => {
+		if (!pendingUnloadWatch) return;
+		const timer = setTimeout(() => {
+			setPendingUnloadWatch(null);
+		}, 300000);
+		return () => clearTimeout(timer);
+	}, [pendingUnloadWatch]);
 
 	// Cache tray_now to prevent flickering when undefined values come in
 	// Valid tray IDs: 0-253 for AMS, 254 for external spool
@@ -4652,12 +4752,24 @@ function PrinterCard({
 			trayId: number;
 			extruderId?: number;
 		}) => api.loadAmsTray(printer.id, trayId, extruderId),
-		onSuccess: (data) => {
+		onSuccess: (data, variables) => {
 			setFeedDirectionRequest(null);
-			showToast(data.message || t("printers.toast.loadInitiated"));
+			setPendingUnloadWatch(null);
+			setPendingLoadWatch({
+				trayId: variables.trayId,
+				timestamp: Date.now(),
+			});
+			showToast(
+				data.message || t("printers.toast.loadCommandSent"),
+				"success",
+			);
+			queryClient.invalidateQueries({
+				queryKey: ["printerStatus", printer.id],
+			});
 		},
 		onError: (error: Error) => {
 			setFeedDirectionRequest(null);
+			setPendingLoadWatch(null);
 			showToast(
 				error.message || t("printers.toast.failedToLoad"),
 				"error",
@@ -4669,9 +4781,21 @@ function PrinterCard({
 		mutationFn: ({ trayId }: { trayId?: number }) =>
 			api.unloadAms(printer.id, trayId),
 		onSuccess: (data) => {
-			showToast(data.message || t("printers.toast.unloadInitiated"));
+			setPendingLoadWatch(null);
+			setPendingUnloadWatch({
+				initialTray: effectiveTrayNow,
+				timestamp: Date.now(),
+			});
+			showToast(
+				data.message || t("printers.toast.unloadCommandSent"),
+				"success",
+			);
+			queryClient.invalidateQueries({
+				queryKey: ["printerStatus", printer.id],
+			});
 		},
 		onError: (error: Error) => {
+			setPendingUnloadWatch(null);
 			showToast(
 				error.message || t("printers.toast.failedToUnload"),
 				"error",
@@ -16367,30 +16491,32 @@ function EditPrinterModal({
 								{t("printers.modal.autoArchiveLabel")}
 							</label>
 						</div>
-						<div className="flex items-center gap-2">
-							<input
-								type="checkbox"
-								id="edit_auto_swap"
-								checked={form.auto_swap}
-								onChange={(e) =>
-									setForm({
-										...form,
-										auto_swap: e.target.checked,
-									})
-								}
-								className="rounded border-bambu-dark-tertiary bg-bambu-dark text-bambu-green focus:ring-bambu-green"
-							/>
-							<label
-								htmlFor="edit_auto_swap"
-								className="text-sm text-bambu-gray flex items-center gap-1.5 cursor-pointer"
-							>
-								<span>
-									{t("printers.modal.autoSwapLabel") ||
-										"Enable Auto Swap PEI option"}
-								</span>
-								<ProBadge feature="Auto Swap PEI" />
-							</label>
-						</div>
+						{isSupportedSwapPeiPrinter(form.model) && (
+							<div className="flex items-center gap-2">
+								<input
+									type="checkbox"
+									id="edit_auto_swap"
+									checked={form.auto_swap}
+									onChange={(e) =>
+										setForm({
+											...form,
+											auto_swap: e.target.checked,
+										})
+									}
+									className="rounded border-bambu-dark-tertiary bg-bambu-dark text-bambu-green focus:ring-bambu-green"
+								/>
+								<label
+									htmlFor="edit_auto_swap"
+									className="text-sm text-bambu-gray flex items-center gap-1.5 cursor-pointer"
+								>
+									<span>
+										{t("printers.modal.autoSwapLabel") ||
+											"Enable Auto Swap PEI option"}
+									</span>
+									<ProBadge feature="Auto Swap PEI" />
+								</label>
+							</div>
+						)}
 						<div className="flex items-center gap-2">
 							<input
 								type="checkbox"

@@ -373,7 +373,12 @@ export function FilamentMapping({
     return null;
   }
 
-  const statusColor = hasTypeMismatch
+  const isMultiColor = (filamentReqs?.filaments?.length ?? 0) > 1;
+  const hasUnassignedSlots = isMultiColor && filamentComparison.some((f) => !f.loaded);
+
+  const statusColor = hasUnassignedSlots
+    ? '#ef4444' // red
+    : hasTypeMismatch
     ? '#f97316' // orange
     : hasColorMismatch
     ? '#facc15' // yellow
@@ -414,7 +419,9 @@ export function FilamentMapping({
       >
         <Circle className="w-4 h-4" fill={statusColor} stroke="none" />
         <span>{plateLabel ? `${t('printModal.filamentMapping')} — ${plateLabel}` : t('printModal.filamentMapping')}</span>
-        {hasTypeMismatch ? (
+        {hasUnassignedSlots ? (
+          <span className="text-xs text-red-500 dark:text-red-400">({t('printModal.statusSlotUnassigned', 'Slots unassigned')})</span>
+        ) : hasTypeMismatch ? (
           <span className="text-xs text-orange-700 dark:text-orange-400">({t('printModal.statusTypeNotFound')})</span>
         ) : hasColorMismatch ? (
           <span className="text-xs text-yellow-700 dark:text-yellow-400">({t('printModal.statusColorMismatch')})</span>
@@ -865,11 +872,15 @@ export function FilamentMapping({
               {t('printModal.insufficientBudget', 'Insufficient budget for this cost center.')}
             </p>
           )}
-          {hasTypeMismatch && (
+          {hasUnassignedSlots ? (
+            <p className="text-xs text-red-500 dark:text-red-400 mt-2">
+              {t('printModal.unassignedMultiColorSlotsWarning', 'All required colors must be assigned to a slot before printing.')}
+            </p>
+          ) : hasTypeMismatch ? (
             <p className="text-xs text-orange-700 dark:text-orange-400 mt-2">
               {t('printModal.requiredTypeNotInPrinter')}
             </p>
-          )}
+          ) : null}
         </div>
       )}
     </div>

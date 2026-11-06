@@ -1407,5 +1407,40 @@ describe('PrintModal', () => {
       // Either omitted entirely or explicitly undefined — both interpret as "keep file"
       expect(capturedBody?.cleanup_library_after_dispatch).toBeUndefined();
     });
+
+    it('disables print button when multi-color print has unassigned slots', async () => {
+      server.use(
+        http.get('/api/v1/archives/:id/filament-requirements', () => {
+          return HttpResponse.json({
+            filaments: [
+              { slot_id: 1, type: 'PETG', color: '#FF0000', used_grams: 25 },
+              { slot_id: 2, type: 'ABS', color: '#0000FF', used_grams: 25 },
+            ],
+          });
+        }),
+        http.get('/api/v1/printers/:id/status', () => {
+          return HttpResponse.json({
+            connected: true,
+            state: 'IDLE',
+            ams: [],
+            vt_tray: [],
+          });
+        }),
+      );
+
+      render(
+        <PrintModal
+          mode="reprint"
+          archiveId={1}
+          archiveName="MultiColor"
+          initialSelectedPrinterIds={[1]}
+          onClose={mockOnClose}
+          onSuccess={mockOnSuccess}
+        />
+      );
+
+      const printButton = await screen.findByRole('button', { name: /^print$/i });
+      expect(printButton).toBeDisabled();
+    });
   });
 });
