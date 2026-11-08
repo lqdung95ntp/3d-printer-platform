@@ -1,250 +1,330 @@
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { api, getAuthToken, setAuthToken } from '../api/client';
-import type { LoginResponse, Permission, TokenPersistence, UserResponse } from '../api/client';
-import { appAssetPath, appBasePath } from '../utils/assetPaths';
+import React, {
+	createContext,
+	useCallback,
+	useContext,
+	useEffect,
+	useMemo,
+	useRef,
+	useState,
+} from "react";
+import { ApiError, api, getAuthToken, setAuthToken } from "../api/client";
+import type {
+	LoginResponse,
+	Permission,
+	TokenPersistence,
+	UserResponse,
+} from "../api/client";
+import { appAssetPath, appBasePath } from "../utils/assetPaths";
 
 interface AuthContextType {
-  user: UserResponse | null;
-  authEnabled: boolean;
-  requiresSetup: boolean;
-  loading: boolean;
-  isAdmin: boolean;
-  /** Login with username/password. Returns LoginResponse (may include requires_2fa). */
-  login: (username: string, password: string, persistence?: TokenPersistence) => Promise<LoginResponse>;
-  /** Finalise login after 2FA or OIDC — store token and set user directly. */
-  loginWithToken: (token: string, user: UserResponse, persistence?: TokenPersistence) => void;
-  logout: () => void;
-  refreshUser: () => Promise<void>;
-  refreshAuth: () => Promise<void>;
-  hasPermission: (permission: Permission) => boolean;
-  hasAnyPermission: (...permissions: Permission[]) => boolean;
-  hasAllPermissions: (...permissions: Permission[]) => boolean;
-  canModify: (resource: 'queue' | 'archives' | 'library', action: 'update' | 'delete' | 'reprint', createdById: number | null | undefined) => boolean;
+	user: UserResponse | null;
+	authEnabled: boolean;
+	requiresSetup: boolean;
+	loading: boolean;
+	isAdmin: boolean;
+	/** Login with username/password. Returns LoginResponse (may include requires_2fa). */
+	login: (
+		username: string,
+		password: string,
+		persistence?: TokenPersistence,
+	) => Promise<LoginResponse>;
+	/** Finalise login after 2FA or OIDC — store token and set user directly. */
+	loginWithToken: (
+		token: string,
+		user: UserResponse,
+		persistence?: TokenPersistence,
+	) => void;
+	logout: () => void;
+	refreshUser: () => Promise<void>;
+	refreshAuth: () => Promise<void>;
+	hasPermission: (permission: Permission) => boolean;
+	hasAnyPermission: (...permissions: Permission[]) => boolean;
+	hasAllPermissions: (...permissions: Permission[]) => boolean;
+	canModify: (
+		resource: "queue" | "archives" | "library",
+		action: "update" | "delete" | "reprint",
+		createdById: number | null | undefined,
+	) => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<UserResponse | null>(null);
-  const [authEnabled, setAuthEnabled] = useState(false);
-  const [requiresSetup, setRequiresSetup] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const hasRedirectedRef = useRef(false);
-  const mountedRef = useRef(true);
+	const [user, setUser] = useState<UserResponse | null>(null);
+	const [authEnabled, setAuthEnabled] = useState(false);
+	const [requiresSetup, setRequiresSetup] = useState(false);
+	const [loading, setLoading] = useState(true);
+	const hasRedirectedRef = useRef(false);
+	const mountedRef = useRef(true);
 
-  const checkAuthStatus = async () => {
-    try {
-      // Bootstrap: if URL has ?token= param, store it session-only first and
-      // strip it from the URL. Persistence to localStorage is deferred until the
-      // token has been verified by the server (L-4: prevents session fixation
-      // where an attacker-crafted URL immediately persists a forged/stolen token).
-      const urlParams = new URLSearchParams(window.location.search);
-      const urlToken = urlParams.get('token');
-      if (urlToken) {
-        setAuthToken(urlToken, 'session'); // session-only until server confirms it's valid
-        urlParams.delete('token');
-        const cleanSearch = urlParams.toString();
-        const cleanUrl = window.location.pathname
-          + (cleanSearch ? `?${cleanSearch}` : '')
-          + window.location.hash;
-        window.history.replaceState({}, '', cleanUrl);
-      }
+	const checkAuthStatus = async () => {
+		try {
+			// Bootstrap: if URL has ?token= param, store it session-only first and
+			// strip it from the URL. Persistence to localStorage is deferred until the
+			// token has been verified by the server (L-4: prevents session fixation
+			// where an attacker-crafted URL immediately persists a forged/stolen token).
+			const urlParams = new URLSearchParams(window.location.search);
+			const urlToken = urlParams.get("token");
+			if (urlToken) {
+				setAuthToken(urlToken, "session"); // session-only until server confirms it's valid
+				urlParams.delete("token");
+				const cleanSearch = urlParams.toString();
+				const cleanUrl =
+					window.location.pathname +
+					(cleanSearch ? `?${cleanSearch}` : "") +
+					window.location.hash;
+				window.history.replaceState({}, "", cleanUrl);
+			}
 
-      const status = await api.getAuthStatus();
-      if (!mountedRef.current) return;
-      setAuthEnabled(status.auth_enabled);
-      setRequiresSetup(status.requires_setup);
+			const status = await api.getAuthStatus();
+			if (!mountedRef.current) return;
+			setAuthEnabled(status.auth_enabled);
+			setRequiresSetup(status.requires_setup);
 
-      if (status.auth_enabled) {
-        const token = getAuthToken();
-        if (token) {
-          try {
-            const currentUser = await api.getCurrentUser();
-            if (!mountedRef.current) return;
-            setUser(currentUser);
-            // Persist kiosk token only after the server confirms it is valid.
-            if (urlToken && token === urlToken) {
-              setAuthToken(urlToken, 'persistent');
-            }
-          } catch {
-            // Token invalid, clear it (removes from both sessionStorage and localStorage)
-            setAuthToken(null);
-            if (!mountedRef.current) return;
-            setUser(null);
-          }
-        } else {
-          setUser(null);
-        }
-      } else {
-        // Auth not enabled, allow access
-        setUser(null);
-      }
-    } catch {
-      if (!mountedRef.current) return;
-      setAuthEnabled(false);
-      setUser(null);
-    } finally {
-      if (mountedRef.current) {
-        setLoading(false);
-      }
-    }
-  };
+			if (status.auth_enabled) {
+				const token = getAuthToken();
+				if (token) {
+					// Validate the stored token. A transient failure here (backend not
+					// yet ready after a container/proxy restart, a brief network blip)
+					// must NOT discard a valid persisted token — doing so logs the user
+					// out and, because the token is deleted, a reload can't recover it
+					// (#1889). Only a definitive 401 invalid-token response clears the
+					// token; transient errors retry and preserve the token so the session survives.
+					let currentUser: UserResponse | null = null;
+					let definitiveAuthFailure = false;
+					const maxAttempts = 3;
+					for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+						try {
+							currentUser = await api.getCurrentUser();
+							break;
+						} catch (err) {
+							if (!mountedRef.current) return;
+							if (err instanceof ApiError && err.status === 401) {
+								definitiveAuthFailure = true;
+								break;
+							}
+							if (attempt < maxAttempts) {
+								await new Promise((r) =>
+									setTimeout(r, 400 * attempt),
+								);
+							}
+						}
+					}
+					if (!mountedRef.current) return;
+					if (currentUser) {
+						setUser(currentUser);
+						// Persist kiosk token only after the server confirms it is valid.
+						if (urlToken && token === urlToken) {
+							setAuthToken(urlToken, "persistent");
+						}
+					} else {
+						if (definitiveAuthFailure) {
+							setAuthToken(null);
+						}
+						setUser(null);
+					}
+				} else {
+					setUser(null);
+				}
+			} else {
+				// Auth not enabled, allow access
+				setUser(null);
+			}
+		} catch {
+			if (!mountedRef.current) return;
+			setAuthEnabled(false);
+			setUser(null);
+		} finally {
+			if (mountedRef.current) {
+				setLoading(false);
+			}
+		}
+	};
 
-  useEffect(() => {
-    mountedRef.current = true;
-    // Check auth status on mount
-    checkAuthStatus();
-    return () => {
-      mountedRef.current = false;
-    };
-  }, []);
+	useEffect(() => {
+		mountedRef.current = true;
+		// Check auth status on mount
+		checkAuthStatus();
+		return () => {
+			mountedRef.current = false;
+		};
+	}, []);
 
-  // Separate effect to handle redirect only when setup is required
-  useEffect(() => {
-    // Only redirect if setup is truly required (first time setup)
-    // Don't redirect if user manually navigated to /setup or is on camera page
-    if (!loading && requiresSetup && !authEnabled) {
-      const currentPath = window.location.pathname;
-      const base = appBasePath();
-      const appPath = base && currentPath.startsWith(base) ? currentPath.slice(base.length) || '/' : currentPath;
-      // Only redirect if not already on setup page or camera page, and haven't redirected yet
-      if (appPath !== '/setup' && !appPath.startsWith('/camera/') && !hasRedirectedRef.current) {
-        hasRedirectedRef.current = true;
-        window.location.href = appAssetPath('/setup');
-      }
-    } else if (!requiresSetup) {
-      // Reset redirect flag when setup is no longer required
-      hasRedirectedRef.current = false;
-    }
-  }, [loading, requiresSetup, authEnabled]);
+	// Separate effect to handle redirect only when setup is required
+	useEffect(() => {
+		// Only redirect if setup is truly required (first time setup)
+		// Don't redirect if user manually navigated to /setup or is on camera page
+		if (!loading && requiresSetup && !authEnabled) {
+			const currentPath = window.location.pathname;
+			const base = appBasePath();
+			const appPath =
+				base && currentPath.startsWith(base)
+					? currentPath.slice(base.length) || "/"
+					: currentPath;
+			// Only redirect if not already on setup page or camera page, and haven't redirected yet
+			if (
+				appPath !== "/setup" &&
+				!appPath.startsWith("/camera/") &&
+				!hasRedirectedRef.current
+			) {
+				hasRedirectedRef.current = true;
+				window.location.href = appAssetPath("/setup");
+			}
+		} else if (!requiresSetup) {
+			// Reset redirect flag when setup is no longer required
+			hasRedirectedRef.current = false;
+		}
+	}, [loading, requiresSetup, authEnabled]);
 
-  const login = async (username: string, password: string, persistence: TokenPersistence = 'session'): Promise<LoginResponse> => {
-    const response = await api.login({ username, password });
-    if (!response.requires_2fa && response.access_token) {
-      setAuthToken(response.access_token, persistence);
-      await checkAuthStatus();
-    }
-    return response;
-  };
+	const login = async (
+		username: string,
+		password: string,
+		persistence: TokenPersistence = "session",
+	): Promise<LoginResponse> => {
+		const response = await api.login({ username, password });
+		if (!response.requires_2fa && response.access_token) {
+			setAuthToken(response.access_token, persistence);
+			await checkAuthStatus();
+		}
+		return response;
+	};
 
-  const loginWithToken = (token: string, userObj: UserResponse, persistence: TokenPersistence = 'session') => {
-    setAuthToken(token, persistence);
-    setUser(userObj);
-    setAuthEnabled(true);
-  };
+	const loginWithToken = (
+		token: string,
+		userObj: UserResponse,
+		persistence: TokenPersistence = "session",
+	) => {
+		setAuthToken(token, persistence);
+		setUser(userObj);
+		setAuthEnabled(true);
+	};
 
-  const logout = () => {
-    setAuthToken(null);
-    setUser(null);
-    api.logout().catch(() => {
-      // Ignore logout errors
-    });
-    window.location.href = appAssetPath('/login');
-  };
+	const logout = () => {
+		setAuthToken(null);
+		setUser(null);
+		api.logout().catch(() => {
+			// Ignore logout errors
+		});
+		window.location.href = appAssetPath("/login");
+	};
 
-  const refreshUser = async () => {
-    if (authEnabled && getAuthToken()) {
-      try {
-        const currentUser = await api.getCurrentUser();
-        if (mountedRef.current) {
-          setUser(currentUser);
-        }
-      } catch {
-        setAuthToken(null);
-        if (mountedRef.current) {
-          setUser(null);
-        }
-      }
-    }
-  };
+	const refreshUser = async () => {
+		if (authEnabled && getAuthToken()) {
+			try {
+				const currentUser = await api.getCurrentUser();
+				if (mountedRef.current) {
+					setUser(currentUser);
+				}
+			} catch (err) {
+				if (err instanceof ApiError && err.status === 401) {
+					setAuthToken(null);
+				}
+				if (mountedRef.current) {
+					setUser(null);
+				}
+			}
+		}
+	};
 
-  const refreshAuth = async () => {
-    await checkAuthStatus();
-  };
+	const refreshAuth = async () => {
+		await checkAuthStatus();
+	};
 
-  // Memoize permission set for efficient lookups
-  const permissionSet = useMemo(() => {
-    return new Set(user?.permissions ?? []);
-  }, [user?.permissions]);
+	// Memoize permission set for efficient lookups
+	const permissionSet = useMemo(() => {
+		return new Set(user?.permissions ?? []);
+	}, [user?.permissions]);
 
-  // Computed admin status
-  const isAdmin = useMemo(() => {
-    if (!authEnabled) return true; // Auth disabled = admin access
-    return user?.is_admin ?? false;
-  }, [authEnabled, user?.is_admin]);
+	// Computed admin status
+	const isAdmin = useMemo(() => {
+		if (!authEnabled) return true; // Auth disabled = admin access
+		return user?.is_admin ?? false;
+	}, [authEnabled, user?.is_admin]);
 
-  // Permission check functions
-  const hasPermission = useCallback((permission: Permission): boolean => {
-    if (!authEnabled) return true; // Auth disabled = allow all
-    if (isAdmin) return true; // Admins have all permissions
-    return permissionSet.has(permission);
-  }, [authEnabled, isAdmin, permissionSet]);
+	// Permission check functions
+	const hasPermission = useCallback(
+		(permission: Permission): boolean => {
+			if (!authEnabled) return true; // Auth disabled = allow all
+			if (isAdmin) return true; // Admins have all permissions
+			return permissionSet.has(permission);
+		},
+		[authEnabled, isAdmin, permissionSet],
+	);
 
-  const hasAnyPermission = useCallback((...permissions: Permission[]): boolean => {
-    if (!authEnabled) return true;
-    if (isAdmin) return true;
-    return permissions.some(p => permissionSet.has(p));
-  }, [authEnabled, isAdmin, permissionSet]);
+	const hasAnyPermission = useCallback(
+		(...permissions: Permission[]): boolean => {
+			if (!authEnabled) return true;
+			if (isAdmin) return true;
+			return permissions.some((p) => permissionSet.has(p));
+		},
+		[authEnabled, isAdmin, permissionSet],
+	);
 
-  const hasAllPermissions = useCallback((...permissions: Permission[]): boolean => {
-    if (!authEnabled) return true;
-    if (isAdmin) return true;
-    return permissions.every(p => permissionSet.has(p));
-  }, [authEnabled, isAdmin, permissionSet]);
+	const hasAllPermissions = useCallback(
+		(...permissions: Permission[]): boolean => {
+			if (!authEnabled) return true;
+			if (isAdmin) return true;
+			return permissions.every((p) => permissionSet.has(p));
+		},
+		[authEnabled, isAdmin, permissionSet],
+	);
 
-  // Ownership-based permission check
-  const canModify = useCallback((
-    resource: 'queue' | 'archives' | 'library',
-    action: 'update' | 'delete' | 'reprint',
-    createdById: number | null | undefined,
-  ): boolean => {
-    if (!authEnabled) return true;  // Auth disabled, allow all
-    if (isAdmin) return true;  // Admins can modify anything
+	// Ownership-based permission check
+	const canModify = useCallback(
+		(
+			resource: "queue" | "archives" | "library",
+			action: "update" | "delete" | "reprint",
+			createdById: number | null | undefined,
+		): boolean => {
+			if (!authEnabled) return true; // Auth disabled, allow all
+			if (isAdmin) return true; // Admins can modify anything
 
-    const allPerm = `${resource}:${action}_all` as Permission;
-    const ownPerm = `${resource}:${action}_own` as Permission;
+			const allPerm = `${resource}:${action}_all` as Permission;
+			const ownPerm = `${resource}:${action}_own` as Permission;
 
-    // User has *_all permission - can modify any item
-    if (permissionSet.has(allPerm)) return true;
+			// User has *_all permission - can modify any item
+			if (permissionSet.has(allPerm)) return true;
 
-    // User has *_own permission - can only modify their own items
-    if (permissionSet.has(ownPerm)) {
-      // Ownerless items (null created_by_id) require *_all permission
-      if (createdById == null) return false;
-      return createdById === user?.id;
-    }
+			// User has *_own permission - can only modify their own items
+			if (permissionSet.has(ownPerm)) {
+				// Ownerless items (null created_by_id) require *_all permission
+				if (createdById == null) return false;
+				return createdById === user?.id;
+			}
 
-    return false;
-  }, [authEnabled, isAdmin, permissionSet, user?.id]);
+			return false;
+		},
+		[authEnabled, isAdmin, permissionSet, user?.id],
+	);
 
-  return (
-    <AuthContext.Provider
-      value={{
-        user,
-        authEnabled,
-        requiresSetup,
-        loading,
-        isAdmin,
-        login,
-        loginWithToken,
-        logout,
-        refreshUser,
-        refreshAuth,
-        hasPermission,
-        hasAnyPermission,
-        hasAllPermissions,
-        canModify,
-      }}
-    >
-      {children}
-    </AuthContext.Provider>
-  );
+	return (
+		<AuthContext.Provider
+			value={{
+				user,
+				authEnabled,
+				requiresSetup,
+				loading,
+				isAdmin,
+				login,
+				loginWithToken,
+				logout,
+				refreshUser,
+				refreshAuth,
+				hasPermission,
+				hasAnyPermission,
+				hasAllPermissions,
+				canModify,
+			}}
+		>
+			{children}
+		</AuthContext.Provider>
+	);
 }
 
 export function useAuth() {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
+	const context = useContext(AuthContext);
+	if (context === undefined) {
+		throw new Error("useAuth must be used within an AuthProvider");
+	}
+	return context;
 }

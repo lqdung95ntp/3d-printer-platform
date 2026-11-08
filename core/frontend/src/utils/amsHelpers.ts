@@ -93,7 +93,7 @@ export function resolveSlotExtruder(
 export function getAmsLabel(amsId: number | string, trayCount: number): string {
 	const id = typeof amsId === "string" ? parseInt(amsId, 10) : amsId;
 	const safeId = isNaN(id) ? 0 : id;
-	if (safeId === 255) return "External";
+	if (safeId === 255) return "Ext";
 	// A2L "AMS Lite": the backend normalises its physical unit id 16 to 6 at
 	// ingest (see a2l-am-unit-16). No regular AMS uses id 6, so this is a safe,
 	// self-scoping label for the Lite's 4-slot unit.
@@ -1121,9 +1121,7 @@ function findTrayBySlot(ams: AMSUnit, trayId: number): AMSTray | undefined {
 	return ams.tray.find((tray) => tray.id === trayId) ?? ams.tray[trayId];
 }
 
-function activeSlotCandidates(
-	status?: PrinterStatus,
-): Array<{
+function activeSlotCandidates(status?: PrinterStatus): Array<{
 	amsId: number;
 	trayId: number;
 	globalTrayId: number;
@@ -1184,9 +1182,7 @@ function activeSlotCandidates(
 	return candidates;
 }
 
-function fallbackSlotCandidates(
-	status?: PrinterStatus,
-): Array<{
+function fallbackSlotCandidates(status?: PrinterStatus): Array<{
 	amsId: number;
 	trayId: number;
 	globalTrayId: number;

@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import en from '../../i18n/locales/en';
 import de from '../../i18n/locales/de';
+import vi from '../../i18n/locales/vi';
 
 /**
  * Recursively extracts all keys from a nested object as dot-notation paths.
@@ -18,6 +19,21 @@ const getKeys = (obj: object, prefix = ''): string[] => {
 describe('i18n locale parity', () => {
   const enKeys = new Set(getKeys(en));
   const deKeys = new Set(getKeys(de));
+  const viKeys = new Set(getKeys(vi));
+
+  it('Vietnamese locale has all English keys', () => {
+    const missingInVietnamese = [...enKeys].filter((k) => !viKeys.has(k)).sort();
+    expect(missingInVietnamese, `Missing ${missingInVietnamese.length} key(s) in Vietnamese locale`).toEqual([]);
+  });
+
+  it('English locale has all Vietnamese keys', () => {
+    const missingInEnglish = [...viKeys].filter((k) => !enKeys.has(k)).sort();
+    expect(missingInEnglish, `Missing ${missingInEnglish.length} key(s) in English locale`).toEqual([]);
+  });
+
+  it('Vietnamese and English locales have the same number of keys', () => {
+    expect(viKeys.size).toBe(enKeys.size);
+  });
 
   it('German locale has all English keys', () => {
     const missingInGerman = [...enKeys].filter((k) => !deKeys.has(k)).sort();

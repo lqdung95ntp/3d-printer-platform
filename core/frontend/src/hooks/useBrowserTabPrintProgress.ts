@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { appAssetPath } from '../utils/assetPaths';
 import { useTheme } from '../contexts/ThemeContext';
+import { formatDuration } from '../utils/date';
 
 type PrinterStatusDetail = {
   printer_id?: number;
@@ -82,10 +83,14 @@ export interface UseBrowserTabPrintProgressOptions {
 
 export function useBrowserTabPrintProgress(options?: UseBrowserTabPrintProgressOptions) {
   let progressInTitle = true;
+  let tabDisplay: 'percentage' | 'time' = 'percentage';
   try {
     const theme = useTheme();
     if (theme && typeof theme.progressInTitle === 'boolean') {
       progressInTitle = theme.progressInTitle;
+    }
+    if (theme && (theme.tabDisplay === 'percentage' || theme.tabDisplay === 'time')) {
+      tabDisplay = theme.tabDisplay;
     }
   } catch {
     // Outside of ThemeProvider (e.g. unit tests)
@@ -158,9 +163,14 @@ export function useBrowserTabPrintProgress(options?: UseBrowserTabPrintProgressO
     }
 
     const progress = Math.max(0, Math.min(100, Math.round(displayed.progress)));
-    document.title = `${progress}% · ${baseTitle}`;
+    const remaining = displayed.remainingTime;
+    const titleValue =
+      tabDisplay === 'time' && remaining != null && Number.isFinite(remaining) && remaining > 0
+        ? formatDuration(remaining * 60)
+        : `${progress}%`;
+    document.title = `${titleValue} · ${baseTitle}`;
     if (icon) icon.href = buildProgressFavicon(progress);
-  }, [version, baseTitle, baseFavicon, progressInTitle]);
+  }, [version, baseTitle, baseFavicon, progressInTitle, tabDisplay]);
 
   useEffect(() => {
     return () => {

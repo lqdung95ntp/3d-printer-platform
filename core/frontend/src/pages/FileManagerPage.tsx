@@ -34,7 +34,6 @@ import {
 	Cog,
 	Printer,
 	Pencil,
-	Play,
 	Image,
 	User,
 	Box,
@@ -968,7 +967,6 @@ interface FileCardProps {
 	onSelect: (id: number) => void;
 	onDelete: (id: number) => void;
 	onDownload: (id: number) => void;
-	onAddToQueue?: (id: number) => void;
 	onPrint?: (file: LibraryFileListItem) => void;
 	onSlice?: (file: LibraryFileListItem) => void;
 	useSlicerApi?: boolean;
@@ -994,7 +992,6 @@ function FileCard({
 	onSelect,
 	onDelete,
 	onDownload,
-	onAddToQueue,
 	onPrint,
 	onSlice,
 	useSlicerApi,
@@ -1116,22 +1113,22 @@ function FileCard({
 							{onPrint && isSlicedFilename(file.filename) && (
 								<button
 									className={`w-full px-3 py-1.5 text-left text-sm flex items-center gap-2 ${
-										hasPermission("printers:control")
+										hasPermission("queue:create")
 											? "text-bambu-green hover:bg-bambu-dark"
 											: "text-bambu-gray cursor-not-allowed"
 									}`}
 									onClick={() => {
-										if (hasPermission("printers:control")) {
+										if (hasPermission("queue:create")) {
 											onPrint(file);
 											setShowActions(false);
 										}
 									}}
-									disabled={
-										!hasPermission("printers:control")
-									}
+									disabled={!hasPermission("queue:create")}
 									title={
-										!hasPermission("printers:control")
-											? t("fileManager.noPermissionPrint")
+										!hasPermission("queue:create")
+											? t(
+													"fileManager.noPermissionAddToQueue",
+												)
 											: undefined
 									}
 								>
@@ -1139,35 +1136,6 @@ function FileCard({
 									{t("common.print")}
 								</button>
 							)}
-							{onAddToQueue &&
-								isSlicedFilename(file.filename) && (
-									<button
-										className={`w-full px-3 py-1.5 text-left text-sm flex items-center gap-2 ${
-											hasPermission("queue:create")
-												? "text-white hover:bg-bambu-dark"
-												: "text-bambu-gray cursor-not-allowed"
-										}`}
-										onClick={() => {
-											if (hasPermission("queue:create")) {
-												onAddToQueue(file.id);
-												setShowActions(false);
-											}
-										}}
-										disabled={
-											!hasPermission("queue:create")
-										}
-										title={
-											!hasPermission("queue:create")
-												? t(
-														"fileManager.noPermissionAddToQueue",
-													)
-												: undefined
-										}
-									>
-										<Clock className="w-3.5 h-3.5" />
-										{t("fileManager.schedulePrint")}
-									</button>
-								)}
 							{onSlice &&
 								useSlicerApi &&
 								isSliceableFilename(file.filename) && (
@@ -1466,10 +1434,6 @@ export function FileManagerPage() {
 	const [printFile, setPrintFile] = useState<LibraryFileListItem | null>(
 		null,
 	);
-	const [printMultiFile, setPrintMultiFile] =
-		useState<LibraryFileListItem | null>(null);
-	const [scheduleFile, setScheduleFile] =
-		useState<LibraryFileListItem | null>(null);
 	const [sliceFile, setSliceFile] = useState<LibraryFileListItem | null>(
 		null,
 	);
@@ -2732,40 +2696,7 @@ export function FileManagerPage() {
 												variant="primary"
 												size="sm"
 												onClick={() =>
-													setPrintMultiFile(
-														selectedSlicedFiles[0],
-													)
-												}
-												disabled={
-													!hasPermission(
-														"printers:control",
-													)
-												}
-												title={
-													!hasPermission(
-														"printers:control",
-													)
-														? t(
-																"fileManager.noPermissionPrint",
-															)
-														: undefined
-												}
-											>
-												<Play className="w-4 h-4 sm:mr-1" />
-												<span className="hidden sm:inline">
-													{t("common.print")}
-												</span>
-											</Button>
-										)}
-										{selectedSlicedFiles.length === 1 && (
-											<Button
-												variant="secondary"
-												size="sm"
-												// Note: Schedule dialog (PrintModal) is designed for single file at a time
-												// but supports scheduling to multiple printers. This provides more control
-												// over scheduling options compared to the previous bulk queue mutation.
-												onClick={() =>
-													setScheduleFile(
+													setPrintFile(
 														selectedSlicedFiles[0],
 													)
 												}
@@ -2784,11 +2715,9 @@ export function FileManagerPage() {
 														: undefined
 												}
 											>
-												<Clock className="w-4 h-4 sm:mr-1" />
+												<Printer className="w-4 h-4 sm:mr-1" />
 												<span className="hidden sm:inline">
-													{t(
-														"fileManager.schedulePrint",
-													)}
+													{t("common.print")}
 												</span>
 											</Button>
 										)}
@@ -2978,12 +2907,6 @@ export function FileManagerPage() {
 											})
 										}
 										onDownload={handleDownload}
-										onAddToQueue={(id) => {
-											const file = files?.find(
-												(f) => f.id === id,
-											);
-											if (file) setScheduleFile(file);
-										}}
 										onPrint={setPrintFile}
 										onSlice={setSliceFile}
 										useSlicerApi={
@@ -3169,79 +3092,36 @@ export function FileManagerPage() {
 											{isSlicedFilename(
 												file.filename,
 											) && (
-												<>
-													<button
-														onClick={() =>
-															hasPermission(
-																"printers:control",
-															) &&
-															setPrintFile(file)
-														}
-														className={`p-1.5 rounded transition-colors ${
-															hasPermission(
-																"printers:control",
-															)
-																? "hover:bg-bambu-dark text-bambu-gray hover:text-bambu-green"
-																: "text-bambu-gray/50 cursor-not-allowed"
-														}`}
-														title={
-															hasPermission(
-																"printers:control",
-															)
-																? t(
-																		"common.print",
-																	)
-																: t(
-																		"fileManager.noPermissionPrint",
-																	)
-														}
-														disabled={
-															!hasPermission(
-																"printers:control",
-															)
-														}
-													>
-														<Printer className="w-4 h-4" />
-													</button>
-													<button
-														onClick={() => {
-															if (
-																hasPermission(
-																	"queue:create",
+												<button
+													onClick={() =>
+														hasPermission(
+															"queue:create",
+														) && setPrintFile(file)
+													}
+													className={`p-1.5 rounded transition-colors ${
+														hasPermission(
+															"queue:create",
+														)
+															? "hover:bg-bambu-dark text-bambu-gray hover:text-bambu-green"
+															: "text-bambu-gray/50 cursor-not-allowed"
+													}`}
+													title={
+														hasPermission(
+															"queue:create",
+														)
+															? t("common.print")
+															: t(
+																	"fileManager.noPermissionAddToQueue",
 																)
-															) {
-																setScheduleFile(
-																	file,
-																);
-															}
-														}}
-														className={`p-1.5 rounded transition-colors ${
-															hasPermission(
-																"queue:create",
-															)
-																? "hover:bg-bambu-dark text-bambu-gray hover:text-white"
-																: "text-bambu-gray/50 cursor-not-allowed"
-														}`}
-														title={
-															hasPermission(
-																"queue:create",
-															)
-																? t(
-																		"fileManager.schedulePrint",
-																	)
-																: t(
-																		"fileManager.noPermissionAddToQueue",
-																	)
-														}
-														disabled={
-															!hasPermission(
-																"queue:create",
-															)
-														}
-													>
-														<Clock className="w-4 h-4" />
-													</button>
-												</>
+													}
+													disabled={
+														!hasPermission(
+															"queue:create",
+														)
+													}
+												>
+													<Printer className="w-4 h-4" />
+												</button>
 											)}
 											{(settings?.use_slicer_api ??
 												false) &&
@@ -3622,32 +3502,12 @@ export function FileManagerPage() {
 
 			{printFile && (
 				<PrintModal
-					mode="reprint"
+					mode="create"
 					libraryFileId={printFile.id}
 					archiveName={printFile.print_name || printFile.filename}
 					onClose={() => setPrintFile(null)}
 					onSuccess={() => {
 						setPrintFile(null);
-						queryClient.invalidateQueries({
-							queryKey: ["library-files"],
-						});
-						queryClient.invalidateQueries({
-							queryKey: ["archives"],
-						});
-					}}
-				/>
-			)}
-
-			{printMultiFile && (
-				<PrintModal
-					mode="reprint"
-					libraryFileId={printMultiFile.id}
-					archiveName={
-						printMultiFile.print_name || printMultiFile.filename
-					}
-					onClose={() => setPrintMultiFile(null)}
-					onSuccess={() => {
-						setPrintMultiFile(null);
 						setSelectedFiles([]);
 						queryClient.invalidateQueries({
 							queryKey: ["library-files"],
@@ -3655,27 +3515,8 @@ export function FileManagerPage() {
 						queryClient.invalidateQueries({
 							queryKey: ["archives"],
 						});
-					}}
-				/>
-			)}
-
-			{scheduleFile && (
-				<PrintModal
-					mode="add-to-queue"
-					libraryFileId={scheduleFile.id}
-					archiveName={
-						scheduleFile.print_name || scheduleFile.filename
-					}
-					onClose={() => setScheduleFile(null)}
-					onSuccess={() => {
-						setScheduleFile(null);
-						setSelectedFiles([]);
 						queryClient.invalidateQueries({
-							queryKey: ["library-files"],
-						});
-						queryClient.invalidateQueries({ queryKey: ["queue"] });
-						queryClient.invalidateQueries({
-							queryKey: ["archives"],
+							queryKey: ["queue"],
 						});
 					}}
 				/>

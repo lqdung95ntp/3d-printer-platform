@@ -221,8 +221,9 @@ import {
 	type PrinterState,
 } from "../components/BulkPrinterToolbar";
 import { FileManagerModal } from "../components/FileManagerModal";
-import { EmbeddedCameraViewer } from "../components/EmbeddedCameraViewer";
 import { CameraWall } from "../components/CameraWall";
+import { DEFAULT_CAM_WALL_TILE_SIZE } from "../components/camWallTileSize";
+import { useEmbeddedCameras } from "../contexts/EmbeddedCameraContext";
 import { ContextMenu, type ContextMenuItem } from "../components/ContextMenu";
 import { MQTTDebugModal } from "../components/MQTTDebugModal";
 import {
@@ -7966,12 +7967,6 @@ function PrinterCard({
 																| "up"
 																| "down",
 														) => {
-															const opensGap =
-																zMovesToolhead
-																	? arrow ===
-																		"up"
-																	: arrow ===
-																		"down";
 															// No not-homed gate here, and no endstop bypass to gate either:
 															// since #2579 the jog is a bare move that never touches M211. That
 															// does not make it clamped — the firmware ignores soft endstops on
@@ -7979,7 +7974,8 @@ function PrinterCard({
 															bedJogMutation.mutate(
 																{
 																	distance:
-																		opensGap
+																		arrow ===
+																		"up"
 																			? bedJogStep
 																			: -bedJogStep,
 																},
@@ -8093,7 +8089,7 @@ function PrinterCard({
 																							onClick={() =>
 																								requestXyJog(
 																									0,
-																									bedJogStep,
+																									-bedJogStep,
 																								)
 																							}
 																							disabled={
@@ -8171,7 +8167,7 @@ function PrinterCard({
 																							onClick={() =>
 																								requestXyJog(
 																									0,
-																									-bedJogStep,
+																									bedJogStep,
 																								)
 																							}
 																							disabled={
@@ -16736,6 +16732,13 @@ export function PrintersPage() {
 	});
 	// Cam-wall settings — per-user, no backend write (a Pi 4 install caps the
 	// live count lower than a NUC; default 4 is the documented Pi 4 ceiling).
+	const [camWallTileSize, setCamWallTileSize] = useState<number>(() => {
+		const saved = parseInt(
+			localStorage.getItem("camWallTileSize") || "",
+			10,
+		);
+		return saved >= 1 && saved <= 4 ? saved : DEFAULT_CAM_WALL_TILE_SIZE;
+	});
 	const [camWallMaxLive, setCamWallMaxLive] = useState<number>(() => {
 		const saved = parseInt(
 			localStorage.getItem("camWallMaxLive") || "",
@@ -16841,38 +16844,7 @@ export function PrintersPage() {
 	// stored setting below can act as the default a fresh browser starts from.
 	const [chosenCameraViewMode, setChosenCameraViewMode] =
 		useState<CameraViewMode | null>(() => readStoredCameraViewMode());
-	// Embedded camera viewer state - supports multiple simultaneous viewers
-	// Persisted to localStorage so cameras reopen after navigation
-	const [embeddedCameraPrinters, setEmbeddedCameraPrinters] = useState<
-		Map<number, { id: number; name: string }>
-	>(() => {
-		const saved = localStorage.getItem("openEmbeddedCameras");
-		if (saved) {
-			try {
-				const cameras = JSON.parse(saved) as Array<{
-					id: number;
-					name: string;
-				}>;
-				return new Map(cameras.map((c) => [c.id, c]));
-			} catch {
-				return new Map();
-			}
-		}
-		return new Map();
-	});
-
-	// Persist open cameras to localStorage when they change
-	useEffect(() => {
-		const cameras = Array.from(embeddedCameraPrinters.values());
-		if (cameras.length > 0) {
-			localStorage.setItem(
-				"openEmbeddedCameras",
-				JSON.stringify(cameras),
-			);
-		} else {
-			localStorage.removeItem("openEmbeddedCameras");
-		}
-	}, [embeddedCameraPrinters]);
+	const { openEmbeddedCamera } = useEmbeddedCameras();
 
 	const { data: printers, isLoading } = useQuery({
 		queryKey: ["printers"],
@@ -17913,23 +17885,34 @@ export function PrintersPage() {
 				</RouterLink>
 			)}
 
-			{/* Card size selector */}
+			{/* Card / CamWall tile size selector */}
 			<div
-				className={`flex h-8 items-center bg-bambu-dark rounded-lg border border-bambu-dark-tertiary ${pageView === "camwall" ? "opacity-40 pointer-events-none" : ""} ${inMenu ? "w-full" : ""}`}
+				className={`flex h-8 items-center bg-bambu-dark rounded-lg border border-bambu-dark-tertiary ${inMenu ? "w-full" : ""}`}
 			>
 				{cardSizeLabels.map((label, index) => {
 					const size = index + 1;
-					const isSelected = cardSize === size;
+					const isSelected =
+						(pageView === "camwall"
+							? camWallTileSize
+							: cardSize) === size;
 					return (
 						<button
 							key={label}
 							onClick={() => {
-								setCompactDrilldownPrinterId(null);
-								setCardSize(size);
-								localStorage.setItem(
-									"printerCardSize",
-									String(size),
-								);
+								if (pageView === "camwall") {
+									setCamWallTileSize(size);
+									localStorage.setItem(
+										"camWallTileSize",
+										String(size),
+									);
+								} else {
+									setCompactDrilldownPrinterId(null);
+									setCardSize(size);
+									localStorage.setItem(
+										"printerCardSize",
+										String(size),
+									);
+								}
 							}}
 							className={`h-full px-2 text-xs font-medium transition-colors ${inMenu ? "flex-1" : ""} ${
 								index === 0 ? "rounded-l-lg" : ""
@@ -18201,15 +18184,14 @@ export function PrintersPage() {
 			) : pageView === "camwall" ? (
 				<CameraWall
 					printers={sortedPrinters}
+					tileSize={camWallTileSize}
 					maxLive={camWallMaxLive}
 					snapshotIntervalSec={camWallSnapshotSec}
 					onTileClick={(id, name) => {
 						// A wall tile has no room for a split button, so it follows the
 						// mode the card buttons last chose.
 						if (cameraViewMode === "embedded") {
-							setEmbeddedCameraPrinters((prev) =>
-								new Map(prev).set(id, { id, name }),
-							);
+							openEmbeddedCamera(id, name);
 						} else {
 							openCameraWindow(id);
 						}
@@ -18383,14 +18365,8 @@ export function PrintersPage() {
 												"system"
 											}
 											cameraViewMode={cameraViewMode}
-											onOpenEmbeddedCamera={(id, name) =>
-												setEmbeddedCameraPrinters(
-													(prev) =>
-														new Map(prev).set(id, {
-															id,
-															name,
-														}),
-												)
+											onOpenEmbeddedCamera={
+												openEmbeddedCamera
 											}
 											onSelectCameraViewMode={
 												selectCameraViewMode
@@ -18505,11 +18481,7 @@ export function PrintersPage() {
 							}
 							timeFormat={settings?.time_format || "system"}
 							cameraViewMode={cameraViewMode}
-							onOpenEmbeddedCamera={(id, name) =>
-								setEmbeddedCameraPrinters((prev) =>
-									new Map(prev).set(id, { id, name }),
-								)
-							}
+							onOpenEmbeddedCamera={openEmbeddedCamera}
 							onSelectCameraViewMode={selectCameraViewMode}
 							checkPrinterFirmware={firmwareChecksOn}
 							dryingPresets={effectiveDryingPresets}
@@ -18630,25 +18602,6 @@ export function PrintersPage() {
 					onConfirm={() => executeBulkAction("clearPlate")}
 					onCancel={() => setBulkConfirmAction(null)}
 				/>
-			)}
-
-			{/* Embedded Camera Viewers - multiple viewers can be open simultaneously */}
-			{Array.from(embeddedCameraPrinters.values()).map(
-				(camera, index) => (
-					<EmbeddedCameraViewer
-						key={camera.id}
-						printerId={camera.id}
-						printerName={camera.name}
-						viewerIndex={index}
-						onClose={() =>
-							setEmbeddedCameraPrinters((prev) => {
-								const next = new Map(prev);
-								next.delete(camera.id);
-								return next;
-							})
-						}
-					/>
-				),
 			)}
 		</div>
 	);

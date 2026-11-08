@@ -32,6 +32,17 @@ export default {
     installAppSuccess: 'Printbuddy was installed',
   },
 
+  cameraLauncher: {
+    title: 'Cameras (C)',
+    noPrinters: 'No printers available',
+    open: 'Open camera overlay',
+    close: 'Close camera overlay',
+  },
+
+  shortcuts: {
+    openCameras: 'Open cameras overlay (C)',
+  },
+
   // Common
   common: {
     save: 'Save',
@@ -1044,7 +1055,6 @@ export default {
     batchCancelled: 'Remaining batch items cancelled',
     cancelBatchConfirmTitle: 'Cancel Batch',
     cancelBatchConfirmMessage: 'Cancel all remaining pending items in this batch?',
-    batch: 'Batch',
     // Sections
     sections: {
       currentlyPrinting: 'Currently Printing',
@@ -1094,6 +1104,8 @@ export default {
       requiresPrevious: 'Requires previous success',
       autoPowerOff: 'Auto power off',
       gcodeInjection: 'G-code',
+      confirmOutcome: 'Outcome prompt',
+      confirmOutcomeTitle: 'Asks how the print came out after it completes',
     },
     // Empty state
     empty: {
@@ -1108,12 +1120,15 @@ export default {
       lessThanMinute: 'In less than a minute',
       inMinutes: 'In {{count}} min',
       inHours: 'In {{count}} hours',
+      etaIfStartedNow: 'Completion time if this job started now',
+      whenFree: 'When a printer is free',
     },
     // Actions
     actions: {
       stopPrint: 'Stop Print',
       startPrint: 'Start Print',
       requeue: 'Re-queue',
+      forcePrint: 'Force Print (Skip build plate check)',
     },
     // Bulk edit
     bulkEdit: {
@@ -1126,11 +1141,13 @@ export default {
       staged: 'Staged (manual start)',
       autoPowerOff: 'Auto power off after print',
       requirePrevious: 'Require previous success',
+      confirmOutcome: 'Ask for outcome',
       printOptions: 'Print Options',
       bedLevelling: 'Bed levelling',
       flowCalibration: 'Flow calibration',
       vibrationCalibration: 'Vibration calibration',
       layerInspection: 'First layer inspection',
+      nozzleOffsetCali: 'Nozzle offset calibration',
       timelapse: 'Timelapse',
       useAms: 'Use AMS',
       applyChanges: 'Apply Changes',
@@ -1171,6 +1188,14 @@ export default {
       updateFailed: 'Failed to update items',
       bulkCancelled: 'Cancelled {{count}} item(s)',
       bulkCancelFailed: 'Failed to cancel items',
+      keptForOrder: 'Cancelled instead of removed: this is the only run its batch order can re-queue this plate from',
+      historyKeptForOrders: 'Cleared history ({{kept}} kept for active batch orders)',
+      batchCreated: 'Batch "{{name}}" created',
+      batchCreateFailed: 'Failed to create batch',
+      batchUngrouped: 'Ungrouped {{count}} item(s)',
+      batchUngroupFailed: 'Failed to ungroup batch',
+      resumedAfterFailure: 'Resumed queue — {{restored}} job(s) restored to pending',
+      resumeAfterFailureFailed: 'Failed to resume queue',
     },
     // Timeline view
     timeline: {
@@ -1183,6 +1208,13 @@ export default {
       filterAll: 'Show All',
       filterPrinting: 'Printing',
       filterQueued: 'Queued',
+      nothingCommitted: 'No committed schedules in this window. Staged items, waiting items, and ASAP jobs on idle printers are not shown — set a scheduled time or release a staged item to see it here.',
+      printerColumnHeader: 'Printer',
+      window: {
+        back12h: 'Back 12 hours',
+        forward12h: 'Forward 12 hours',
+        now: 'Now',
+      },
       time: {
         anyMoment: 'any moment',
         minutesLeft: '{{minutes}}m left',
@@ -1206,6 +1238,93 @@ export default {
       noClearHistory: 'You do not have permission to clear all history',
       noEditItems: 'You do not have permission to edit queue items',
       noCancelItems: 'You do not have permission to cancel queue items',
+    },
+    slicerAmsMapping: {
+      rowBadge: 'AMS slots saved for this printer',
+      rowTooltip: 'This archive carries the exact AMS slots the slicer picked, saved for the printer this item targets. A reprint on it can reuse those trays instead of matching again by type and colour.',
+    },
+    printQueuedWillStartWhenIdle: 'Will start when printer is idle',
+    plateQuantityLabel: 'Runs of {{plate}}',
+    plateQuantityTotal_one: '{{count}} run in total',
+    plateQuantityTotal_other: '{{count}} runs in total',
+    batchOrders: {
+      title: 'Batch Orders',
+      emptyTitle: 'No batch orders',
+      emptyDescription: 'Queue a multi-plate file, or more than one copy of a plate, and the order shows up here with its progress.',
+      filter: {
+        active: 'Active',
+        completed: 'Completed',
+        cancelled: 'Cancelled',
+        all: 'All',
+      },
+      status: {
+        active: 'Active',
+        completed: 'Completed',
+        cancelled: 'Cancelled',
+      },
+      noTargets: 'Grouping only',
+      noTargetsHint: 'Created before per-plate targets existed, so it tracks the runs it queued rather than a target.',
+      dispatchRemaining: 'Queue {{count}} remaining',
+      dispatchPlate: 'Queue remaining',
+      strandedPlate: 'Nothing left to copy settings from',
+      strandedNotice: 'Cannot queue {{runs}} of the {{owed}} runs still owed: that plate has no queued or finished run left to copy settings from. Queue the plate once from the file, or cancel the order.',
+      dispatched: 'Queued the remaining runs for {{name}}',
+      plateProgress: '{{completed}} of {{target}} done',
+      remaining: '{{count}} still owed',
+      failed: '{{count}} failed',
+      printing: '{{count}} printing',
+      wholeFile: 'Whole file',
+      due: 'Due {{date}}',
+      costSoFar: '{{amount}} so far',
+      costRemaining: '({{amount}} to go)',
+    },
+    batch: {
+      defaultName: 'Batch',
+      label: '{{count}} item',
+      label_plural: '{{count}} items',
+      pendingCount: '{{count}} pending',
+      pendingCount_plural: '{{count}} pending',
+      expand: 'Expand batch',
+      collapse: 'Collapse batch',
+      groupAsBatch: 'Group as batch…',
+      groupAsBatchDescription: 'Combine the {{count}} selected items into a single collapsible batch.',
+      nameLabel: 'Batch name',
+      namePlaceholder: 'e.g. Friday gifts',
+      create: 'Create batch',
+      ungroup: 'Ungroup',
+      ungroupConfirmTitle: 'Ungroup batch?',
+      ungroupConfirmMessage: 'The items will stay in the queue but no longer be grouped together.',
+      dragGroup: 'Drag group',
+    },
+    tabs: {
+      batches: 'Batches',
+      queue: 'Queue',
+      history: 'History',
+      timeline: 'Timeline',
+      pipelines: 'Pipelines',
+    },
+    layout: {
+      flatList: 'List',
+      byPrinter: 'By Printer',
+      groupByPrinter: 'Group by Printer',
+    },
+    history: {
+      emptyTitle: 'No history yet',
+      emptyDescription: 'Completed, cancelled, and failed prints will appear here.',
+      showMore: 'Show more',
+      showingCount: 'Showing {{shown}} of {{total}}',
+    },
+    dragGhost: {
+      multiCount: '{{count}} items',
+      batch: '{{name}} ({{count}} copy)',
+      batch_plural: '{{name}} ({{count}} copies)',
+    },
+    resumeAfterFailure: {
+      banner: '{{printer}} is blocked by a previous-print failure — {{count}} job(s) skipped',
+      bannerHint: 'Fix the printer issue, then resume to restore the skipped jobs and clear the gate.',
+      button: 'Resume after failure',
+      confirmTitle: 'Resume queue after failure?',
+      confirmMessage: 'Restore {{count}} skipped job(s) on {{printer}} to pending and clear the previous-print gate. Make sure the printer is ready before continuing.',
     },
   },
 
@@ -2177,6 +2296,10 @@ export default {
     themeToggleHint: 'Toggle between dark and light mode using the sun/moon icon in the sidebar.',
     progressInTitle: 'Print progress in tab',
     progressInTitleDescription: "Show the active print's percentage and a progress ring in the browser tab.",
+    tabDisplay: 'Tab display',
+    tabDisplayHint: 'Display percentage or time remaining on the browser tab title.',
+    tabDisplayPercentage: 'Percentage',
+    tabDisplayTime: 'Remaining time',
     // Archive
     autoArchivePrints: 'Auto-archive prints',
     autoArchiveDescription: 'Automatically save 3MF files when prints complete',
@@ -2203,6 +2326,21 @@ export default {
     cameraSnapshotUrlPlaceholder: 'http://192.168.1.61:1984/api/frame.jpeg?src=printer',
     cameraSnapshotUrlHelp: 'Single-frame URL used for notification thumbnails, finish photos, layer-timelapse frames, and plate detection. Timelapse and plate detection each require their own per-printer toggle — this URL is just the image source they pull from when active. Leave blank to capture from the live stream above. Useful for go2rtc (/api/frame.jpeg) and IP cameras with a dedicated snapshot endpoint.',
     cameraRotation: 'Rotation',
+    cameraLightMode: 'Chamber light for camera',
+    cameraLightOff: 'Off',
+    cameraLightAll: 'Turn on for all printers',
+    cameraLightSelected: 'Turn on for selected printers',
+    cameraLightDescription: 'Automatically turn on the chamber light while viewing camera or capturing snapshots, and turn it off 15 seconds after.',
+    cameraLightDelay: 'Snapshot wait delay (seconds)',
+    cameraLightAutoForPrinter: 'Turn on chamber light on camera use',
+    usbCameraDevice: 'USB Camera Device',
+    usbCameraSearching: 'Scanning video devices...',
+    usbCameraSelect: 'Select a USB camera device...',
+    usbCameraNotFound: 'Device not found ({{device}})',
+    usbCameraRefresh: 'Refresh device list',
+    usbCameraListFailed: 'Failed to list video devices.',
+    usbCameraNoneFound: 'No V4L2 video devices detected.',
+    usbCameraEnterManually: 'Enter path manually...',
     test: 'Test',
     connected: 'Connected',
     disconnected: 'Disconnected',
@@ -2347,6 +2485,18 @@ export default {
       linkedAccounts: 'Linked SSO Accounts',
       linkedAccountsDesc: 'These external identity providers are linked to your account.',
       oidcUnlinked: 'Account unlinked.',
+    },
+
+    // Session Policy (#1706) — admin-configurable session lifetime ceiling.
+    sessionPolicy: {
+      title: 'Session Policy',
+      description: 'Maximum session lifetime for new user logins. Already-issued tokens keep their original expiry.',
+      preset24h: '24 hours',
+      preset7d: '7 days',
+      preset30d: '30 days',
+      customHoursLabel: 'Custom session lifetime in hours',
+      hoursSuffix: 'hours',
+      warning: 'Longer sessions reduce automatic logout protection. Recommended only for trusted single-user deployments.',
     },
 
     // OIDC provider settings
@@ -4845,6 +4995,7 @@ export default {
       webhook: 'Webhook',
       homeassistant: 'Home Assistant',
       notify: 'Notify',
+      gotify: 'Gotify',
     },
     // Provider descriptions
     providerDescriptions: {
@@ -4857,6 +5008,7 @@ export default {
       webhook: 'Generic HTTP POST to any URL',
       homeassistant: 'Persistent notifications in Home Assistant dashboard',
       notify: 'Push notifications through the Notify app',
+      gotify: 'Self-hosted push notifications via Gotify',
     },
     // NotificationProviderCard
     lastSuccess: 'Last: {{date}}',

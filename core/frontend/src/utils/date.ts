@@ -6,100 +6,115 @@
  * displayed in the user's local timezone.
  */
 
-export type TimeFormat = 'system' | '12h' | '24h';
-export type DateFormat = 'system' | 'us' | 'eu' | 'iso';
+export type TimeFormat = "system" | "12h" | "24h";
+export type DateFormat = "system" | "us" | "eu" | "iso";
 
 /**
  * Get the date input placeholder based on format setting.
  */
-export function getDatePlaceholder(dateFormat: DateFormat = 'system'): string {
-  const resolved = dateFormat === 'system' ? detectSystemDateFormat() : dateFormat;
-  switch (resolved) {
-    case 'us': return 'MM/DD/YYYY';
-    case 'eu': return 'DD/MM/YYYY';
-    case 'iso': return 'YYYY-MM-DD';
-    default: return resolved satisfies never;
-  }
+export function getDatePlaceholder(dateFormat: DateFormat = "system"): string {
+	const resolved =
+		dateFormat === "system" ? detectSystemDateFormat() : dateFormat;
+	switch (resolved) {
+		case "us":
+			return "MM/DD/YYYY";
+		case "eu":
+			return "DD/MM/YYYY";
+		case "iso":
+			return "YYYY-MM-DD";
+		default:
+			return resolved satisfies never;
+	}
 }
 
 /**
  * Get the time input placeholder based on format setting.
  */
-export function getTimePlaceholder(timeFormat: TimeFormat = 'system'): string {
-  switch (timeFormat) {
-    case '12h':
-      return 'HH:MM AM/PM';
-    case '24h':
-      return 'HH:MM';
-    case 'system':
-    default: {
-      // Try to detect system format
-      const testDate = new Date(2000, 0, 1, 14, 30);
-      const formatted = testDate.toLocaleTimeString();
-      if (formatted.includes('PM') || formatted.includes('AM')) return 'HH:MM AM/PM';
-      return 'HH:MM';
-    }
-  }
+export function getTimePlaceholder(timeFormat: TimeFormat = "system"): string {
+	switch (timeFormat) {
+		case "12h":
+			return "HH:MM AM/PM";
+		case "24h":
+			return "HH:MM";
+		case "system":
+		default: {
+			// Try to detect system format
+			const testDate = new Date(2000, 0, 1, 14, 30);
+			const formatted = testDate.toLocaleTimeString();
+			if (formatted.includes("PM") || formatted.includes("AM"))
+				return "HH:MM AM/PM";
+			return "HH:MM";
+		}
+	}
 }
 
 /**
  * Format a Date object to a date string based on format setting.
  */
-export function formatDateInput(date: Date, dateFormat: DateFormat = 'system'): string {
-  const day = String(date.getDate()).padStart(2, '0');
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const year = date.getFullYear();
+export function formatDateInput(
+	date: Date,
+	dateFormat: DateFormat = "system",
+): string {
+	const day = String(date.getDate()).padStart(2, "0");
+	const month = String(date.getMonth() + 1).padStart(2, "0");
+	const year = date.getFullYear();
 
-  switch (dateFormat) {
-    case 'us':
-      return `${month}/${day}/${year}`;
-    case 'eu':
-      return `${day}/${month}/${year}`;
-    case 'iso':
-      return `${year}-${month}-${day}`;
-    case 'system':
-    default:
-      return date.toLocaleDateString();
-  }
+	switch (dateFormat) {
+		case "us":
+			return `${month}/${day}/${year}`;
+		case "eu":
+			return `${day}/${month}/${year}`;
+		case "iso":
+			return `${year}-${month}-${day}`;
+		case "system":
+		default:
+			return date.toLocaleDateString();
+	}
 }
 
 /**
  * Format a Date object to a time string based on format setting.
  */
-export function formatTimeInput(date: Date, timeFormat: TimeFormat = 'system'): string {
-  const hours24 = date.getHours();
-  const minutes = String(date.getMinutes()).padStart(2, '0');
+export function formatTimeInput(
+	date: Date,
+	timeFormat: TimeFormat = "system",
+): string {
+	const hours24 = date.getHours();
+	const minutes = String(date.getMinutes()).padStart(2, "0");
 
-  switch (timeFormat) {
-    case '12h': {
-      const hours12 = hours24 % 12 || 12;
-      const ampm = hours24 < 12 ? 'AM' : 'PM';
-      return `${hours12}:${minutes} ${ampm}`;
-    }
-    case '24h':
-      return `${String(hours24).padStart(2, '0')}:${minutes}`;
-    case 'system':
-    default:
-      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  }
+	switch (timeFormat) {
+		case "12h": {
+			const hours12 = hours24 % 12 || 12;
+			const ampm = hours24 < 12 ? "AM" : "PM";
+			return `${hours12}:${minutes} ${ampm}`;
+		}
+		case "24h":
+			return `${String(hours24).padStart(2, "0")}:${minutes}`;
+		case "system":
+		default:
+			return date.toLocaleTimeString([], {
+				hour: "2-digit",
+				minute: "2-digit",
+			});
+	}
 }
 
 /**
  * Split a date string by common separators (/, ., -).
  */
 function splitDateParts(value: string): string[] | null {
-  for (const sep of ['/', '.', '-']) {
-    const parts = value.split(sep);
-    if (parts.length === 3) return parts;
-  }
-  return null;
+	for (const sep of ["/", ".", "-"]) {
+		const parts = value.split(sep);
+		if (parts.length === 3) return parts;
+	}
+	return null;
 }
 
-function detectSystemDateFormat(): 'us' | 'eu' | 'iso' {
-  const formatted = new Date(2000, 11, 31).toLocaleDateString();
-  if (formatted.startsWith('12')) return 'us';
-  if (formatted.startsWith('31')) return 'eu';
-  return 'iso';
+function detectSystemDateFormat(): "us" | "eu" | "iso" {
+	const formatted = new Date(2000, 11, 31).toLocaleDateString();
+	if (formatted.startsWith("12")) return "us";
+	if (formatted.startsWith("31")) return "eu";
+	return "iso";
 }
 
 /**
@@ -107,76 +122,82 @@ function detectSystemDateFormat(): 'us' | 'eu' | 'iso' {
  * Returns null if parsing fails.
  * Supports common separators: / . -
  */
-export function parseDateInput(value: string, dateFormat: DateFormat = 'system'): Date | null {
-  if (!value) return null;
+export function parseDateInput(
+	value: string,
+	dateFormat: DateFormat = "system",
+): Date | null {
+	if (!value) return null;
 
-  const parts = splitDateParts(value);
-  if (!parts) return null;
+	const parts = splitDateParts(value);
+	if (!parts) return null;
 
-  const resolved = dateFormat === 'system' ? detectSystemDateFormat() : dateFormat;
-  let day: number, month: number, year: number;
+	const resolved =
+		dateFormat === "system" ? detectSystemDateFormat() : dateFormat;
+	let day: number, month: number, year: number;
 
-  switch (resolved) {
-    case 'us':
-      month = parseInt(parts[0], 10);
-      day = parseInt(parts[1], 10);
-      year = parseInt(parts[2], 10);
-      break;
-    case 'eu':
-      day = parseInt(parts[0], 10);
-      month = parseInt(parts[1], 10);
-      year = parseInt(parts[2], 10);
-      break;
-    case 'iso':
-      year = parseInt(parts[0], 10);
-      month = parseInt(parts[1], 10);
-      day = parseInt(parts[2], 10);
-      break;
-  }
+	switch (resolved) {
+		case "us":
+			month = parseInt(parts[0], 10);
+			day = parseInt(parts[1], 10);
+			year = parseInt(parts[2], 10);
+			break;
+		case "eu":
+			day = parseInt(parts[0], 10);
+			month = parseInt(parts[1], 10);
+			year = parseInt(parts[2], 10);
+			break;
+		case "iso":
+			year = parseInt(parts[0], 10);
+			month = parseInt(parts[1], 10);
+			day = parseInt(parts[2], 10);
+			break;
+	}
 
-  if (isNaN(day) || isNaN(month) || isNaN(year)) return null;
-  if (month < 1 || month > 12) return null;
-  if (day < 1 || day > 31) return null;
-  if (year < 1900 || year > 2100) return null;
+	if (isNaN(day) || isNaN(month) || isNaN(year)) return null;
+	if (month < 1 || month > 12) return null;
+	if (day < 1 || day > 31) return null;
+	if (year < 1900 || year > 2100) return null;
 
-  return new Date(year, month - 1, day);
+	return new Date(year, month - 1, day);
 }
 
 /**
  * Parse a time string. Handles both 12h (with AM/PM) and 24h formats.
  * Returns { hours, minutes } or null if parsing fails.
  */
-export function parseTimeInput(value: string): { hours: number; minutes: number } | null {
-  if (!value) return null;
+export function parseTimeInput(
+	value: string,
+): { hours: number; minutes: number } | null {
+	if (!value) return null;
 
-  const trimmed = value.trim();
+	const trimmed = value.trim();
 
-  const match = trimmed.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?$/i);
-  if (!match) return null;
+	const match = trimmed.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?$/i);
+	if (!match) return null;
 
-  let hours = parseInt(match[1], 10);
-  const minutes = parseInt(match[2], 10);
-  const ampm = match[3]?.toUpperCase();
+	let hours = parseInt(match[1], 10);
+	const minutes = parseInt(match[2], 10);
+	const ampm = match[3]?.toUpperCase();
 
-  if (ampm === 'PM' && hours < 12) hours += 12;
-  if (ampm === 'AM' && hours === 12) hours = 0;
+	if (ampm === "PM" && hours < 12) hours += 12;
+	if (ampm === "AM" && hours === 12) hours = 0;
 
-  if (hours < 0 || hours > 23) return null;
-  if (minutes < 0 || minutes > 59) return null;
+	if (hours < 0 || hours > 23) return null;
+	if (minutes < 0 || minutes > 59) return null;
 
-  return { hours, minutes };
+	return { hours, minutes };
 }
 
 /**
  * Convert a Date object to datetime-local input value (ISO format).
  */
 export function toDateTimeLocalValue(date: Date): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  const hours = String(date.getHours()).padStart(2, '0');
-  const minutes = String(date.getMinutes()).padStart(2, '0');
-  return `${year}-${month}-${day}T${hours}:${minutes}`;
+	const year = date.getFullYear();
+	const month = String(date.getMonth() + 1).padStart(2, "0");
+	const day = String(date.getDate()).padStart(2, "0");
+	const hours = String(date.getHours()).padStart(2, "0");
+	const minutes = String(date.getMinutes()).padStart(2, "0");
+	return `${year}-${month}-${day}T${hours}:${minutes}`;
 }
 
 /**
@@ -184,16 +205,16 @@ export function toDateTimeLocalValue(date: Date): string {
  * This modifies the options object in place and returns it.
  */
 export function applyTimeFormat(
-  options: Intl.DateTimeFormatOptions,
-  timeFormat: TimeFormat = 'system'
+	options: Intl.DateTimeFormatOptions,
+	timeFormat: TimeFormat = "system",
 ): Intl.DateTimeFormatOptions {
-  if (timeFormat === '12h') {
-    options.hour12 = true;
-  } else if (timeFormat === '24h') {
-    options.hour12 = false;
-  }
-  // 'system' leaves hour12 undefined, letting the browser decide
-  return options;
+	if (timeFormat === "12h") {
+		options.hour12 = true;
+	} else if (timeFormat === "24h") {
+		options.hour12 = false;
+	}
+	// 'system' leaves hour12 undefined, letting the browser decide
+	return options;
 }
 
 /**
@@ -204,15 +225,15 @@ export function applyTimeFormat(
  * @returns Date object in local timezone
  */
 export function parseUTCDate(dateStr: string | null | undefined): Date | null {
-  if (!dateStr) return null;
+	if (!dateStr) return null;
 
-  // If the string already has a timezone indicator, parse as-is
-  if (dateStr.endsWith('Z') || /[+-]\d{2}:\d{2}$/.test(dateStr)) {
-    return new Date(dateStr);
-  }
+	// If the string already has a timezone indicator, parse as-is
+	if (dateStr.endsWith("Z") || /[+-]\d{2}:\d{2}$/.test(dateStr)) {
+		return new Date(dateStr);
+	}
 
-  // Otherwise, append 'Z' to interpret as UTC
-  return new Date(dateStr + 'Z');
+	// Otherwise, append 'Z' to interpret as UTC
+	return new Date(dateStr + "Z");
 }
 
 /**
@@ -223,21 +244,21 @@ export function parseUTCDate(dateStr: string | null | undefined): Date | null {
  * @returns Formatted date string in user's locale and timezone
  */
 export function formatDate(
-  dateStr: string | null | undefined,
-  options?: Intl.DateTimeFormatOptions
+	dateStr: string | null | undefined,
+	options?: Intl.DateTimeFormatOptions,
 ): string {
-  const date = parseUTCDate(dateStr);
-  if (!date) return '';
+	const date = parseUTCDate(dateStr);
+	if (!date) return "";
 
-  const defaultOptions: Intl.DateTimeFormatOptions = {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  };
+	const defaultOptions: Intl.DateTimeFormatOptions = {
+		year: "numeric",
+		month: "short",
+		day: "numeric",
+		hour: "2-digit",
+		minute: "2-digit",
+	};
 
-  return date.toLocaleString(undefined, options ?? defaultOptions);
+	return date.toLocaleString(undefined, options ?? defaultOptions);
 }
 
 /**
@@ -248,19 +269,19 @@ export function formatDate(
  * @returns Formatted date string in user's locale and timezone
  */
 export function formatDateOnly(
-  dateStr: string | null | undefined,
-  options?: Intl.DateTimeFormatOptions
+	dateStr: string | null | undefined,
+	options?: Intl.DateTimeFormatOptions,
 ): string {
-  const date = parseUTCDate(dateStr);
-  if (!date) return '';
+	const date = parseUTCDate(dateStr);
+	if (!date) return "";
 
-  const defaultOptions: Intl.DateTimeFormatOptions = {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  };
+	const defaultOptions: Intl.DateTimeFormatOptions = {
+		year: "numeric",
+		month: "short",
+		day: "numeric",
+	};
 
-  return date.toLocaleDateString(undefined, options ?? defaultOptions);
+	return date.toLocaleDateString(undefined, options ?? defaultOptions);
 }
 
 /**
@@ -272,23 +293,23 @@ export function formatDateOnly(
  * @returns Formatted date string in user's locale and timezone
  */
 export function formatDateTime(
-  dateStr: string | null | undefined,
-  timeFormat: TimeFormat = 'system',
-  options?: Intl.DateTimeFormatOptions
+	dateStr: string | null | undefined,
+	timeFormat: TimeFormat = "system",
+	options?: Intl.DateTimeFormatOptions,
 ): string {
-  const date = parseUTCDate(dateStr);
-  if (!date) return '';
+	const date = parseUTCDate(dateStr);
+	if (!date) return "";
 
-  const defaultOptions: Intl.DateTimeFormatOptions = {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  };
+	const defaultOptions: Intl.DateTimeFormatOptions = {
+		year: "numeric",
+		month: "short",
+		day: "numeric",
+		hour: "2-digit",
+		minute: "2-digit",
+	};
 
-  const finalOptions = applyTimeFormat(options ?? defaultOptions, timeFormat);
-  return date.toLocaleString(undefined, finalOptions);
+	const finalOptions = applyTimeFormat(options ?? defaultOptions, timeFormat);
+	return date.toLocaleString(undefined, finalOptions);
 }
 
 /**
@@ -300,17 +321,20 @@ export function formatDateTime(
  * @returns Formatted time string
  */
 export function formatTimeOnly(
-  date: Date,
-  timeFormat: TimeFormat = 'system',
-  options?: Intl.DateTimeFormatOptions
+	date: Date,
+	timeFormat: TimeFormat = "system",
+	options?: Intl.DateTimeFormatOptions,
 ): string {
-  const defaultOptions: Intl.DateTimeFormatOptions = {
-    hour: '2-digit',
-    minute: '2-digit',
-  };
+	const defaultOptions: Intl.DateTimeFormatOptions = {
+		hour: "2-digit",
+		minute: "2-digit",
+	};
 
-  const finalOptions = applyTimeFormat({ ...defaultOptions, ...options }, timeFormat);
-  return date.toLocaleTimeString([], finalOptions);
+	const finalOptions = applyTimeFormat(
+		{ ...defaultOptions, ...options },
+		timeFormat,
+	);
+	return date.toLocaleTimeString([], finalOptions);
 }
 
 /**
@@ -319,28 +343,34 @@ export function formatTimeOnly(
  * @param remainingMinutes - Minutes until completion
  * @param timeFormat - Time format setting ('system', '12h', '24h')
  * @param t - Optional i18n translation function
+ * @param baseTime - Optional base timestamp in ms to count from
  * @returns Formatted ETA string (e.g., "3:45 PM", "Tomorrow 9:30 AM", "Wed 2:00 PM")
  */
 export function formatETA(
-  remainingMinutes: number,
-  timeFormat: TimeFormat = 'system',
-  t?: (key: string) => string
+	remainingMinutes: number,
+	timeFormat: TimeFormat = "system",
+	t?: (key: string) => string,
+	baseTime?: number,
 ): string {
-  const now = new Date();
-  const eta = new Date(now.getTime() + remainingMinutes * 60 * 1000);
+	const now = baseTime != null ? new Date(baseTime) : new Date();
+	const eta = new Date(now.getTime() + remainingMinutes * 60 * 1000);
 
-  const today = new Date(now);
-  today.setHours(0, 0, 0, 0);
-  const etaDay = new Date(eta);
-  etaDay.setHours(0, 0, 0, 0);
+	const today = new Date(now);
+	today.setHours(0, 0, 0, 0);
+	const etaDay = new Date(eta);
+	etaDay.setHours(0, 0, 0, 0);
 
-  const timeOptions = applyTimeFormat({ hour: '2-digit', minute: '2-digit' }, timeFormat);
-  const timeStr = eta.toLocaleTimeString([], timeOptions);
-  const dayDiff = Math.floor((etaDay.getTime() - today.getTime()) / 86400000);
+	const timeOptions = applyTimeFormat(
+		{ hour: "2-digit", minute: "2-digit" },
+		timeFormat,
+	);
+	const timeStr = eta.toLocaleTimeString([], timeOptions);
+	const dayDiff = Math.floor((etaDay.getTime() - today.getTime()) / 86400000);
 
-  if (dayDiff === 0) return timeStr;
-  if (dayDiff === 1) return `${t?.('common.tomorrow') ?? 'Tomorrow'} ${timeStr}`;
-  return `${eta.toLocaleDateString([], { weekday: 'short' })} ${timeStr}`;
+	if (dayDiff === 0) return timeStr;
+	if (dayDiff === 1)
+		return `${t?.("common.tomorrow") ?? "Tomorrow"} ${timeStr}`;
+	return `${eta.toLocaleDateString([], { weekday: "short" })} ${timeStr}`;
 }
 
 /**
@@ -350,15 +380,18 @@ export function formatETA(
  * @returns Formatted string (e.g., "2h 30m", "45m") or "--" if no value
  */
 export function formatDuration(seconds: number | null | undefined): string {
-  if (seconds == null || seconds < 0) return '--';
+	if (seconds == null || seconds < 0) return "--";
 
-  const hours = Math.floor(seconds / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
+	const hours = Math.floor(seconds / 3600);
+	const minutes = Math.floor((seconds % 3600) / 60);
 
-  return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
+	return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
 }
 
-type TranslateFunction = (key: string, options?: Record<string, unknown>) => string;
+type TranslateFunction = (
+	key: string,
+	options?: Record<string, unknown>,
+) => string;
 
 /**
  * Format a date string as a human-readable relative time expression.
@@ -369,54 +402,54 @@ type TranslateFunction = (key: string, options?: Record<string, unknown>) => str
  * @returns Relative string (e.g., "5m ago", "in 2h", "3d ago") or formatted date if older than 7 days
  */
 export function formatRelativeTime(
-  dateStr: string | null,
-  timeFormat: TimeFormat = 'system',
-  t?: TranslateFunction
+	dateStr: string | null,
+	timeFormat: TimeFormat = "system",
+	t?: TranslateFunction,
 ): string {
-  if (!dateStr) return t?.('time.unknown') ?? '-';
+	if (!dateStr) return t?.("time.unknown") ?? "-";
 
-  const date = parseUTCDate(dateStr);
-  if (!date) return t?.('time.unknown') ?? '-';
+	const date = parseUTCDate(dateStr);
+	if (!date) return t?.("time.unknown") ?? "-";
 
-  const now = new Date();
-  const diffMs = date.getTime() - now.getTime();
-  const isPast = diffMs < 0;
-  const absDiffMs = Math.abs(diffMs);
+	const now = new Date();
+	const diffMs = date.getTime() - now.getTime();
+	const isPast = diffMs < 0;
+	const absDiffMs = Math.abs(diffMs);
 
-  const minutes = Math.floor(absDiffMs / 60000);
-  const hours = Math.floor(absDiffMs / 3600000);
-  const days = Math.floor(absDiffMs / 86400000);
+	const minutes = Math.floor(absDiffMs / 60000);
+	const hours = Math.floor(absDiffMs / 3600000);
+	const days = Math.floor(absDiffMs / 86400000);
 
-  // Less than 1 minute
-  if (minutes < 1) {
-    return isPast
-      ? t?.('time.justNow') ?? 'Just now'
-      : t?.('time.now') ?? 'Now';
-  }
+	// Less than 1 minute
+	if (minutes < 1) {
+		return isPast
+			? (t?.("time.justNow") ?? "Just now")
+			: (t?.("time.now") ?? "Now");
+	}
 
-  // Less than 1 hour
-  if (hours < 1) {
-    return isPast
-      ? t?.('time.minsAgo', { count: minutes }) ?? `${minutes}m ago`
-      : t?.('time.inMins', { count: minutes }) ?? `in ${minutes}m`;
-  }
+	// Less than 1 hour
+	if (hours < 1) {
+		return isPast
+			? (t?.("time.minsAgo", { count: minutes }) ?? `${minutes}m ago`)
+			: (t?.("time.inMins", { count: minutes }) ?? `in ${minutes}m`);
+	}
 
-  // Less than 1 day
-  if (days < 1) {
-    return isPast
-      ? t?.('time.hoursAgo', { count: hours }) ?? `${hours}h ago`
-      : t?.('time.inHours', { count: hours }) ?? `in ${hours}h`;
-  }
+	// Less than 1 day
+	if (days < 1) {
+		return isPast
+			? (t?.("time.hoursAgo", { count: hours }) ?? `${hours}h ago`)
+			: (t?.("time.inHours", { count: hours }) ?? `in ${hours}h`);
+	}
 
-  // Less than 7 days
-  if (days < 7) {
-    return isPast
-      ? t?.('time.daysAgo', { count: days }) ?? `${days}d ago`
-      : t?.('time.inDays', { count: days }) ?? `in ${days}d`;
-  }
+	// Less than 7 days
+	if (days < 7) {
+		return isPast
+			? (t?.("time.daysAgo", { count: days }) ?? `${days}d ago`)
+			: (t?.("time.inDays", { count: days }) ?? `in ${days}d`);
+	}
 
-  // Older than 7 days
-  return formatDateTime(dateStr, timeFormat);
+	// Older than 7 days
+	return formatDateTime(dateStr, timeFormat);
 }
 
 /**
@@ -426,9 +459,9 @@ export function formatRelativeTime(
  * @returns Formatted string (e.g., "2:05", "0:30")
  */
 export function formatMediaTime(seconds: number): string {
-  const mins = Math.floor(seconds / 60);
-  const secs = Math.floor(seconds % 60);
-  return `${mins}:${secs.toString().padStart(2, '0')}`;
+	const mins = Math.floor(seconds / 60);
+	const secs = Math.floor(seconds % 60);
+	return `${mins}:${secs.toString().padStart(2, "0")}`;
 }
 
 /**
@@ -438,10 +471,10 @@ export function formatMediaTime(seconds: number): string {
  * @returns Formatted string (e.g., "2h 30m", "45m", "3h")
  */
 export function formatDurationFromHours(hours: number): string {
-  if (hours < 1) return `${Math.round(hours * 60)}m`;
-  const h = Math.floor(hours);
-  const m = Math.round((hours - h) * 60);
-  return m > 0 ? `${h}h ${m}m` : `${h}h`;
+	if (hours < 1) return `${Math.round(hours * 60)}m`;
+	const h = Math.floor(hours);
+	const m = Math.round((hours - h) * 60);
+	return m > 0 ? `${h}h ${m}m` : `${h}h`;
 }
 
 /**
@@ -456,10 +489,10 @@ export function formatDurationFromHours(hours: number): string {
  * string regardless of locale conventions.
  */
 export function localDateKey(input: string | Date): string {
-  const date = typeof input === 'string' ? parseUTCDate(input) : input;
-  if (!date) return '';
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, '0');
-  const d = String(date.getDate()).padStart(2, '0');
-  return `${y}-${m}-${d}`;
+	const date = typeof input === "string" ? parseUTCDate(input) : input;
+	if (!date) return "";
+	const y = date.getFullYear();
+	const m = String(date.getMonth() + 1).padStart(2, "0");
+	const d = String(date.getDate()).padStart(2, "0");
+	return `${y}-${m}-${d}`;
 }

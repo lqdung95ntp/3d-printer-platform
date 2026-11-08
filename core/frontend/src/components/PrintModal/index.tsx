@@ -2,8 +2,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
 	AlertCircle,
 	AlertTriangle,
-	Calendar,
-	Code,
 	Layers,
 	Loader2,
 	Minus,
@@ -97,6 +95,7 @@ export function PrintModal({
 
 	// Determine if we're printing a library file
 	const isLibraryFile = !!libraryFileId && !archiveId;
+	const isEditing = mode === "edit-queue-item";
 
 	type FilamentWarningItem = {
 		printerName: string;
@@ -207,9 +206,9 @@ export function PrintModal({
 	const [scheduleOptions, setScheduleOptions] = useState<ScheduleOptions>(
 		() => {
 			if (mode === "edit-queue-item" && queueItem) {
-				let scheduleType: ScheduleType = "asap";
+				let scheduleType: ScheduleType = "queue";
 				if (queueItem.manual_start) {
-					scheduleType = "manual";
+					scheduleType = "queue";
 				} else if (
 					queueItem.scheduled_time &&
 					!isPlaceholderDate(queueItem.scheduled_time)
@@ -231,6 +230,7 @@ export function PrintModal({
 				return {
 					scheduleType,
 					scheduledTime,
+					requireManualStart: queueItem.manual_start ?? false,
 					requirePreviousSuccess: queueItem.require_previous_success,
 					autoOffAfter: queueItem.auto_off_after,
 					gcodeInjection: queueItem.gcode_injection ?? false,
@@ -465,9 +465,8 @@ export function PrintModal({
 		queryFn: () => api.getAssignments(),
 		staleTime: 30 * 1000,
 		enabled:
-			((mode === "reprint" || mode === "add-to-queue") &&
-				assignmentMode === "printer") ||
-			(isLibraryFile && mode === "reprint"),
+			(!isEditing && assignmentMode === "printer") ||
+			(isLibraryFile && !isEditing),
 	});
 
 	// Fetch archive details to get sliced_for_model
@@ -546,15 +545,6 @@ export function PrintModal({
 	const effectiveFilamentReqs = isLibraryFile
 		? libraryFilamentReqs
 		: archiveFilamentReqs;
-	const selectedPlateName = useMemo(() => {
-		if (selectedPlate === null || !platesData?.plates?.length) {
-			return undefined;
-		}
-		return (
-			platesData.plates.find((plate) => plate.index === selectedPlate)
-				?.name || undefined
-		);
-	}, [platesData, selectedPlate]);
 
 	// Fetch available filaments for model-based assignment (for filament override UI)
 	const { data: availableFilaments } = useQuery({
@@ -895,9 +885,6 @@ export function PrintModal({
 		},
 	});
 
-	const willUseStagger =
-		scheduleOptions.staggerEnabled && selectedPrinters.length > 1;
-
 	// Show filament mapping when:
 	// - Single printer selected
 	// - For archives: plate is selected (for multi-plate) or not required (single-plate)
@@ -936,7 +923,9 @@ export function PrintModal({
 				return true;
 			}
 			return reqs.some((req) => {
-				const comp = filamentComparison.find((c) => c.slot_id === req.slot_id);
+				const comp = filamentComparison.find(
+					(c) => c.slot_id === req.slot_id,
+				);
 				return !comp || !comp.loaded;
 			});
 		}
@@ -971,7 +960,7 @@ export function PrintModal({
 
 		if (
 			!options?.skipMissingSpoolConfirmation &&
-			mode === "reprint" &&
+			!isEditing &&
 			assignmentMode === "printer"
 		) {
 			const [currentSettings, assignments] = await Promise.all([
@@ -996,7 +985,7 @@ export function PrintModal({
 		if (
 			!options?.skipFilamentCheck &&
 			!settings?.disable_filament_warnings &&
-			(mode === "reprint" || mode === "add-to-queue") &&
+			!isEditing &&
 			assignmentMode === "printer"
 		) {
 			const warningItems: FilamentWarningItem[] = [];
@@ -1240,11 +1229,14 @@ export function PrintModal({
 				// Use library_file_id for library files, archive_id for archives
 				archive_id: isLibraryFile ? undefined : archiveId,
 				library_file_id: isLibraryFile ? libraryFileId : undefined,
+				cleanup_library_after_dispatch: cleanupLibraryAfterDispatch,
 				require_previous_success:
 					scheduleOptions.requirePreviousSuccess,
 				auto_off_after: scheduleOptions.autoOffAfter,
 				gcode_injection: scheduleOptions.gcodeInjection,
-				manual_start: scheduleOptions.scheduleType === "manual",
+				manual_start:
+					scheduleOptions.scheduleType === "queue" &&
+					scheduleOptions.requireManualStart,
 				ams_mapping: printerId
 					? getMappingForPrinter(printerId)
 					: undefined,
@@ -1265,17 +1257,19 @@ export function PrintModal({
 			};
 		};
 
+		let asapInserted = 0;
+		const applyAsapInsertion = (
+			queueData: PrintQueueItemCreate,
+			itemCount = 1,
+		) => {
+			if (scheduleOptions.scheduleType !== "asap") return;
+			queueData.insert_at_top = true;
+			queueData.insert_position = asapInserted + 1;
+			asapInserted += itemCount;
+		};
+
 		// Model-based assignment
 		if (assignmentMode === "model") {
-			if (mode === "reprint") {
-				showToast(
-					"Model-based assignment only works with queue mode",
-					"error",
-				);
-				setIsSubmitting(false);
-				return;
-			}
-
 			let progressCounter = 0;
 			for (const plate of platesToQueue) {
 				progressCounter++;
@@ -1286,7 +1280,7 @@ export function PrintModal({
 				const plateId = plate ? plate.index : selectedPlate;
 
 				try {
-					if (mode === "edit-queue-item" && !plate) {
+					if (isEditing && !plate) {
 						// Edit mode - update with target_model (only for single plate)
 						const updateData: PrintQueueItemUpdate = {
 							printer_id: null,
@@ -1298,7 +1292,8 @@ export function PrintModal({
 							auto_off_after: scheduleOptions.autoOffAfter,
 							gcode_injection: scheduleOptions.gcodeInjection,
 							manual_start:
-								scheduleOptions.scheduleType === "manual",
+								scheduleOptions.scheduleType === "queue" &&
+								scheduleOptions.requireManualStart,
 							ams_mapping: undefined,
 							plate_id: plateId,
 							skipped_objects:
@@ -1321,6 +1316,7 @@ export function PrintModal({
 						const queueData = getQueueData(null, plateId);
 						const runQty = quantityForPlate(plateId);
 						if (runQty > 1) queueData.quantity = runQty;
+						applyAsapInsertion(queueData, runQty);
 						await addToQueueMutation.mutateAsync(queueData);
 					}
 					results.success++;
@@ -1341,7 +1337,7 @@ export function PrintModal({
 			// Compute stagger base time once before the loop
 			const useStagger =
 				scheduleOptions.staggerEnabled &&
-				(mode === "add-to-queue" || mode === "reprint") &&
+				!isEditing &&
 				selectedPrinters.length > 1;
 			const staggerBaseTime = useStagger
 				? scheduleOptions.scheduleType === "scheduled" &&
@@ -1363,65 +1359,7 @@ export function PrintModal({
 					});
 
 					try {
-						if (mode === "reprint" && !useStagger) {
-							// Reprint mode - start print immediately (single plate only, multi-select not available)
-							const printerMapping =
-								getMappingForPrinter(printerId);
-							if (isLibraryFile) {
-								await api.printLibraryFile(
-									libraryFileId!,
-									printerId,
-									{
-										plate_id: selectedPlate ?? undefined,
-										plate_name: selectedPlateName,
-										ams_mapping: printerMapping,
-										...getPrintOptionsForPrinter(printerId),
-										...getElegooCc1OptionsForPrinter(
-											printerId,
-										),
-										project_id: projectId,
-										cleanup_library_after_dispatch:
-											cleanupLibraryAfterDispatch,
-										skipped_objects:
-											skippedObjectIds.length > 0
-												? skippedObjectIds
-												: undefined,
-									},
-								);
-							} else {
-								// project_id is intentionally omitted here: reprintArchive targets an existing
-								// archive that already carries its own project association from the original print.
-								await api.reprintArchive(
-									archiveId!,
-									printerId,
-									{
-										plate_id: selectedPlate ?? undefined,
-										plate_name: selectedPlateName,
-										ams_mapping: printerMapping,
-										...getPrintOptionsForPrinter(printerId),
-										...getElegooCc1OptionsForPrinter(
-											printerId,
-										),
-										skipped_objects:
-											skippedObjectIds.length > 0
-												? skippedObjectIds
-												: undefined,
-									},
-								);
-							}
-							// Queue remaining copies if quantity > 1
-							if (effectiveQuantity > 1) {
-								const queueData = getQueueData(
-									printerId,
-									plateId,
-								);
-								queueData.quantity = effectiveQuantity - 1;
-								await addToQueueMutation.mutateAsync(queueData);
-							}
-						} else if (
-							mode === "edit-queue-item" &&
-							progressCounter === 1
-						) {
+						if (isEditing && progressCounter === 1) {
 							// Edit mode - update the original queue item for the first entry
 							const printerMapping =
 								getMappingForPrinter(printerId);
@@ -1434,7 +1372,8 @@ export function PrintModal({
 								auto_off_after: scheduleOptions.autoOffAfter,
 								gcode_injection: scheduleOptions.gcodeInjection,
 								manual_start:
-									scheduleOptions.scheduleType === "manual",
+									scheduleOptions.scheduleType === "queue" &&
+									scheduleOptions.requireManualStart,
 								ams_mapping: printerMapping,
 								plate_id: plateId,
 								skipped_objects:
@@ -1453,11 +1392,11 @@ export function PrintModal({
 								...getElegooCc1OptionsForPrinter(printerId),
 							};
 							await updateQueueMutation.mutateAsync(updateData);
-						} else {
-							// Add-to-queue mode, stagger-reprint mode, or edit mode with additional entries
+						} else if (!isEditing) {
 							const queueData = getQueueData(printerId, plateId);
 							const runQty = quantityForPlate(plateId);
 							if (runQty > 1) queueData.quantity = runQty;
+							applyAsapInsertion(queueData, runQty);
 							// Apply stagger offset for groups after the first
 							if (useStagger) {
 								const groupIndex = Math.floor(
@@ -1499,25 +1438,18 @@ export function PrintModal({
 
 		setIsSubmitting(false);
 
-		// Show result toast (skip for direct reprint — the dispatch toast handles it)
+		// Show result toast
 		if (results.failed === 0) {
-			if (mode === "reprint" && willUseStagger) {
-				// Stagger-reprint routed through queue
+			if (isEditing) {
+				showToast("Queue item updated");
+			} else if (results.success === 1) {
+				showToast(
+					assignmentMode === "model"
+						? `Queued for any ${targetModel}`
+						: t("queue.printQueued"),
+				);
+			} else {
 				showToast(t("queue.itemsQueued", { count: results.success }));
-			} else if (mode !== "reprint") {
-				if (mode === "edit-queue-item") {
-					showToast("Queue item updated");
-				} else if (results.success === 1) {
-					showToast(
-						assignmentMode === "model"
-							? `Queued for any ${targetModel}`
-							: t("queue.printQueued"),
-					);
-				} else {
-					showToast(
-						t("queue.itemsQueued", { count: results.success }),
-					);
-				}
 			}
 			queryClient.invalidateQueries({ queryKey: ["queue"] });
 			onSuccess?.();
@@ -1542,9 +1474,6 @@ export function PrintModal({
 		if (assignmentMode === "printer" && selectedPrinters.length === 0)
 			return false;
 		if (assignmentMode === "model" && !targetModel) return false;
-
-		// Model-based assignment only works in queue modes (not immediate reprint)
-		if (assignmentMode === "model" && mode === "reprint") return false;
 
 		// For multi-plate files, need at least one plate selected
 		if (isMultiPlate && selectedPlates.size === 0) return false;
@@ -1572,54 +1501,12 @@ export function PrintModal({
 
 	// Modal title and action button text based on mode
 	const getModalConfig = () => {
-		const printerCount = selectedPrinters.length;
-
-		if (mode === "reprint") {
-			const staggerReprint = willUseStagger && printerCount > 1;
-			let submitText = staggerReprint
-				? t("printModal.staggerToPrinters", {
-						count: printerCount,
-						defaultValue: "Stagger to {{count}} printers",
-					})
-				: printerCount > 1
-					? t("queue.printToPrinters", { count: printerCount })
-					: t("queue.print");
-			if (effectiveQuantity > 1) {
-				submitText = `${submitText} ×${effectiveQuantity}`;
-			}
+		if (!isEditing) {
 			return {
-				title: isLibraryFile ? t("queue.print") : t("queue.reprint"),
+				title: t("common.print"),
 				icon: Printer,
-				submitText,
-				submitIcon: staggerReprint ? Calendar : Printer,
-				loadingText:
-					submitProgress.total > 1
-						? t("queue.sendingProgress", {
-								current: submitProgress.current,
-								total: submitProgress.total,
-							})
-						: t("queue.sending"),
-			};
-		}
-		if (mode === "add-to-queue") {
-			let submitText = t("queue.addToQueue");
-			if (selectedPlates.size > 1) {
-				submitText = t("queue.queueSelectedPlates", {
-					count: selectedPlates.size,
-				});
-			} else if (printerCount > 1) {
-				submitText = t("queue.queueToPrinters", {
-					count: printerCount,
-				});
-			}
-			if (effectiveQuantity > 1) {
-				submitText = `${submitText} ×${effectiveQuantity}`;
-			}
-			return {
-				title: t("queue.schedulePrint"),
-				icon: Calendar,
-				submitText,
-				submitIcon: Calendar,
+				submitText: t("common.print"),
+				submitIcon: Printer,
 				loadingText:
 					submitProgress.total > 1
 						? t("queue.addingProgress", {
@@ -1702,7 +1589,7 @@ export function PrintModal({
 								>
 									{archiveName}
 								</span>
-								{mode === "reprint" &&
+								{!isEditing &&
 									initialSelectedPrinterIds?.length === 1 &&
 									printers && (
 										<p className="text-xs text-bambu-gray mt-0.5">
@@ -1815,7 +1702,7 @@ export function PrintModal({
 							onToggle={(plateIndex) => {
 								setSelectedPlates((prev) => {
 									const next = new Set(prev);
-									if (mode === "add-to-queue") {
+									if (!isEditing) {
 										// Multi-select: toggle the plate
 										if (next.has(plateIndex)) {
 											next.delete(plateIndex);
@@ -1831,7 +1718,7 @@ export function PrintModal({
 								});
 							}}
 							onSelectAll={
-								mode === "add-to-queue"
+								!isEditing
 									? () =>
 											setSelectedPlates(
 												new Set(
@@ -1841,11 +1728,11 @@ export function PrintModal({
 									: undefined
 							}
 							onDeselectAll={
-								mode === "add-to-queue"
+								!isEditing
 									? () => setSelectedPlates(new Set())
 									: undefined
 							}
-							multiSelect={mode === "add-to-queue"}
+							multiSelect={!isEditing}
 							quantities={
 								usePerPlateQuantities
 									? plateQuantities
@@ -1871,7 +1758,7 @@ export function PrintModal({
 								isLoading={loadingPrinters}
 								allowMultiple={true}
 								showInactive={mode === "edit-queue-item"}
-								disableBusy={mode === "reprint"}
+								disableBusy={false}
 								printerMappingResults={
 									multiPrinterMapping.printerResults
 								}
@@ -1882,27 +1769,17 @@ export function PrintModal({
 								onUpdatePrinterConfig={
 									multiPrinterMapping.updatePrinterConfig
 								}
-								assignmentMode={
-									mode === "reprint"
-										? "printer"
-										: assignmentMode
-								}
+								assignmentMode={assignmentMode}
 								onAssignmentModeChange={
-									mode !== "reprint"
-										? setAssignmentMode
-										: undefined
+									!isEditing ? setAssignmentMode : undefined
 								}
 								targetModel={targetModel}
 								onTargetModelChange={
-									mode !== "reprint"
-										? setTargetModel
-										: undefined
+									!isEditing ? setTargetModel : undefined
 								}
 								targetLocation={targetLocation}
 								onTargetLocationChange={
-									mode !== "reprint"
-										? setTargetLocation
-										: undefined
+									!isEditing ? setTargetLocation : undefined
 								}
 								slicedForModel={slicedForModel}
 							/>
@@ -2066,7 +1943,7 @@ export function PrintModal({
 						)}
 
 						{/* Print options */}
-						{(mode === "reprint" ||
+						{(!isEditing ||
 							effectivePrinterCount > 0 ||
 							(assignmentMode === "model" && targetModel)) && (
 							<PrintOptionsPanel
@@ -2145,122 +2022,23 @@ export function PrintModal({
 								</div>
 							)}
 
-						{/* Stagger option for reprint mode with multiple printers */}
-						{mode === "reprint" &&
-							assignmentMode === "printer" &&
-							selectedPrinters.length > 1 && (
-								<div className="space-y-2 pb-2">
-									<div className="flex items-center gap-2">
-										<input
-											type="checkbox"
-											id="staggerEnabledReprint"
-											checked={
-												scheduleOptions.staggerEnabled
-											}
-											onChange={(e) =>
-												setScheduleOptions({
-													...scheduleOptions,
-													staggerEnabled:
-														e.target.checked,
-												})
-											}
-											className="rounded border-bambu-dark-tertiary bg-bambu-dark text-bambu-green focus:ring-bambu-green"
-										/>
-										<label
-											htmlFor="staggerEnabledReprint"
-											className="text-sm flex items-center gap-1 text-bambu-gray"
-										>
-											<Layers className="w-3.5 h-3.5" />
-											{t(
-												"printModal.staggerPrinterStarts",
-												"Stagger printer starts",
-											)}
-										</label>
-									</div>
-									{scheduleOptions.staggerEnabled &&
-										(() => {
-											const groupSize =
-												scheduleOptions.staggerGroupSize;
-											const interval =
-												scheduleOptions.staggerIntervalMinutes;
-											const groupCount = Math.ceil(
-												selectedPrinters.length /
-													groupSize,
-											);
-											const totalMinutes =
-												(groupCount - 1) * interval;
-											return (
-												<p className="ml-6 text-xs text-bambu-gray">
-													{t(
-														"printModal.staggerPreview",
-														"{{printers}} printers → {{groups}} groups of {{size}}, starting every {{interval}} min",
-														{
-															printers:
-																selectedPrinters.length,
-															groups: groupCount,
-															size: groupSize,
-															interval,
-														},
-													)}
-													{groupCount > 1
-														? ` (${t("printModal.staggerTotal", "total: {{minutes}} min", { minutes: totalMinutes })})`
-														: ""}
-												</p>
-											);
-										})()}
-								</div>
+						{/* Schedule options */}
+						<ScheduleOptionsPanel
+							options={scheduleOptions}
+							onChange={setScheduleOptions}
+							dateFormat={settings?.date_format || "system"}
+							timeFormat={settings?.time_format || "system"}
+							canControlPrinter={hasPermission(
+								"printers:control",
 							)}
-
-						{/* Schedule options - only for queue modes */}
-						{mode !== "reprint" && (
-							<ScheduleOptionsPanel
-								options={scheduleOptions}
-								onChange={setScheduleOptions}
-								dateFormat={settings?.date_format || "system"}
-								timeFormat={settings?.time_format || "system"}
-								canControlPrinter={hasPermission(
-									"printers:control",
-								)}
-								showStagger={
-									mode === "add-to-queue" &&
-									assignmentMode === "printer" &&
-									selectedPrinters.length > 1
-								}
-								printerCount={selectedPrinters.length}
-								hasGcodeSnippets={!!settings?.gcode_snippets}
-							/>
-						)}
-
-						{/* G-code injection for reprint mode (only shown when quantity > 1 — applies to queued copies) */}
-						{mode === "reprint" &&
-							!!settings?.gcode_snippets &&
-							effectiveQuantity > 1 && (
-								<div className="flex items-center gap-2">
-									<input
-										type="checkbox"
-										id="gcodeInjectionReprint"
-										checked={scheduleOptions.gcodeInjection}
-										onChange={(e) =>
-											setScheduleOptions({
-												...scheduleOptions,
-												gcodeInjection:
-													e.target.checked,
-											})
-										}
-										className="rounded border-bambu-dark-tertiary bg-bambu-dark text-bambu-green focus:ring-bambu-green"
-									/>
-									<label
-										htmlFor="gcodeInjectionReprint"
-										className="text-sm flex items-center gap-1 text-bambu-gray"
-									>
-										<Code className="w-3.5 h-3.5" />
-										{t(
-											"printModal.gcodeInjection",
-											"Inject auto-print G-code",
-										)}
-									</label>
-								</div>
-							)}
+							showStagger={
+								!isEditing &&
+								assignmentMode === "printer" &&
+								selectedPrinters.length > 1
+							}
+							printerCount={selectedPrinters.length}
+							hasGcodeSnippets={!!settings?.gcode_snippets}
+						/>
 
 						{/* Error message */}
 						{updateQueueMutation.isError && (
@@ -2271,9 +2049,7 @@ export function PrintModal({
 						)}
 
 						{/* Actions */}
-						<div
-							className={`flex gap-3 ${mode === "reprint" ? "" : "pt-2"}`}
-						>
+						<div className="flex gap-3 pt-2">
 							<Button
 								type="button"
 								variant="secondary"

@@ -6,6 +6,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import { KeyboardShortcutsModal } from './KeyboardShortcutsModal';
 import { InstallAppButton } from './InstallAppButton';
 import { SwitchbarPopover } from './SwitchbarPopover';
+import { CameraLauncher } from './CameraLauncher';
 import { useQuery, useQueries } from '@tanstack/react-query';
 import { api, supportApi, pendingUploadsApi, type Permission } from '../api/client';
 import { getIconByName } from './IconPicker';
@@ -66,7 +67,7 @@ export function Layout() {
   const navigate = useNavigate();
   const location = useLocation();
   const { mode, toggleMode } = useTheme();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const isSidebarCompact = useIsSidebarCompact();
   // Re-render Layout (and the page rendered inside <Outlet />) whenever the
   // backend color catalog is (re)populated, so pages that mounted before the
@@ -86,6 +87,7 @@ export function Layout() {
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [showSwitchbar, setShowSwitchbar] = useState(false);
+  const [cameraListOpen, setCameraListOpen] = useState(false);
   const defaultSidebarOrder = useMemo(() => defaultNavItems.map(i => i.id), []);
   const [sidebarOrder, setSidebarOrder] = useState<string[]>(() => getSidebarOrder(defaultNavItems.map(i => i.id)));
   const [hiddenSystemItemIds, setHiddenSystemItemIds] = useState<string[]>(getHiddenSidebarSystemItemIds);
@@ -111,6 +113,13 @@ export function Layout() {
     queryFn: api.getSettings,
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
+
+  // Sync initial language from backend settings if not already explicitly stored in localStorage
+  useEffect(() => {
+    if (settings?.language && !localStorage.getItem('bambutrack_language')) {
+      i18n.changeLanguage(settings.language);
+    }
+  }, [settings?.language, i18n]);
 
   const { data: uiPreferences } = useQuery({
     queryKey: ['ui-preferences'],
@@ -444,8 +453,14 @@ export function Layout() {
           e.preventDefault();
           setShowShortcuts(true);
           break;
+        case 'c':
+        case 'C':
+          e.preventDefault();
+          setCameraListOpen((open) => !open);
+          break;
         case 'Escape':
           setShowShortcuts(false);
+          setCameraListOpen(false);
           break;
       }
     }
@@ -666,11 +681,11 @@ export function Layout() {
                 const showClearPlateDot = id === 'printers' && needsClearPlate;
 
                 return (
-                  <li key={id}>
+                  <li key={id} className="relative flex items-center">
                     <NavLink
                       to={to}
                       className={({ isActive }) =>
-                        `flex items-center ${isSidebarCompact || sidebarExpanded ? 'gap-3 px-4' : 'justify-center px-2'} py-3 rounded-lg transition-colors group ${
+                        `flex-1 flex items-center ${isSidebarCompact || sidebarExpanded ? 'gap-3 px-4' : 'justify-center px-2'} py-3 rounded-lg transition-colors group ${
                           isActive
                             ? 'bg-bambu-green text-white'
                             : 'text-bambu-gray-light hover:bg-bambu-dark-tertiary hover:text-white'
@@ -691,8 +706,18 @@ export function Layout() {
                           </span>
                         )}
                       </div>
-                      {(isSidebarCompact || sidebarExpanded) && <span>{t(labelKey)}</span>}
+                      {(isSidebarCompact || sidebarExpanded) && <span className="flex-1 truncate">{t(labelKey)}</span>}
                     </NavLink>
+                    {id === 'printers' && (
+                      <div className={isSidebarCompact || sidebarExpanded ? 'pr-2' : 'hidden'}>
+                        <CameraLauncher
+                          placement="side"
+                          size="xs"
+                          open={cameraListOpen}
+                          onOpenChange={setCameraListOpen}
+                        />
+                      </div>
+                    )}
                   </li>
                 );
               }

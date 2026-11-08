@@ -87,6 +87,7 @@ import {
 	CardDensityProvider,
 	CardHeader,
 } from "../components/Card";
+import { UsbCameraDevicePicker } from "../components/UsbCameraDevicePicker";
 import { SlicerBundlesPanel } from "../components/SlicerBundlesPanel";
 import { CameraTokensSection } from "./CameraTokensPage";
 import { Collapsible } from "../components/Collapsible";
@@ -650,6 +651,8 @@ export function SettingsPage() {
 		setMode,
 		progressInTitle,
 		setProgressInTitle,
+		tabDisplay,
+		setTabDisplay,
 		darkStyle,
 		darkBackground,
 		darkAccent,
@@ -2194,6 +2197,7 @@ export function SettingsPage() {
 		Record<number, ReturnType<typeof setTimeout>>
 	>({});
 	const initializedPrinterSnapshotUrlsRef = useRef<Set<number>>(new Set());
+	const [usbManualEntry, setUsbManualEntry] = useState<Record<number, boolean>>({});
 
 	// Initialize local camera URLs from printer data
 	useEffect(() => {
@@ -3555,6 +3559,49 @@ export function SettingsPage() {
 													<div className="w-11 h-6 bg-bambu-dark-tertiary peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-bambu-green"></div>
 												</label>
 											</div>
+
+											{progressInTitle && (
+												<div className="flex flex-wrap items-center justify-between pt-2 border-t border-bambu-dark-tertiary/60">
+													<div>
+														<p className="text-sm text-white">
+															{t("settings.tabDisplay")}
+														</p>
+														<p className="text-xs text-bambu-gray">
+															{t("settings.tabDisplayHint")}
+														</p>
+													</div>
+													<div className="flex rounded-lg bg-bambu-dark-tertiary p-1 border border-bambu-dark-tertiary">
+														<button
+															type="button"
+															onClick={() => {
+																setTabDisplay("percentage");
+																showToast(t("settings.toast.settingsSaved"), "success");
+															}}
+															className={`px-3 py-1 text-xs rounded-md font-medium transition-colors ${
+																tabDisplay === "percentage"
+																	? "bg-bambu-green text-white"
+																	: "text-bambu-gray hover:text-white"
+															}`}
+														>
+															{t("settings.tabDisplayPercentage")}
+														</button>
+														<button
+															type="button"
+															onClick={() => {
+																setTabDisplay("time");
+																showToast(t("settings.toast.settingsSaved"), "success");
+															}}
+															className={`px-3 py-1 text-xs rounded-md font-medium transition-colors ${
+																tabDisplay === "time"
+																	? "bg-bambu-green text-white"
+																	: "text-bambu-gray hover:text-white"
+															}`}
+														>
+															{t("settings.tabDisplayTime")}
+														</button>
+													</div>
+												</div>
+											)}
 										</CardContent>
 									</Card>
 
@@ -3917,6 +3964,61 @@ export function SettingsPage() {
 												</p>
 											</div>
 
+											{/* Chamber Light on Camera */}
+											<div className="border-t border-bambu-dark-tertiary pt-4 mt-4">
+												<label className="block text-sm text-white mb-1">
+													{t("settings.cameraLightMode", "Chamber light for camera")}
+												</label>
+												<select
+													value={localSettings.camera_light_mode ?? "off"}
+													onChange={(e) =>
+														updateSetting("camera_light_mode", e.target.value)
+													}
+													className="w-full px-3 py-2 bg-bambu-dark border border-bambu-dark-tertiary rounded-lg text-white focus:border-bambu-green focus:outline-none"
+												>
+													<option value="off">
+														{t("settings.cameraLightOff", "Off")}
+													</option>
+													<option value="all">
+														{t("settings.cameraLightAll", "Turn on for all printers")}
+													</option>
+													<option value="selected">
+														{t("settings.cameraLightSelected", "Turn on for selected printers")}
+													</option>
+												</select>
+												<p className="text-xs text-bambu-gray mt-1">
+													{t(
+														"settings.cameraLightDescription",
+														"Automatically turn on the chamber light while viewing camera or capturing snapshots, and turn it off 15 seconds after.",
+													)}
+												</p>
+
+												{localSettings.camera_light_mode !== "off" && (
+													<div className="mt-3">
+														<label className="block text-xs text-bambu-gray mb-1">
+															{t(
+																"settings.cameraLightDelay",
+																"Snapshot wait delay (seconds)",
+															)}
+														</label>
+														<input
+															type="number"
+															min={0}
+															max={5}
+															step={0.5}
+															value={localSettings.camera_light_delay ?? 2.0}
+															onChange={(e) =>
+																updateSetting(
+																	"camera_light_delay",
+																	parseFloat(e.target.value) || 0,
+																)
+															}
+															className="w-full px-3 py-1.5 bg-bambu-dark border border-bambu-dark-tertiary rounded text-white text-sm focus:border-bambu-green focus:outline-none"
+														/>
+													</div>
+												)}
+											</div>
+
 											{/* External Cameras Section */}
 											<div className="border-t border-bambu-dark-tertiary pt-4 mt-4">
 												<h3 className="text-sm font-medium text-white mb-2">
@@ -3972,40 +4074,80 @@ export function SettingsPage() {
 																		</label>
 																	</div>
 
+																	{localSettings.camera_light_mode === "selected" && (
+																		<div className="flex items-center justify-between py-1 mb-2 border-b border-bambu-dark-tertiary/40">
+																			<span className="text-xs text-bambu-gray">
+																				{t("settings.cameraLightAutoForPrinter", "Chamber light on camera use")}
+																			</span>
+																			<input
+																				type="checkbox"
+																				checked={printer.camera_light_auto ?? false}
+																				onChange={(e) => {
+																					api.updatePrinter(printer.id, {
+																						camera_light_auto: e.target.checked,
+																					}).then(() => {
+																						queryClient.invalidateQueries({ queryKey: ["printers"] });
+																					});
+																				}}
+																				className="rounded border-bambu-dark-tertiary text-bambu-green focus:ring-bambu-green"
+																			/>
+																		</div>
+																	)}
+
 																	{printer.external_camera_enabled && (
 																		<div className="space-y-2 mt-2">
-																			<input
-																				type="text"
-																				placeholder={
-																					printer.external_camera_type ===
-																					"usb"
-																						? t(
-																								"settings.cameraPlaceholderUsb",
-																							)
-																						: t(
-																								"settings.cameraPlaceholderUrl",
-																							)
-																				}
-																				value={
-																					localCameraUrls[
-																						printer
-																							.id
-																					] ??
-																					printer.external_camera_url ??
-																					""
-																				}
-																				onChange={(
-																					e,
-																				) =>
-																					handleCameraUrlChange(
-																						printer.id,
-																						e
-																							.target
-																							.value,
-																					)
-																				}
-																				className="w-full px-3 py-2 bg-bambu-dark-secondary border border-bambu-dark-tertiary rounded text-white text-sm focus:border-bambu-green focus:outline-none"
-																			/>
+																			{printer.external_camera_type === "usb" && !usbManualEntry[printer.id] ? (
+																				<UsbCameraDevicePicker
+																					printerName={printer.name}
+																					value={
+																						localCameraUrls[printer.id] ??
+																						printer.external_camera_url ??
+																						""
+																					}
+																					onSelect={(device) =>
+																						handleCameraUrlChange(printer.id, device)
+																					}
+																					onEnterManually={() =>
+																						setUsbManualEntry((prev) => ({
+																							...prev,
+																							[printer.id]: true,
+																						}))
+																					}
+																				/>
+																			) : (
+																				<input
+																					type="text"
+																					placeholder={
+																						printer.external_camera_type ===
+																						"usb"
+																							? t(
+																									"settings.cameraPlaceholderUsb",
+																								)
+																							: t(
+																									"settings.cameraPlaceholderUrl",
+																								)
+																					}
+																					value={
+																						localCameraUrls[
+																							printer
+																								.id
+																						] ??
+																						printer.external_camera_url ??
+																						""
+																					}
+																					onChange={(
+																						e,
+																					) =>
+																						handleCameraUrlChange(
+																							printer.id,
+																							e
+																								.target
+																								.value,
+																						)
+																					}
+																					className="w-full px-3 py-2 bg-bambu-dark-secondary border border-bambu-dark-tertiary rounded text-white text-sm focus:border-bambu-green focus:outline-none"
+																				/>
+																			)}
 																			<div className="flex gap-2">
 																				<select
 																					value={

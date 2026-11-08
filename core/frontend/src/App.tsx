@@ -38,6 +38,7 @@ import { SliceJobTrackerProvider } from './contexts/SliceJobTrackerContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ColorCatalogProvider } from './contexts/ColorCatalogContext';
 import { ProLicenseProvider } from './contexts/ProLicenseContext';
+import { EmbeddedCameraProvider } from './contexts/EmbeddedCameraContext';
 import { UpgradeModal } from './components/UpgradeModal';
 class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null; errorInfo: ErrorInfo | null }> {
   state = { error: null as Error | null, errorInfo: null as ErrorInfo | null };
@@ -178,6 +179,7 @@ function App() {
             <StreamTokenSync />
             <FarmBrandingSync />
             <BrowserRouter basename={appBasePath() || undefined}>
+              <EmbeddedCameraProvider>
               <UpgradeModal />
               <Routes>
                 {/* Setup page - only accessible if auth not enabled */}
@@ -222,6 +224,7 @@ function App() {
                   <Route path="camera-tokens" element={<Navigate to="/settings?tab=apikeys#card-camera-tokens" replace />} />
                 </Route>
               </Routes>
+              </EmbeddedCameraProvider>
             </BrowserRouter>
             </SliceJobTrackerProvider>
             </ColorCatalogProvider>

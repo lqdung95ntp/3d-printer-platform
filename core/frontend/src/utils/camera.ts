@@ -52,7 +52,7 @@ export function storeCameraViewMode(mode: CameraViewMode): void {
  * so the browser copies sessionStorage -- which is where the auth token lives
  * -- into the new window. Without it the camera page loads unauthenticated.
  */
-export function openCameraWindow(printerId: number): void {
+export function openCameraWindow(printerId: number): boolean {
   let state: { width?: number; height?: number; left?: number; top?: number } = {
     width: 640,
     height: 400,
@@ -78,5 +78,147 @@ export function openCameraWindow(printerId: number): void {
     .filter(Boolean)
     .join(',');
 
-  window.open(`/camera/${printerId}`, `camera-${printerId}`, features);
+  return window.open(`/camera/${printerId}`, `camera-${printerId}`, features) !== null;
+}
+
+/**
+ * Moving a camera window back into a tab as an overlay (#2737).
+ *
+ * The camera window asks over a BroadcastChannel, every tab showing the app
+ * answers, and exactly one of them is told to open the overlay.
+ */
+const CAMERA_CHANNEL = 'printbuddy-camera';
+const TAB_ID_KEY = 'printbuddyTabId';
+
+type PopInMessage =
+  | { type: 'pop-in-offer'; requestId: string; printerId: number; printerName: string }
+  | { type: 'pop-in-candidate'; requestId: string; tabId: string; instanceId: string }
+  | { type: 'pop-in-claim'; requestId: string; instanceId: string; deadline: number }
+  | { type: 'pop-in-done'; requestId: string }
+  | { type: 'pop-in-refused'; requestId: string; instanceId: string };
+
+function randomId(prefix: string): string {
+  return `${prefix}${Math.random().toString(36).slice(2, 12)}`;
+}
+
+/**
+ * This tab's id, kept in sessionStorage so a popup it opens inherits it.
+ */
+export function registerCameraTab(): string {
+  try {
+    const existing = sessionStorage.getItem(TAB_ID_KEY);
+    if (existing) return existing;
+    const tabId = randomId('t');
+    sessionStorage.setItem(TAB_ID_KEY, tabId);
+    return tabId;
+  } catch {
+    return randomId('t');
+  }
+}
+
+/** The tab this camera window was opened from, if it was. */
+export function readOpenerTabId(): string | null {
+  try {
+    return sessionStorage.getItem(TAB_ID_KEY);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Answer camera windows asking to move into a tab; `open` shows the overlay.
+ */
+export function listenForCameraPopIn(
+  tabId: string,
+  open: (printerId: number, printerName: string) => void,
+  canShow: (printerId: number) => Promise<boolean> = async () => true,
+): () => void {
+  if (typeof BroadcastChannel === 'undefined') return () => {};
+  const channel = new BroadcastChannel(CAMERA_CHANNEL);
+  let closed = false;
+  const instanceId = randomId('i');
+  const offers = new Map<string, { printerId: number; printerName: string }>();
+  channel.onmessage = async (event: MessageEvent<PopInMessage>) => {
+    const msg = event.data;
+    if (msg?.type === 'pop-in-offer' && Number.isInteger(msg.printerId) && msg.printerId > 0) {
+      offers.set(msg.requestId, { printerId: msg.printerId, printerName: String(msg.printerName ?? '') });
+      channel.postMessage({ type: 'pop-in-candidate', requestId: msg.requestId, tabId, instanceId } satisfies PopInMessage);
+    } else if (msg?.type === 'pop-in-claim') {
+      if (msg.instanceId !== instanceId) return;
+      const offer = offers.get(msg.requestId);
+      offers.delete(msg.requestId);
+      if (!offer) return;
+      let allowed = false;
+      try {
+        allowed = await canShow(offer.printerId);
+      } catch {
+        allowed = false;
+      }
+      if (closed) return;
+      if (!allowed) {
+        channel.postMessage({ type: 'pop-in-refused', requestId: msg.requestId, instanceId } satisfies PopInMessage);
+        return;
+      }
+      if (!(Date.now() <= msg.deadline)) return;
+      open(offer.printerId, offer.printerName);
+      channel.postMessage({ type: 'pop-in-done', requestId: msg.requestId } satisfies PopInMessage);
+    } else if (msg?.type === 'pop-in-done') {
+      offers.delete(msg.requestId);
+    }
+  };
+  return () => {
+    closed = true;
+    channel.close();
+  };
+}
+
+/**
+ * Ask a tab to take this camera as an overlay.
+ */
+export function requestCameraPopIn(
+  printerId: number,
+  printerName: string,
+  preferredTabId: string | null,
+  { answerMs = 400, doneMs = 3000 }: { answerMs?: number; doneMs?: number } = {},
+): Promise<boolean> {
+  if (typeof BroadcastChannel === 'undefined') return Promise.resolve(false);
+  const channel = new BroadcastChannel(CAMERA_CHANNEL);
+  const requestId = randomId('r');
+  return new Promise<boolean>((resolve) => {
+    const candidates: Array<{ tabId: string; instanceId: string }> = [];
+    let claimedId: string | null = null;
+    let timer: ReturnType<typeof setTimeout>;
+    const finish = (ok: boolean) => {
+      clearTimeout(timer);
+      channel.close();
+      resolve(ok);
+    };
+    const claimNext = () => {
+      clearTimeout(timer);
+      const target = candidates.find(c => c.tabId === preferredTabId) ?? candidates[0];
+      if (!target) {
+        finish(false);
+        return;
+      }
+      candidates.splice(candidates.indexOf(target), 1);
+      claimedId = target.instanceId;
+      const deadline = Date.now() + doneMs / 2;
+      channel.postMessage({ type: 'pop-in-claim', requestId, instanceId: target.instanceId, deadline } satisfies PopInMessage);
+      timer = setTimeout(() => finish(false), doneMs);
+    };
+    channel.onmessage = (event: MessageEvent<PopInMessage>) => {
+      const msg = event.data;
+      if (msg?.requestId !== requestId) return;
+      if (msg.type === 'pop-in-candidate') {
+        candidates.push({ tabId: msg.tabId, instanceId: msg.instanceId });
+        if (claimedId === null && preferredTabId && msg.tabId === preferredTabId) claimNext();
+      } else if (msg.type === 'pop-in-refused' && msg.instanceId === claimedId) {
+        claimNext();
+      } else if (msg.type === 'pop-in-done') {
+        finish(true);
+      }
+    };
+    timer = setTimeout(claimNext, answerMs);
+    channel.postMessage({ type: 'pop-in-offer', requestId, printerId, printerName } satisfies PopInMessage);
+  });
 }

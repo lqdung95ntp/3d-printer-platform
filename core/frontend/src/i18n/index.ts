@@ -3,6 +3,7 @@ import { initReactI18next } from 'react-i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
 
 // Import translations directly for bundling
+import vi from './locales/vi';
 import en from './locales/en';
 import de from './locales/de';
 import es from './locales/es';
@@ -14,6 +15,7 @@ import zhCN from './locales/zh-CN';
 import zhTW from './locales/zh-TW';
 
 const resources = {
+  vi: { translation: vi },
   en: { translation: en },
   de: { translation: de },
   es: { translation: es },
@@ -30,12 +32,15 @@ i18n
   .use(initReactI18next)
   .init({
     resources,
-    fallbackLng: 'en',
-    supportedLngs: ['en', 'de', 'es', 'fr', 'ja', 'it', 'pt-BR', 'zh-CN', 'zh-TW'],
+    fallbackLng: {
+      vi: ['en'],
+      default: ['vi', 'en'],
+    },
+    supportedLngs: ['vi', 'en', 'de', 'es', 'fr', 'ja', 'it', 'pt-BR', 'zh-CN', 'zh-TW'],
 
     detection: {
       // Order of detection methods
-      order: ['localStorage', 'navigator', 'htmlTag'],
+      order: ['localStorage'],
       // Key to use in localStorage
       lookupLocalStorage: 'bambutrack_language',
       // Cache user language
@@ -55,6 +60,7 @@ export default i18n;
 
 // Helper to get available languages
 export const availableLanguages = [
+  { code: 'vi', name: 'Vietnamese', nativeName: 'Tiếng Việt' },
   { code: 'en', name: 'English', nativeName: 'English' },
   { code: 'de', name: 'German', nativeName: 'Deutsch' },
   { code: 'es', name: 'Spanish', nativeName: 'Español' },
