@@ -3328,7 +3328,7 @@ export function QueuePage() {
 
 			{/* Tab strip — Active queue is the main view; History, Batches and Timeline
           live in their own tabs so the queue page stays focused. */}
-			<div className="flex gap-1 border-b border-bambu-dark-tertiary mb-6 overflow-x-auto">
+			<div className="flex gap-1 border-b border-bambu-dark-tertiary mb-3 sm:mb-4 overflow-x-auto">
 				{[
 					{
 						id: "queue" as const,
@@ -3443,160 +3443,161 @@ export function QueuePage() {
 					</div>
 				)}
 
-			{/* Filters — about the print queue items (printer / status / location). */}
+			{/* Unified Toolbar: View mode, SJF, Filters, and Actions */}
 			{activeTab !== "batches" && (
-				<div className="flex flex-wrap items-center gap-2 sm:gap-4 mb-6">
-					<select
-						className="px-2 sm:px-3 py-2 text-sm sm:text-base bg-bambu-dark-secondary border border-bambu-dark-tertiary rounded-lg text-white focus:border-bambu-green focus:outline-none min-w-0 flex-1 sm:flex-none"
-						value={
-							filterPrinter === -1
-								? "unassigned"
-								: filterPrinter || ""
-						}
-						onChange={(e) => {
-							const val = e.target.value;
-							if (val === "unassigned") setFilterPrinter(-1);
-							else if (val === "") setFilterPrinter(null);
-							else setFilterPrinter(Number(val));
-						}}
-					>
-						<option value="">
-							{t("queue.filter.allPrinters")}
-						</option>
-						<option value="unassigned">
-							{t("queue.filter.unassigned")}
-						</option>
-						{printers?.map((p) => (
-							<option key={p.id} value={p.id}>
-								{p.name}
-							</option>
-						))}
-					</select>
+				<div className="flex flex-wrap items-center justify-between gap-2.5 mb-3 sm:mb-4">
+					<div className="flex flex-wrap items-center gap-2">
+						{activeTab === "queue" && (
+							<>
+								<div className="inline-flex items-center bg-bambu-dark-secondary border border-bambu-dark-tertiary rounded-lg p-0.5">
+									<button
+										className={`px-2.5 py-1 text-xs rounded-md transition-colors flex items-center gap-1.5 ${
+											activeLayout === "position"
+												? "bg-bambu-dark-tertiary text-white shadow-sm font-medium"
+												: "text-bambu-gray hover:text-white"
+										}`}
+										onClick={() => setActiveLayout("position")}
+										title={t("queue.layout.flatList")}
+									>
+										<List className="w-3.5 h-3.5" />
+										<span className="hidden sm:inline">
+											{t("queue.layout.flatList")}
+										</span>
+									</button>
+									<button
+										className={`px-2.5 py-1 text-xs rounded-md transition-colors flex items-center gap-1.5 ${
+											activeLayout === "printer"
+												? "bg-bambu-dark-tertiary text-white shadow-sm font-medium"
+												: "text-bambu-gray hover:text-white"
+										}`}
+										onClick={() => setActiveLayout("printer")}
+										title={t("queue.layout.groupByPrinter")}
+									>
+										<Printer className="w-3.5 h-3.5" />
+										<span className="hidden sm:inline">
+											{t("queue.layout.byPrinter")}
+										</span>
+									</button>
+								</div>
 
-					<select
-						className="px-2 sm:px-3 py-2 text-sm sm:text-base bg-bambu-dark-secondary border border-bambu-dark-tertiary rounded-lg text-white focus:border-bambu-green focus:outline-none min-w-0 flex-1 sm:flex-none"
-						value={filterStatus}
-						onChange={(e) => setFilterStatus(e.target.value)}
-					>
-						<option value="">{t("queue.filter.allStatus")}</option>
-						<option value="pending">
-							{t("queue.status.pending")}
-						</option>
-						<option value="printing">
-							{t("queue.status.printing")}
-						</option>
-						<option value="completed">
-							{t("queue.status.completed")}
-						</option>
-						<option value="failed">
-							{t("queue.status.failed")}
-						</option>
-						<option value="skipped">
-							{t("queue.status.skipped")}
-						</option>
-						<option value="cancelled">
-							{t("queue.status.cancelled")}
-						</option>
-					</select>
+								<button
+									onClick={() => {
+										const newValue = !(
+											settings?.queue_shortest_first ?? false
+										);
+										sjfMutation.mutate(newValue);
+									}}
+									className={`flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-lg border transition-colors ${
+										settings?.queue_shortest_first
+											? "bg-bambu-green/20 border-bambu-green text-bambu-green"
+											: "bg-bambu-dark-secondary border-bambu-dark-tertiary text-bambu-gray hover:text-white hover:border-bambu-gray"
+									}`}
+									title={t(
+										"queue.sjf.tooltip",
+										"Shortest Job First — scheduler prioritizes shorter prints",
+									)}
+								>
+									<Snail className="w-3.5 h-3.5" />
+									<span>{t("queue.sjf.label", "SJF")}</span>
+									<span
+										className={`w-1.5 h-1.5 rounded-full ${settings?.queue_shortest_first ? "bg-bambu-green" : "bg-bambu-gray"}`}
+									/>
+								</button>
 
-					{uniqueLocations.length > 0 && (
+								<div className="hidden sm:block h-4 w-px bg-bambu-dark-tertiary mx-0.5" />
+							</>
+						)}
+
 						<select
-							className="px-2 sm:px-3 py-2 text-sm sm:text-base bg-bambu-dark-secondary border border-bambu-dark-tertiary rounded-lg text-white focus:border-bambu-green focus:outline-none min-w-0 flex-1 sm:flex-none"
-							value={filterLocation}
-							onChange={(e) => setFilterLocation(e.target.value)}
+							className="px-2.5 py-1 text-xs bg-bambu-dark-secondary border border-bambu-dark-tertiary rounded-lg text-white focus:border-bambu-green focus:outline-none min-w-0"
+							value={
+								filterPrinter === -1
+									? "unassigned"
+									: filterPrinter || ""
+							}
+							onChange={(e) => {
+								const val = e.target.value;
+								if (val === "unassigned") setFilterPrinter(-1);
+								else if (val === "") setFilterPrinter(null);
+								else setFilterPrinter(Number(val));
+							}}
 						>
 							<option value="">
-								{t("queue.filter.allLocations")}
+								{t("queue.filter.allPrinters")}
 							</option>
-							{uniqueLocations.map((loc) => (
-								<option key={loc} value={loc}>
-									{loc}
+							<option value="unassigned">
+								{t("queue.filter.unassigned")}
+							</option>
+							{printers?.map((p) => (
+								<option key={p.id} value={p.id}>
+									{p.name}
 								</option>
 							))}
 						</select>
-					)}
 
-					<div className="hidden sm:block flex-1" />
+						<select
+							className="px-2.5 py-1 text-xs bg-bambu-dark-secondary border border-bambu-dark-tertiary rounded-lg text-white focus:border-bambu-green focus:outline-none min-w-0"
+							value={filterStatus}
+							onChange={(e) => setFilterStatus(e.target.value)}
+						>
+							<option value="">{t("queue.filter.allStatus")}</option>
+							<option value="pending">
+								{t("queue.status.pending")}
+							</option>
+							<option value="printing">
+								{t("queue.status.printing")}
+							</option>
+							<option value="completed">
+								{t("queue.status.completed")}
+							</option>
+							<option value="failed">
+								{t("queue.status.failed")}
+							</option>
+							<option value="skipped">
+								{t("queue.status.skipped")}
+							</option>
+							<option value="cancelled">
+								{t("queue.status.cancelled")}
+							</option>
+						</select>
 
-					{activeTab === "history" && historyItems.length > 0 && (
-						<Button
-							className="w-full sm:w-auto"
-							variant="secondary"
-							size="sm"
-							onClick={() => setShowClearHistoryConfirm(true)}
-							disabled={!hasPermission("queue:delete_all")}
-							title={
-								!hasPermission("queue:delete_all")
-									? t("queue.permissions.noClearHistory")
-									: undefined
-							}
-						>
-							<Trash2 className="w-4 h-4" />
-							{t("queue.clearHistory")}
-						</Button>
-					)}
-				</div>
-			)}
-
-			{/* Queue-tab controls: layout toggle (Position / Printer) + SJF.
-          Hidden on History/Timeline tabs since they don't apply. */}
-			{activeTab === "queue" && (
-				<div className="flex flex-wrap items-center gap-3 mb-6">
-					<div className="inline-flex items-center bg-bambu-dark-secondary border border-bambu-dark-tertiary rounded-lg p-0.5">
-						<button
-							className={`px-3 py-1.5 text-xs sm:text-sm rounded-md transition-colors flex items-center gap-1.5 ${
-								activeLayout === "position"
-									? "bg-bambu-dark-tertiary text-white"
-									: "text-bambu-gray hover:text-white"
-							}`}
-							onClick={() => setActiveLayout("position")}
-							title={t("queue.layout.flatList")}
-						>
-							<List className="w-3.5 h-3.5" />
-							<span className="hidden sm:inline">
-								{t("queue.layout.flatList")}
-							</span>
-						</button>
-						<button
-							className={`px-3 py-1.5 text-xs sm:text-sm rounded-md transition-colors flex items-center gap-1.5 ${
-								activeLayout === "printer"
-									? "bg-bambu-dark-tertiary text-white"
-									: "text-bambu-gray hover:text-white"
-							}`}
-							onClick={() => setActiveLayout("printer")}
-							title={t("queue.layout.groupByPrinter")}
-						>
-							<Printer className="w-3.5 h-3.5" />
-							<span className="hidden sm:inline">
-								{t("queue.layout.byPrinter")}
-							</span>
-						</button>
-					</div>
-					<button
-						onClick={() => {
-							const newValue = !(
-								settings?.queue_shortest_first ?? false
-							);
-							sjfMutation.mutate(newValue);
-						}}
-						className={`flex items-center gap-1 px-2 py-1.5 text-xs rounded-lg border transition-colors ${
-							settings?.queue_shortest_first
-								? "bg-bambu-green/20 border-bambu-green text-bambu-green"
-								: "bg-bambu-dark-secondary border-bambu-dark-tertiary text-bambu-gray hover:text-white hover:border-bambu-gray"
-						}`}
-						title={t(
-							"queue.sjf.tooltip",
-							"Shortest Job First — scheduler prioritizes shorter prints",
+						{uniqueLocations.length > 0 && (
+							<select
+								className="px-2.5 py-1 text-xs bg-bambu-dark-secondary border border-bambu-dark-tertiary rounded-lg text-white focus:border-bambu-green focus:outline-none min-w-0"
+								value={filterLocation}
+								onChange={(e) => setFilterLocation(e.target.value)}
+							>
+								<option value="">
+									{t("queue.filter.allLocations")}
+								</option>
+								{uniqueLocations.map((loc) => (
+									<option key={loc} value={loc}>
+										{loc}
+									</option>
+								))}
+							</select>
 						)}
-					>
-						<Snail className="w-4 h-4" />
-						<span className="hidden sm:inline">
-							{t("queue.sjf.label", "SJF")}
-						</span>
-						<span
-							className={`w-1.5 h-1.5 rounded-full ${settings?.queue_shortest_first ? "bg-bambu-green" : "bg-bambu-gray"}`}
-						/>
-					</button>
+					</div>
+
+					<div className="flex items-center gap-2">
+						{activeTab === "history" && historyItems.length > 0 && (
+							<Button
+								variant="secondary"
+								size="sm"
+								className="text-xs h-7 px-2.5"
+								onClick={() => setShowClearHistoryConfirm(true)}
+								disabled={!hasPermission("queue:delete_all")}
+								title={
+									!hasPermission("queue:delete_all")
+										? t("queue.permissions.noClearHistory")
+										: undefined
+								}
+							>
+								<Trash2 className="w-3.5 h-3.5" />
+								{t("queue.clearHistory")}
+							</Button>
+						)}
+					</div>
 				</div>
 			)}
 
@@ -3712,27 +3713,61 @@ export function QueuePage() {
 					{/* Pending Queue */}
 					{pendingItems.length > 0 && (
 						<div>
-							<div className="flex flex-wrap items-center justify-between gap-2 mb-3 sm:mb-4">
-								<h2 className="text-base sm:text-lg font-semibold text-white flex items-center gap-2">
-									<Clock className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-600 dark:text-yellow-400" />
-									{t("queue.sections.queued")}
-									<span className="text-xs sm:text-sm font-normal text-bambu-gray">
-										(
-										{t("queue.itemCount", {
-											count: pendingItems.length,
-										})}
-										)
-									</span>
+							<div className="flex flex-wrap items-center justify-between gap-2 mb-2 sm:mb-3">
+								<div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+									<h2 className="text-sm sm:text-base font-semibold text-white flex items-center gap-1.5">
+										<Clock className="w-4 h-4 text-yellow-500 flex-shrink-0" />
+										<span>{t("queue.sections.queued")}</span>
+										<span className="text-xs font-normal text-bambu-gray">
+											(
+											{t("queue.itemCount", {
+												count: pendingItems.length,
+											})}
+											)
+										</span>
+									</h2>
 									<span
-										className="hidden sm:inline text-xs text-bambu-gray ml-2"
+										className="hidden md:inline text-xs text-bambu-gray/80"
 										title={t("queue.reorderHint")}
 									>
-										{t("queue.dragToReorder")}
+										· {t("queue.dragToReorder")}
 									</span>
-								</h2>
-								<div className="flex items-center gap-2">
+
+									{/* Quick Select All inline toggle */}
+									{hasAnyPermission(
+										"queue:update_own",
+										"queue:update_all",
+										"queue:delete_own",
+										"queue:delete_all",
+									) && (
+										<Button
+											variant="ghost"
+											size="sm"
+											onClick={handleSelectAll}
+											className="h-7 px-2 text-xs text-bambu-gray hover:text-white"
+										>
+											{selectedItems.length ===
+												pendingItems.length &&
+											pendingItems.length > 0 ? (
+												<CheckSquare className="w-3.5 h-3.5 text-bambu-green" />
+											) : (
+												<Square className="w-3.5 h-3.5" />
+											)}
+											<span>
+												{selectedItems.length ===
+													pendingItems.length &&
+												pendingItems.length > 0
+													? t("queue.bulkEdit.deselectAll")
+													: t("queue.bulkEdit.selectAll")}
+											</span>
+										</Button>
+									)}
+								</div>
+
+								{/* Sort Controls */}
+								<div className="flex items-center gap-1.5">
 									<select
-										className="px-2 sm:px-3 py-1.5 text-xs sm:text-sm bg-bambu-dark-secondary border border-bambu-dark-tertiary rounded-lg text-white focus:border-bambu-green focus:outline-none"
+										className="px-2 py-1 text-xs bg-bambu-dark-secondary border border-bambu-dark-tertiary rounded-lg text-white focus:border-bambu-green focus:outline-none"
 										value={pendingSortBy}
 										onChange={(e) =>
 											setPendingSortBy(
@@ -3768,138 +3803,117 @@ export function QueuePage() {
 												? t("common.ascending")
 												: t("common.descending")
 										}
-										className="px-2"
+										className="h-7 w-7 p-0"
 									>
 										{pendingSortAsc ? (
-											<ArrowUp className="w-4 h-4" />
+											<ArrowUp className="w-3.5 h-3.5 text-bambu-gray hover:text-white" />
 										) : (
-											<ArrowDown className="w-4 h-4" />
+											<ArrowDown className="w-3.5 h-3.5 text-bambu-gray hover:text-white" />
 										)}
 									</Button>
 								</div>
 							</div>
 
-							{/* Bulk action toolbar (now with "Group as batch") */}
-							<div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-3 sm:mb-4 p-2 sm:p-3 bg-bambu-dark rounded-lg">
-								<Button
-									variant="ghost"
-									size="sm"
-									onClick={handleSelectAll}
-									className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm"
-								>
-									{selectedItems.length ===
-										pendingItems.length &&
-									pendingItems.length > 0 ? (
-										<CheckSquare className="w-4 h-4 text-bambu-green" />
-									) : (
-										<Square className="w-4 h-4" />
-									)}
-									{selectedItems.length ===
-										pendingItems.length &&
-									pendingItems.length > 0
-										? t("queue.bulkEdit.deselectAll")
-										: t("queue.bulkEdit.selectAll")}
-								</Button>
-								{selectedItems.length > 0 && (
-									<>
-										<span className="text-xs sm:text-sm text-bambu-gray">
-											{t("queue.bulkEdit.selected", {
-												count: selectedItems.length,
-											})}
-										</span>
-										<div className="hidden sm:block h-4 w-px bg-bambu-dark-tertiary" />
-										{canGroupSelected && (
-											<Button
-												variant="ghost"
-												size="sm"
-												onClick={() =>
-													setGroupBatchModal(true)
-												}
-												className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm text-cyan-700 dark:text-cyan-300 hover:text-cyan-900 dark:hover:text-cyan-200"
-												title={t(
+							{/* Bulk action toolbar (Only visible when items are selected) */}
+							{selectedItems.length > 0 && (
+								<div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-3 p-2 bg-bambu-dark-secondary/90 border border-bambu-green/30 rounded-lg shadow-sm">
+									<span className="text-xs sm:text-sm font-medium text-white px-1">
+										{t("queue.bulkEdit.selected", {
+											count: selectedItems.length,
+										})}
+									</span>
+									<div className="hidden sm:block h-4 w-px bg-bambu-dark-tertiary" />
+									{canGroupSelected && (
+										<Button
+											variant="ghost"
+											size="sm"
+											onClick={() =>
+												setGroupBatchModal(true)
+											}
+											className="flex items-center gap-1.5 text-xs text-cyan-400 hover:text-cyan-300 h-7 px-2"
+											title={t(
+												"queue.batch.groupAsBatch",
+											)}
+										>
+											<Package className="w-3.5 h-3.5" />
+											<span>
+												{t(
 													"queue.batch.groupAsBatch",
 												)}
-											>
-												<Package className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-												<span className="hidden sm:inline">
-													{t(
-														"queue.batch.groupAsBatch",
-													)}
-												</span>
-											</Button>
-										)}
-										<Button
-											variant="ghost"
-											size="sm"
-											onClick={() =>
-												setShowBulkEditModal(true)
-											}
-											className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm text-bambu-green hover:text-bambu-green-light"
-											disabled={
-												!hasAnyPermission(
-													"queue:update_own",
-													"queue:update_all",
-												)
-											}
-											title={
-												!hasAnyPermission(
-													"queue:update_own",
-													"queue:update_all",
-												)
-													? t(
-															"queue.permissions.noEditItems",
-														)
-													: t(
-															"queue.bulkEdit.editSelected",
-														)
-											}
-										>
-											<Pencil className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-											<span className="hidden sm:inline">
-												{t(
-													"queue.bulkEdit.editSelected",
-												)}
 											</span>
 										</Button>
-										<Button
-											variant="ghost"
-											size="sm"
-											onClick={() =>
-												bulkCancelMutation.mutate(
-													selectedItems,
-												)
-											}
-											className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"
-											disabled={
-												bulkCancelMutation.isPending ||
-												!hasAnyPermission(
-													"queue:delete_own",
-													"queue:delete_all",
-												)
-											}
-											title={
-												!hasAnyPermission(
-													"queue:delete_own",
-													"queue:delete_all",
-												)
-													? t(
-															"queue.permissions.noCancelItems",
-														)
-													: t(
-															"queue.bulkEdit.cancelSelected",
-														)
-											}
-										>
-											<X className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-											<span className="hidden sm:inline">
-												{t(
-													"queue.bulkEdit.cancelSelected",
-												)}
-											</span>
-										</Button>
-									</>
-								)}
-							</div>
+									)}
+									<Button
+										variant="ghost"
+										size="sm"
+										onClick={() =>
+											setShowBulkEditModal(true)
+										}
+										className="flex items-center gap-1.5 text-xs text-bambu-green hover:text-bambu-green-light h-7 px-2"
+										disabled={
+											!hasAnyPermission(
+												"queue:update_own",
+												"queue:update_all",
+											)
+										}
+										title={
+											!hasAnyPermission(
+												"queue:update_own",
+												"queue:update_all",
+											)
+												? t(
+														"queue.permissions.noEditItems",
+													)
+												: t(
+														"queue.bulkEdit.editSelected",
+													)
+										}
+									>
+										<Pencil className="w-3.5 h-3.5" />
+										<span>
+											{t(
+												"queue.bulkEdit.editSelected",
+											)}
+										</span>
+									</Button>
+									<Button
+										variant="ghost"
+										size="sm"
+										onClick={() =>
+											bulkCancelMutation.mutate(
+												selectedItems,
+											)
+										}
+										className="flex items-center gap-1.5 text-xs text-red-400 hover:text-red-300 h-7 px-2"
+										disabled={
+											bulkCancelMutation.isPending ||
+											!hasAnyPermission(
+												"queue:delete_own",
+												"queue:delete_all",
+											)
+										}
+										title={
+											!hasAnyPermission(
+												"queue:delete_own",
+												"queue:delete_all",
+											)
+												? t(
+														"queue.permissions.noCancelItems",
+													)
+												: t(
+														"queue.bulkEdit.cancelSelected",
+													)
+										}
+									>
+										<X className="w-3.5 h-3.5" />
+										<span>
+											{t(
+												"queue.bulkEdit.cancelSelected",
+											)}
+										</span>
+									</Button>
+								</div>
+							)}
 
 							<DndContext
 								sensors={sensors}
