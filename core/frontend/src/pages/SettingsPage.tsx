@@ -30,6 +30,7 @@ import {
 	Database,
 	X,
 	Shield,
+	ShieldCheck,
 	Printer,
 	Cylinder,
 	Wifi,
@@ -1208,6 +1209,13 @@ export function SettingsPage() {
 			staleTime: 60 * 1000,
 		});
 
+	const { data: autoUpdateStatus } = useQuery({
+		queryKey: ["autoUpdateStatus"],
+		queryFn: api.getAutoUpdateStatus,
+		enabled: settings?.check_updates !== false,
+		refetchInterval: 15000,
+	});
+
 	const { data: selfUpdateJob } = useQuery<SelfUpdateJob>({
 		queryKey: ["selfUpdateJob", selfUpdateJobId],
 		queryFn: () => api.getSelfUpdateJob(selfUpdateJobId!),
@@ -1805,6 +1813,10 @@ export function SettingsPage() {
 				(localSettings.check_printer_firmware ?? true) ||
 			(settings.include_beta_updates ?? false) !==
 				(localSettings.include_beta_updates ?? false) ||
+			(settings.auto_update_enabled ?? true) !==
+				(localSettings.auto_update_enabled ?? true) ||
+			(settings.auto_update_time ?? "03:00") !==
+				(localSettings.auto_update_time ?? "03:00") ||
 			settings.notification_language !==
 				localSettings.notification_language ||
 			(settings.bed_cooled_threshold ?? 35) !==
@@ -1931,6 +1943,8 @@ export function SettingsPage() {
 				check_updates: localSettings.check_updates,
 				check_printer_firmware: localSettings.check_printer_firmware,
 				include_beta_updates: localSettings.include_beta_updates,
+				auto_update_enabled: localSettings.auto_update_enabled,
+				auto_update_time: localSettings.auto_update_time,
 				notification_language: localSettings.notification_language,
 				bed_cooled_threshold: localSettings.bed_cooled_threshold,
 				ams_humidity_good: localSettings.ams_humidity_good,
@@ -4809,7 +4823,7 @@ export function SettingsPage() {
 											</h2>
 										</CardHeader>
 										<CardContent className="space-y-3">
-											<div className="flex items-center justify-between">
+											<div className="flex items-center justify-between pb-3 border-b border-bambu-dark-tertiary">
 												<div>
 													<p className="text-white">
 														{t(
@@ -4840,6 +4854,124 @@ export function SettingsPage() {
 													<div className="w-11 h-6 bg-bambu-dark-tertiary peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-bambu-green"></div>
 												</label>
 											</div>
+
+											{/* Scheduled Safe Auto-Update */}
+											<div className="flex items-center justify-between py-2 border-b border-bambu-dark-tertiary">
+												<div>
+													<p className="text-white font-medium">
+														{t(
+															"settings.autoUpdateScheduled",
+															"Scheduled Safe Auto-Update",
+														)}
+													</p>
+													<p className="text-sm text-bambu-gray">
+														{t(
+															"settings.autoUpdateScheduledDescription",
+															"Automatically apply updates at a scheduled time only when all tasks and printers are idle",
+														)}
+													</p>
+												</div>
+												<label className="relative inline-flex items-center cursor-pointer">
+													<input
+														type="checkbox"
+														checked={
+															localSettings.auto_update_enabled ??
+															true
+														}
+														onChange={(e) =>
+															updateSetting(
+																"auto_update_enabled",
+																e.target
+																	.checked,
+															)
+														}
+														className="sr-only peer"
+													/>
+													<div className="w-11 h-6 bg-bambu-dark-tertiary peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-bambu-green"></div>
+												</label>
+											</div>
+
+											{(localSettings.auto_update_enabled ?? true) && (
+												<div className="py-3 border-b border-bambu-dark-tertiary space-y-3">
+													<div className="flex items-center justify-between">
+														<div>
+															<label className="block text-sm font-medium text-white">
+																{t(
+																	"settings.autoUpdateTime",
+																	"Daily Update Time",
+																)}
+															</label>
+															<p className="text-xs text-bambu-gray">
+																{t(
+																	"settings.autoUpdateTimeHint",
+																	"Time of day to check and apply updates (default 03:00)",
+																)}
+															</p>
+														</div>
+														<input
+															type="time"
+															value={
+																localSettings.auto_update_time ||
+																"03:00"
+															}
+															onChange={(e) =>
+																updateSetting(
+																	"auto_update_time",
+																	e.target
+																		.value,
+																)
+															}
+															className="px-3 py-1.5 bg-bambu-dark border border-bambu-dark-tertiary rounded text-sm text-white focus:outline-none focus:border-bambu-green font-mono"
+														/>
+													</div>
+													<div className="p-3 bg-bambu-dark rounded border border-bambu-dark-tertiary/60 text-xs text-bambu-gray space-y-1">
+														<div className="flex items-center gap-1.5 text-bambu-green font-medium">
+															<ShieldCheck className="w-4 h-4" />
+															<span>
+																{t(
+																	"settings.autoUpdateGuardrailTitle",
+																	"Safe Graceful Update Guardrail",
+																)}
+															</span>
+														</div>
+														<p>
+															{t(
+																"settings.autoUpdateGuardrailDesc",
+																"Before updating, the platform verifies that no file transfers (G-code/3MF), active queue dispatches, bed plate clearing, or backups are in progress. If busy, it waits 30 seconds and retries for up to 15 minutes. If still busy, the update is postponed to the next day.",
+															)}
+														</p>
+														{autoUpdateStatus && (
+															<p className="pt-1 text-bambu-gray/80 border-t border-bambu-dark-tertiary/40">
+																{t(
+																	"settings.autoUpdateStatusLabel",
+																	"Current status:",
+																)}{" "}
+																<span
+																	className={
+																		autoUpdateStatus.is_busy
+																			? "text-amber-400"
+																			: "text-bambu-green"
+																	}
+																>
+																	{autoUpdateStatus.is_busy
+																		? `${t("settings.autoUpdateStatusBusy", "Busy")} (${autoUpdateStatus.busy_reason})`
+																		: t(
+																				"settings.autoUpdateStatusIdle",
+																				"Idle (Safe to update)",
+																			)}
+																</span>
+																{autoUpdateStatus.last_status_message && (
+																	<span className="block text-bambu-gray/60 italic mt-0.5">
+																		{
+																			autoUpdateStatus.last_status_message
+																		}
+																	</span>
+																)}
+															</p>
+														)}
+													</div>
+												</div>
+											)}
 											<div>
 												<div className="flex items-center justify-between mb-2">
 													<div>

@@ -1201,6 +1201,10 @@ export interface AppSettings {
 	check_updates: boolean;
 	check_printer_firmware: boolean;
 	include_beta_updates: boolean;
+	auto_update_enabled?: boolean;
+	auto_update_time?: string;
+	auto_update_retry_delay?: number;
+	auto_update_timeout_minutes?: number;
 	language: string;
 	notification_language: string;
 	// AMS threshold settings
@@ -3321,6 +3325,15 @@ export interface SelfUpdateStatus {
 	};
 }
 
+export interface AutoUpdateStatus {
+	current_phase: "idle" | "checking" | "waiting_idle" | "updating" | "postponed";
+	is_busy: boolean;
+	busy_reason?: string | null;
+	last_checked_date?: string | null;
+	last_status_message?: string | null;
+	last_run_timestamp?: number | null;
+}
+
 export interface SelfUpdateJob {
 	job_id: string;
 	status:
@@ -4105,7 +4118,14 @@ export const api = {
 	// Printers
 	getPrinters: () => request<Printer[]>("/printers/"),
 	getUsbCameras: () =>
-		request<{ cameras: Array<{ device: string; name: string; capabilities?: string[]; driver?: string }> }>("/printers/usb-cameras"),
+		request<{
+			cameras: Array<{
+				device: string;
+				name: string;
+				capabilities?: string[];
+				driver?: string;
+			}>;
+		}>("/printers/usb-cameras"),
 	getPrinterFleetGroups: () =>
 		request<PrinterFleetGroup[]>("/printer-fleet-groups/"),
 	createPrinterFleetGroup: (data: PrinterFleetGroupPayload) =>
@@ -4326,7 +4346,7 @@ export const api = {
 		),
 	resetStatusFinish: (printerId: number) =>
 		request<{ success: boolean; message: string }>(
-			`/printers/${printerId}/reset-status-finish`,
+			`/printers/${printerId}/reset-status`,
 			{ method: "POST" },
 		),
 	klipperHome: (printerId: number, axes?: string[]) =>
@@ -6881,6 +6901,13 @@ export const api = {
 	getUpdateStatus: () => request<UpdateStatus>("/updates/status"),
 	getSelfUpdateStatus: () =>
 		request<SelfUpdateStatus>("/updates/self-update/status"),
+	getAutoUpdateStatus: () =>
+		request<AutoUpdateStatus>("/updates/auto-update/status"),
+	triggerSafeAutoUpdate: () =>
+		request<{ status: string; message?: string; target?: string }>(
+			"/updates/auto-update/trigger",
+			{ method: "POST" },
+		),
 	startSelfUpdate: () =>
 		request<SelfUpdateStartResult>("/updates/self-update", {
 			method: "POST",

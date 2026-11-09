@@ -299,6 +299,7 @@ import {
 	isPrintableForProvider,
 } from "../utils/printerFileRules";
 import { canOpenPrinterCamera } from "../utils/printerCamera";
+import { defaultPrinterComparator } from "../utils/printerSort";
 
 import { KlipperControlPanel } from "../components/KlipperControlPanel";
 import { PRINTER_MODEL_GROUPS } from "../utils/printerModels";
@@ -17490,27 +17491,24 @@ export function PrintersPage() {
 
 		switch (sortBy) {
 			case "name":
-				sorted.sort((a, b) => a.name.localeCompare(b.name));
-				break;
 			case "model":
-				sorted.sort((a, b) =>
-					(a.model || "").localeCompare(b.model || ""),
-				);
+				sorted.sort(defaultPrinterComparator);
 				break;
 			case "location":
-				// Sort by location, with ungrouped printers last
+				// Sort by location, with ungrouped printers last; ties broken by default order (Bambu first, model, name)
 				sorted.sort((a, b) => {
 					const locA = a.location || "";
 					const locB = b.location || "";
 					if (!locA && locB) return 1;
 					if (locA && !locB) return -1;
 					return (
-						locA.localeCompare(locB) || a.name.localeCompare(b.name)
+						locA.localeCompare(locB, undefined, { numeric: true, sensitivity: "base" }) ||
+						defaultPrinterComparator(a, b)
 					);
 				});
 				break;
 			case "status":
-				// Sort by status: HMS errors > printing > idle > offline
+				// Sort by status: HMS errors > printing > idle > offline; ties broken by default order
 				sorted.sort((a, b) => {
 					const statusA = queryClient.getQueryData<{
 						connected: boolean;
@@ -17533,7 +17531,9 @@ export function PrintersPage() {
 						return 2; // idle
 					};
 
-					return getPriority(statusA) - getPriority(statusB);
+					const prioDiff = getPriority(statusA) - getPriority(statusB);
+					if (prioDiff !== 0) return prioDiff;
+					return defaultPrinterComparator(a, b);
 				});
 				break;
 			case "eta":
@@ -17570,7 +17570,7 @@ export function PrintersPage() {
 							(statusB!.remaining_time ?? 0);
 						if (diff !== 0) return diff;
 					}
-					return a.name.localeCompare(b.name);
+					return defaultPrinterComparator(a, b);
 				});
 				break;
 		}

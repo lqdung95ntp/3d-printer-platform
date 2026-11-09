@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { api, type PrinterStatus } from '../../api/client';
 import { getColorName } from '../../utils/colors';
+import { sortPrintersDefault } from '../../utils/printerSort';
 import {
   normalizeColorForCompare,
   colorsAreSimilar,
@@ -224,8 +225,11 @@ export function PrinterSelector({
   // State for showing all printers vs only matching model
   const [showAllPrinters, setShowAllPrinters] = useState(false);
 
-  // Filter printers based on showInactive flag
-  const activePrinters = showInactive ? printers : printers.filter((p) => p.is_active);
+  // Filter printers based on showInactive flag and order by default (Bambu first, model, name)
+  const activePrinters = useMemo(() => {
+    const list = showInactive ? printers : printers.filter((p) => p.is_active);
+    return sortPrintersDefault(list);
+  }, [printers, showInactive]);
 
   // Fetch printer statuses to determine busy/idle state
   const statusQueries = useQueries({
@@ -272,13 +276,16 @@ export function PrinterSelector({
 
   // Filter by sliced model (only in printer mode, when slicedForModel is set)
   const displayPrinters = useMemo(() => {
+    let list: typeof activePrinters;
     if (assignmentMode !== 'printer' || !slicedForModel || showAllPrinters) {
-      return activePrinters;
+      list = activePrinters;
+    } else {
+      // Filter to only show printers matching the sliced model
+      const matching = activePrinters.filter((p) => p.model === slicedForModel);
+      // If no matching printers, show all
+      list = matching.length > 0 ? matching : activePrinters;
     }
-    // Filter to only show printers matching the sliced model
-    const matching = activePrinters.filter((p) => p.model === slicedForModel);
-    // If no matching printers, show all
-    return matching.length > 0 ? matching : activePrinters;
+    return sortPrintersDefault(list);
   }, [activePrinters, assignmentMode, slicedForModel, showAllPrinters]);
 
   // Check if there are hidden printers due to model filtering
