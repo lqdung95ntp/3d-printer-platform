@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { AlertCircle, Box, CheckSquare, Loader2, Maximize2, Square, X, RotateCw } from 'lucide-react';
+import { AlertCircle, Box, CheckSquare, Loader2, Maximize2, Square, X, RotateCw, Zap } from 'lucide-react';
 import { api, withMediaToken, type PrintableObject } from '../api/client';
 import { useToast } from '../contexts/ToastContext';
 import { useAuth } from '../contexts/AuthContext';
+import { useProLicense } from '../contexts/ProLicenseContext';
 import { pickObjectIdAt, plateClickToMaskPoint } from '../utils/skipObjects';
 import { ConfirmModal } from './ConfirmModal';
 import { VectorBedViewer } from './VectorBedViewer';
@@ -29,6 +30,7 @@ export function SkipObjectsModal({ printerId, isOpen, onClose }: SkipObjectsModa
   const { t } = useTranslation();
   const { showToast } = useToast();
   const { hasPermission } = useAuth();
+  const { isPro, openUpgradeModal } = useProLicense();
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [confirming, setConfirming] = useState(false);
   const [enlarged, setEnlarged] = useState(false);
@@ -353,6 +355,24 @@ export function SkipObjectsModal({ printerId, isOpen, onClose }: SkipObjectsModa
             </div>
           </header>
 
+          {!isPro && (
+            <div className="flex items-center justify-between gap-3 px-4 py-2 bg-gradient-to-r from-amber-500/15 via-orange-500/10 to-amber-500/15 border-b border-amber-500/30 text-amber-200 text-xs">
+              <div className="flex items-center gap-2 min-w-0">
+                <Zap className="w-4 h-4 text-amber-400 shrink-0 fill-amber-400" />
+                <span className="truncate">
+                  <strong>BeE Pro:</strong> {t('printers.skipObjects.proBanner')}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => openUpgradeModal('Real-time Skip Objects')}
+                className="shrink-0 px-2.5 py-1 rounded bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-black font-bold text-xs shadow transition-all"
+              >
+                {t('common.upgrade', 'Upgrade')}
+              </button>
+            </div>
+          )}
+
           {!objectsData ? (
             <div className="flex items-center justify-center py-16">
               <Loader2 className="h-6 w-6 animate-spin text-bambu-gray" />
@@ -455,14 +475,25 @@ export function SkipObjectsModal({ printerId, isOpen, onClose }: SkipObjectsModa
                 <button type="button" onClick={onClose} className="rounded-md border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:border-bambu-dark-tertiary dark:text-white dark:hover:bg-white/5">
                   {t('common.cancel')}
                 </button>
-                <button
-                  type="button"
-                  onClick={() => setConfirming(true)}
-                  disabled={!canSubmit || skipObjectsMutation.isPending}
-                  className="rounded-md bg-red-500 px-4 py-2 text-sm font-semibold text-white hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-35"
-                >
-                  {skipObjectsMutation.isPending ? t('printers.skipObjects.skipping') : t('printers.skipObjects.skipSelected')}
-                </button>
+                {!isPro ? (
+                  <button
+                    type="button"
+                    onClick={() => openUpgradeModal('Real-time Skip Objects')}
+                    className="inline-flex items-center gap-1.5 rounded-md bg-gradient-to-r from-amber-500 to-orange-500 px-4 py-2 text-sm font-semibold text-black hover:from-amber-400 hover:to-orange-400 shadow transition-all cursor-pointer"
+                  >
+                    <Zap className="h-4 w-4 fill-black text-black" />
+                    {t('printers.skipObjects.upgradeToSkip')}
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setConfirming(true)}
+                    disabled={!canSubmit || skipObjectsMutation.isPending}
+                    className="rounded-md bg-red-500 px-4 py-2 text-sm font-semibold text-white hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-35"
+                  >
+                    {skipObjectsMutation.isPending ? t('printers.skipObjects.skipping') : t('printers.skipObjects.skipSelected')}
+                  </button>
+                )}
               </footer>
             </>
           )}

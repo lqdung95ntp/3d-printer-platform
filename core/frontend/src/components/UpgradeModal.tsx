@@ -234,6 +234,7 @@ export function UpgradeModal() {
 				"Manage 1 to 5 printers",
 				"Full BeE Pro: Continuous 24/7 Auto Swap PEI",
 				"Full BeE Pro: Smart Power auto shutoff",
+				"Real-time Skip Objects (Save multi-part plates)",
 				"Technical support via Zalo",
 			],
 		},
@@ -249,6 +250,7 @@ export function UpgradeModal() {
 			features: [
 				"Manage 6 to 15 printers",
 				"Full BeE Pro for all farm printers",
+				"Real-time Skip Objects for multi-part plates",
 				"Optimized performance for medium farms",
 				"Priority technical support via Zalo",
 			],
@@ -265,6 +267,7 @@ export function UpgradeModal() {
 			features: [
 				"Manage 16 to 30 printers",
 				"Full BeE Pro maxed out on single Pi / Mini PC",
+				"Real-time Skip Objects for multi-part plates",
 				"Optimized MQTT & camera streaming",
 				"Dedicated 1-on-1 technical support",
 			],

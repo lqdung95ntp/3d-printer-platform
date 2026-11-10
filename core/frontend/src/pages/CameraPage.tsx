@@ -6,6 +6,7 @@ import { RefreshCw, AlertTriangle, Camera, Maximize, Minimize, WifiOff, ZoomIn, 
 import { api, getAuthToken, getStreamToken, withStreamToken } from '../api/client';
 import { useToast } from '../contexts/ToastContext';
 import { useAuth } from '../contexts/AuthContext';
+import { useProLicense } from '../contexts/ProLicenseContext';
 import { useStreamTokenSync } from '../hooks/useCameraStreamToken';
 import { ChamberLight } from '../components/icons/ChamberLight';
 import { SkipObjectsModal, SkipObjectsIcon } from '../components/SkipObjectsModal';
@@ -22,6 +23,7 @@ export function CameraPage() {
   const queryClient = useQueryClient();
   const { showToast } = useToast();
   const { hasPermission, authEnabled, user } = useAuth();
+  const { isPro } = useProLicense();
   const { printerId } = useParams<{ printerId: string }>();
   const id = parseInt(printerId || '0', 10);
   const [searchParams] = useSearchParams();
@@ -663,7 +665,7 @@ export function CameraPage() {
           <button
             onClick={() => setShowSkipObjectsModal(true)}
             disabled={!isPrintingWithObjects || !hasPermission('printers:control')}
-            className={`p-1.5 rounded disabled:opacity-50 ${isPrintingWithObjects && hasPermission('printers:control') ? 'hover:bg-bambu-dark-tertiary' : ''}`}
+            className={`p-1.5 rounded relative disabled:opacity-50 ${isPrintingWithObjects && hasPermission('printers:control') ? 'hover:bg-bambu-dark-tertiary' : ''}`}
             title={
               !hasPermission('printers:control')
                 ? t('printers.permission.noControl')
@@ -673,6 +675,11 @@ export function CameraPage() {
             }
           >
             <SkipObjectsIcon className="w-4 h-4 text-bambu-gray" />
+            {!isPro && (
+              <span className="absolute -top-1 -right-1 text-[7px] font-black bg-gradient-to-r from-amber-500 to-orange-500 text-black px-1 rounded shadow-sm leading-tight">
+                PRO
+              </span>
+            )}
           </button>
           <button
             onClick={refresh}

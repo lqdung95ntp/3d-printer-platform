@@ -16,6 +16,8 @@ import {
 import { api, type PrintableObject } from "../../api/client";
 import { SkipObjectsIcon } from "../SkipObjectsModal";
 import { VectorBedViewer } from "../VectorBedViewer";
+import { ProBadge } from "../ProBadge";
+import { useProLicense } from "../../contexts/ProLicenseContext";
 import { pickObjectIdAt, plateClickToMaskPoint } from "../../utils/skipObjects";
 
 export interface SkipObjectsProps {
@@ -40,6 +42,7 @@ export function SkipObjects({
 	defaultExpanded = false,
 }: SkipObjectsProps) {
 	const { t } = useTranslation();
+	const { isPro, openUpgradeModal } = useProLicense();
 	const [isExpanded, setIsExpanded] = useState(defaultExpanded);
 	const [enlarged, setEnlarged] = useState(false);
 	const [pickReady, setPickReady] = useState(false);
@@ -219,6 +222,10 @@ export function SkipObjects({
 
 	const toggleObject = useCallback(
 		(objectId: number) => {
+			if (!isPro) {
+				openUpgradeModal("Skip Objects");
+				return;
+			}
 			if (selectedSet.has(objectId)) {
 				onSelectedObjectIdsChange(
 					selectedObjectIds.filter((id) => id !== objectId),
@@ -227,7 +234,7 @@ export function SkipObjects({
 				onSelectedObjectIdsChange([...selectedObjectIds, objectId]);
 			}
 		},
-		[selectedSet, selectedObjectIds, onSelectedObjectIdsChange],
+		[isPro, openUpgradeModal, selectedSet, selectedObjectIds, onSelectedObjectIdsChange],
 	);
 
 	const toggleFromPlate = useCallback(
@@ -254,12 +261,16 @@ export function SkipObjects({
 	);
 
 	const handleSelectAll = useCallback(() => {
+		if (!isPro) {
+			openUpgradeModal("Skip Objects");
+			return;
+		}
 		if (allSelected) {
 			onSelectedObjectIdsChange([]);
 		} else {
 			onSelectedObjectIdsChange(objects.map((o) => o.id));
 		}
-	}, [allSelected, objects, onSelectedObjectIdsChange]);
+	}, [isPro, openUpgradeModal, allSelected, objects, onSelectedObjectIdsChange]);
 
 	const hasValidTopView = Boolean(topViewUrl && !topViewError);
 	const hasVectorPolygons =
@@ -332,6 +343,7 @@ export function SkipObjects({
 						? `${t("printModal.skipObjects", "Skip Objects")} — ${plateLabel}`
 						: t("printModal.skipObjects", "Skip Objects")}
 				</span>
+				<ProBadge feature="Skip Objects" />
 				{allSelected ? (
 					<span className="text-xs font-semibold text-red-400">
 						({objects.length}{" "}
@@ -362,6 +374,23 @@ export function SkipObjects({
 			{/* Collapsible Content */}
 			{isExpanded && (
 				<div className="mt-2 bg-bambu-dark rounded-lg p-3 border border-bambu-dark-tertiary space-y-3">
+					{!isPro && (
+						<div className="flex items-center justify-between gap-2 p-2.5 rounded bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs">
+							<span>
+								<strong>BeE Pro:</strong> {t("printModal.skipObjectsProNote", "Pre-skipping objects from queue is a Bee Pro feature.")}
+							</span>
+							<button
+								type="button"
+								onClick={(e) => {
+									e.stopPropagation();
+									openUpgradeModal("Skip Objects");
+								}}
+								className="font-bold underline text-amber-200 hover:text-white shrink-0 cursor-pointer"
+							>
+								{t("common.upgrade", "Upgrade")}
+							</button>
+						</div>
+					)}
 					<div className="flex items-center justify-between text-xs text-bambu-gray">
 						<span>
 							{t(

@@ -5,6 +5,7 @@ import { X, RefreshCw, AlertTriangle, Maximize2, Minimize2, GripVertical, WifiOf
 import { api, getAuthToken, withStreamToken } from '../api/client';
 import { useToast } from '../contexts/ToastContext';
 import { useAuth } from '../contexts/AuthContext';
+import { useProLicense } from '../contexts/ProLicenseContext';
 import { ChamberLight } from './icons/ChamberLight';
 import { SkipObjectsModal, SkipObjectsIcon } from './SkipObjectsModal';
 import { CameraDiagnoseModal } from './CameraDiagnoseModal';
@@ -47,6 +48,7 @@ export function EmbeddedCameraViewer({ printerId, printerName, viewerIndex = 0, 
   const queryClient = useQueryClient();
   const { showToast } = useToast();
   const { hasPermission } = useAuth();
+  const { isPro } = useProLicense();
 
   const isInline = mode === 'inline';
   const minWidth = isInline ? INLINE_MIN_WIDTH : FLOATING_MIN_WIDTH;
@@ -627,7 +629,7 @@ export function EmbeddedCameraViewer({ printerId, printerName, viewerIndex = 0, 
           <button
             onClick={() => setShowSkipObjectsModal(true)}
             disabled={!isPrintingWithObjects || !hasPermission('printers:control')}
-            className={`p-1 rounded disabled:opacity-50 ${isPrintingWithObjects && hasPermission('printers:control') ? 'hover:bg-bambu-dark-tertiary' : ''}`}
+            className={`p-1 rounded relative disabled:opacity-50 ${isPrintingWithObjects && hasPermission('printers:control') ? 'hover:bg-bambu-dark-tertiary' : ''}`}
             title={
               !hasPermission('printers:control')
                 ? t('printers.permission.noControl')
@@ -637,6 +639,11 @@ export function EmbeddedCameraViewer({ printerId, printerName, viewerIndex = 0, 
             }
           >
             <SkipObjectsIcon className="w-3.5 h-3.5 text-bambu-gray" />
+            {!isPro && (
+              <span className="absolute -top-1 -right-1 text-[7px] font-black bg-gradient-to-r from-amber-500 to-orange-500 text-black px-1 rounded shadow-sm leading-tight">
+                PRO
+              </span>
+            )}
           </button>
           <button
             onClick={refresh}

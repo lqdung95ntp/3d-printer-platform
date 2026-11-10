@@ -458,6 +458,10 @@ export default {
       confirmMessage: 'Are you sure you want to skip "{{name}}"? This cannot be undone.',
       confirmAllMessage: 'All remaining objects are selected. This will stop the print job. Continue?',
       confirmMultipleMessage: 'Skip {{count}} selected objects? This cannot be undone.',
+      proBadge: 'PRO',
+      proBanner: 'Real-time object skipping saves multi-part prints when an individual object fails.',
+      upgradeToSkip: 'Upgrade to Pro to Skip',
+      proFeatureRequired: 'Skip Objects is a Bee Pro feature. Please upgrade to Pro or start a 7-day free trial.',
     },
     // Confirm modals
     confirm: {
@@ -4169,6 +4173,7 @@ export default {
     selectPrinter: 'Select Printer',
     selectPlate: 'Select Plate',
     skipObjects: 'Skip Objects',
+    skipObjectsProNote: 'Pre-skipping objects from queue is a Bee Pro feature.',
     allObjectsSkippedWarning: 'Cannot skip all objects. At least one object must be printed.',
     allSkipped: 'All skipped',
     filamentMapping: 'Filament Mapping',

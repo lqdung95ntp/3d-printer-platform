@@ -477,6 +477,12 @@ export default {
 				"Tất cả các đối tượng còn lại được chọn. Điều này sẽ dừng công việc in. Tiếp tục?",
 			confirmMultipleMessage:
 				"Bỏ qua {{count}} đối tượng đã chọn? Điều này không thể hoàn tác được.",
+			proBadge: "PRO",
+			proBanner:
+				"Bỏ qua vật thể thời gian thực giúp cứu cả mâm in nhiều chi tiết khi có 1 mẫu bị hỏng.",
+			upgradeToSkip: "Nâng cấp Pro để bỏ qua",
+			proFeatureRequired:
+				"Bỏ qua vật thể là tính năng của gói Bee Pro. Vui lòng nâng cấp Pro hoặc kích hoạt dùng thử 7 ngày.",
 		},
 		// Confirm modals
 		confirm: {
@@ -4575,6 +4581,8 @@ export default {
 		selectPrinter: "Chọn Máy in",
 		selectPlate: "Chọn tấm",
 		skipObjects: "Bỏ qua đối tượng",
+		skipObjectsProNote:
+			"Bỏ qua trước vật thể trong hàng đợi in là tính năng của gói Bee Pro.",
 		allObjectsSkippedWarning:
 			"Không thể bỏ qua tất cả các đối tượng. Ít nhất một đối tượng phải được in.",
 		allSkipped: "Tất cả đều bị bỏ qua",

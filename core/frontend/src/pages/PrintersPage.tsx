@@ -6645,6 +6645,11 @@ function PrinterCard({
 													}
 												>
 													<SkipObjectsIcon className="w-[var(--pc-i4,1rem)] h-[var(--pc-i4,1rem)]" />
+													{!isPro && (
+														<span className="absolute -top-1 -left-1 text-[7px] font-black bg-gradient-to-r from-amber-500 to-orange-500 text-black px-1 rounded shadow-sm leading-tight">
+															PRO
+														</span>
+													)}
 													{objectsData &&
 														objectsData.skipped_count >
 															0 && (
