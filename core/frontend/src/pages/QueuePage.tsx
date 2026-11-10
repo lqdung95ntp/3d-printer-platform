@@ -68,7 +68,7 @@ import {
 	PlayCircle,
 	ThumbsUp,
 } from "lucide-react";
-import { api, ApiError } from "../api/client";
+import { api, ApiError, type Printer as PrinterType } from "../api/client";
 import {
 	type TimeFormat,
 	formatETA,
@@ -99,6 +99,7 @@ import { QueueStatsBar } from "../components/QueueStatsBar";
 import { CompactHistoryRow } from "../components/CompactHistoryRow";
 import { QueueTimelineView } from "../components/QueueTimelineView";
 import { compareQueueOrder } from "../utils/queueOrder";
+import { defaultPrinterComparator, naturalCompare } from "../utils/printerSort";
 import { BatchOrdersView } from "../components/BatchOrdersView";
 import {
 	buildLoadedFilaments,
@@ -2447,6 +2448,30 @@ export function QueuePage() {
 		queryFn: () => api.getPrinters(),
 	});
 
+	const printerMap = useMemo(() => {
+		const map = new Map<number, PrinterType>();
+		printers?.forEach((p) => map.set(p.id, p));
+		return map;
+	}, [printers]);
+
+	const compareQueueByPrinter = useCallback(
+		(a: PrintQueueItem, b: PrintQueueItem): number => {
+			const pA =
+				a.printer_id != null ? printerMap.get(a.printer_id) : undefined;
+			const pB =
+				b.printer_id != null ? printerMap.get(b.printer_id) : undefined;
+			if (pA && pB) {
+				return defaultPrinterComparator(pA, pB);
+			}
+			if (pA && !pB) return -1;
+			if (!pA && pB) return 1;
+			const nameA = a.printer_name || "";
+			const nameB = b.printer_name || "";
+			return naturalCompare(nameA, nameB);
+		},
+		[printerMap],
+	);
+
 	const sjfMutation = useMutation({
 		mutationFn: (enabled: boolean) =>
 			api.updateSettings({ queue_shortest_first: enabled }),
@@ -2715,11 +2740,10 @@ export function QueuePage() {
 			if (pendingSortBy === "name") {
 				const aName = a.archive_name || a.library_file_name || "";
 				const bName = b.archive_name || b.library_file_name || "";
-				cmp = aName.localeCompare(bName);
+				cmp =
+					naturalCompare(aName, bName) || compareQueueByPrinter(a, b);
 			} else if (pendingSortBy === "printer") {
-				cmp = (a.printer_name || "").localeCompare(
-					b.printer_name || "",
-				);
+				cmp = compareQueueByPrinter(a, b);
 			} else if (pendingSortBy === "time") {
 				// Sort by scheduled start time (when print will begin)
 				cmp = getScheduledTime(a) - getScheduledTime(b);
@@ -2735,6 +2759,7 @@ export function QueuePage() {
 		matchesLocationFilter,
 		filterLocation,
 		settings?.queue_shortest_first,
+		compareQueueByPrinter,
 	]);
 
 	const handleSelectAll = () => {
@@ -2918,11 +2943,10 @@ export function QueuePage() {
 			if (historySortBy === "name") {
 				const aName = a.archive_name || a.library_file_name || "";
 				const bName = b.archive_name || b.library_file_name || "";
-				cmp = aName.localeCompare(bName);
+				cmp =
+					naturalCompare(aName, bName) || compareQueueByPrinter(a, b);
 			} else if (historySortBy === "printer") {
-				cmp = (a.printer_name || "").localeCompare(
-					b.printer_name || "",
-				);
+				cmp = compareQueueByPrinter(a, b);
 			} else {
 				// Default: by date - most recent first (desc) is the natural order
 				cmp =
@@ -2939,6 +2963,7 @@ export function QueuePage() {
 		historySortAsc,
 		matchesLocationFilter,
 		filterLocation,
+		compareQueueByPrinter,
 	]);
 
 	// Calculate total queue time
@@ -3293,8 +3318,13 @@ export function QueuePage() {
 				printerName: name,
 				skippedCount: count,
 			}))
-			.sort((a, b) => a.printerName.localeCompare(b.printerName));
-	}, [queue]);
+			.sort((a, b) => {
+				const pA = printerMap.get(a.printerId);
+				const pB = printerMap.get(b.printerId);
+				if (pA && pB) return defaultPrinterComparator(pA, pB);
+				return naturalCompare(a.printerName, b.printerName);
+			});
+	}, [queue, printerMap]);
 
 	const aggregateForRows = (rows: QueueRow[]) => {
 		let count = 0;
@@ -3456,7 +3486,9 @@ export function QueuePage() {
 												? "bg-bambu-dark-tertiary text-white shadow-sm font-medium"
 												: "text-bambu-gray hover:text-white"
 										}`}
-										onClick={() => setActiveLayout("position")}
+										onClick={() =>
+											setActiveLayout("position")
+										}
 										title={t("queue.layout.flatList")}
 									>
 										<List className="w-3.5 h-3.5" />
@@ -3470,7 +3502,9 @@ export function QueuePage() {
 												? "bg-bambu-dark-tertiary text-white shadow-sm font-medium"
 												: "text-bambu-gray hover:text-white"
 										}`}
-										onClick={() => setActiveLayout("printer")}
+										onClick={() =>
+											setActiveLayout("printer")
+										}
 										title={t("queue.layout.groupByPrinter")}
 									>
 										<Printer className="w-3.5 h-3.5" />
@@ -3483,7 +3517,8 @@ export function QueuePage() {
 								<button
 									onClick={() => {
 										const newValue = !(
-											settings?.queue_shortest_first ?? false
+											settings?.queue_shortest_first ??
+											false
 										);
 										sjfMutation.mutate(newValue);
 									}}
@@ -3540,7 +3575,9 @@ export function QueuePage() {
 							value={filterStatus}
 							onChange={(e) => setFilterStatus(e.target.value)}
 						>
-							<option value="">{t("queue.filter.allStatus")}</option>
+							<option value="">
+								{t("queue.filter.allStatus")}
+							</option>
 							<option value="pending">
 								{t("queue.status.pending")}
 							</option>
@@ -3565,7 +3602,9 @@ export function QueuePage() {
 							<select
 								className="px-2.5 py-1 text-xs bg-bambu-dark-secondary border border-bambu-dark-tertiary rounded-lg text-white focus:border-bambu-green focus:outline-none min-w-0"
 								value={filterLocation}
-								onChange={(e) => setFilterLocation(e.target.value)}
+								onChange={(e) =>
+									setFilterLocation(e.target.value)
+								}
 							>
 								<option value="">
 									{t("queue.filter.allLocations")}
@@ -3717,7 +3756,9 @@ export function QueuePage() {
 								<div className="flex items-center gap-2 sm:gap-3 flex-wrap">
 									<h2 className="text-sm sm:text-base font-semibold text-white flex items-center gap-1.5">
 										<Clock className="w-4 h-4 text-yellow-500 flex-shrink-0" />
-										<span>{t("queue.sections.queued")}</span>
+										<span>
+											{t("queue.sections.queued")}
+										</span>
 										<span className="text-xs font-normal text-bambu-gray">
 											(
 											{t("queue.itemCount", {
@@ -3757,8 +3798,12 @@ export function QueuePage() {
 												{selectedItems.length ===
 													pendingItems.length &&
 												pendingItems.length > 0
-													? t("queue.bulkEdit.deselectAll")
-													: t("queue.bulkEdit.selectAll")}
+													? t(
+															"queue.bulkEdit.deselectAll",
+														)
+													: t(
+															"queue.bulkEdit.selectAll",
+														)}
 											</span>
 										</Button>
 									)}
@@ -3837,9 +3882,7 @@ export function QueuePage() {
 										>
 											<Package className="w-3.5 h-3.5" />
 											<span>
-												{t(
-													"queue.batch.groupAsBatch",
-												)}
+												{t("queue.batch.groupAsBatch")}
 											</span>
 										</Button>
 									)}
@@ -3871,9 +3914,7 @@ export function QueuePage() {
 									>
 										<Pencil className="w-3.5 h-3.5" />
 										<span>
-											{t(
-												"queue.bulkEdit.editSelected",
-											)}
+											{t("queue.bulkEdit.editSelected")}
 										</span>
 									</Button>
 									<Button
@@ -3907,9 +3948,7 @@ export function QueuePage() {
 									>
 										<X className="w-3.5 h-3.5" />
 										<span>
-											{t(
-												"queue.bulkEdit.cancelSelected",
-											)}
+											{t("queue.bulkEdit.cancelSelected")}
 										</span>
 									</Button>
 								</div>

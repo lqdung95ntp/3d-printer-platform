@@ -2,6 +2,7 @@ import type {
 	ArchivePlatesResponse,
 	LibraryFilePlatesResponse,
 } from "../types/plates";
+import { sortPrintersDefault } from "../utils/printerSort";
 
 const API_BASE = "/api/v1";
 
@@ -3326,7 +3327,12 @@ export interface SelfUpdateStatus {
 }
 
 export interface AutoUpdateStatus {
-	current_phase: "idle" | "checking" | "waiting_idle" | "updating" | "postponed";
+	current_phase:
+		| "idle"
+		| "checking"
+		| "waiting_idle"
+		| "updating"
+		| "postponed";
 	is_busy: boolean;
 	busy_reason?: string | null;
 	last_checked_date?: string | null;
@@ -4116,7 +4122,10 @@ export const api = {
 		}),
 
 	// Printers
-	getPrinters: () => request<Printer[]>("/printers/"),
+	getPrinters: async () => {
+		const printers = await request<Printer[]>("/printers/");
+		return sortPrintersDefault(printers);
+	},
 	getUsbCameras: () =>
 		request<{
 			cameras: Array<{
