@@ -3072,6 +3072,7 @@ function PrinterCard({
 		id: number;
 		filename: string;
 	} | null>(null);
+	const isPrintSubmittedRef = useRef(false);
 	const openPrusaDirectUpload = useCallback(() => {
 		setDroppedPrusaFile(null);
 		setShowUploadForPrint(false);
@@ -5233,6 +5234,7 @@ function PrinterCard({
 				return;
 			}
 
+			isPrintSubmittedRef.current = false;
 			setPrintAfterUpload({ id: result.id, filename: result.filename });
 		} catch {
 			showToast(t("common.uploadFailed", "Upload failed"), "error");
@@ -12734,6 +12736,7 @@ function PrinterCard({
 								{ slicedFor, printerModel },
 							);
 						}
+						isPrintSubmittedRef.current = false;
 						setPrintAfterUpload({
 							id: uploadedFile.id,
 							filename: uploadedFile.filename,
@@ -12791,8 +12794,21 @@ function PrinterCard({
 					libraryFileId={printAfterUpload.id}
 					archiveName={printAfterUpload.filename}
 					initialSelectedPrinterIds={[printer.id]}
-					onClose={() => setPrintAfterUpload(null)}
-					onSuccess={() => setPrintAfterUpload(null)}
+					onClose={() => {
+						if (
+							!isPrintSubmittedRef.current &&
+							printAfterUpload?.id
+						) {
+							api.deleteLibraryFile(printAfterUpload.id).catch(
+								() => {},
+							);
+						}
+						setPrintAfterUpload(null);
+					}}
+					onSuccess={() => {
+						isPrintSubmittedRef.current = true;
+						setPrintAfterUpload(null);
+					}}
 					cleanupLibraryAfterDispatch
 				/>
 			)}
@@ -17502,8 +17518,10 @@ export function PrintersPage() {
 					if (!locA && locB) return 1;
 					if (locA && !locB) return -1;
 					return (
-						locA.localeCompare(locB, undefined, { numeric: true, sensitivity: "base" }) ||
-						defaultPrinterComparator(a, b)
+						locA.localeCompare(locB, undefined, {
+							numeric: true,
+							sensitivity: "base",
+						}) || defaultPrinterComparator(a, b)
 					);
 				});
 				break;
@@ -17531,7 +17549,8 @@ export function PrintersPage() {
 						return 2; // idle
 					};
 
-					const prioDiff = getPriority(statusA) - getPriority(statusB);
+					const prioDiff =
+						getPriority(statusA) - getPriority(statusB);
 					if (prioDiff !== 0) return prioDiff;
 					return defaultPrinterComparator(a, b);
 				});

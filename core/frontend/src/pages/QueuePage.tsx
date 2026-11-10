@@ -816,6 +816,7 @@ function SortableQueueItem({
 		enabled:
 			item.printer_id != null &&
 			(printerState === "printing" || hasPhysicalAmsMapping),
+		staleTime: 30 * 1000,
 	});
 
 	// Inventory identity is display-only: printer telemetry knows the tray colour
@@ -826,7 +827,7 @@ function SortableQueueItem({
 		queryKey: ["printer-inventory-remain", item.printer_id],
 		queryFn: () => api.getInventoryRemain(item.printer_id!),
 		enabled: hasPhysicalAmsMapping,
-		staleTime: 30 * 1000,
+		staleTime: 60 * 1000,
 	});
 
 	const slotSpools = useMemo(() => {
@@ -853,6 +854,7 @@ function SortableQueueItem({
 		queryKey: ["archive-plates", item.archive_id],
 		queryFn: () => api.getArchivePlates(item.archive_id!),
 		enabled: !!item.archive_id && !isLibraryFile && !item.archive_deleted,
+		staleTime: 5 * 60 * 1000,
 	});
 
 	// Fetch library file plate details
@@ -860,6 +862,7 @@ function SortableQueueItem({
 		queryKey: ["library-file-plates", item.library_file_id],
 		queryFn: () => api.getLibraryFilePlates(item.library_file_id!),
 		enabled: isLibraryFile && !!item.library_file_id,
+		staleTime: 5 * 60 * 1000,
 	});
 
 	// Combine plates data from either source
@@ -2440,7 +2443,7 @@ export function QueuePage() {
 		queryKey: ["queue", filterPrinter, filterStatus],
 		queryFn: () =>
 			api.getQueue(filterPrinter || undefined, filterStatus || undefined),
-		refetchInterval: 5000,
+		refetchInterval: 15000,
 	});
 
 	const { data: printers } = useQuery({

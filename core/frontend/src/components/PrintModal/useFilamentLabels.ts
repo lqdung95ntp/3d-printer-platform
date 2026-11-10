@@ -27,12 +27,13 @@ export function useFilamentLabels(reqs: readonly FilamentReqLike[] | undefined):
   const { data: builtinFilaments } = useQuery({
     queryKey: ['builtin-filaments'],
     queryFn: () => api.getBuiltinFilaments(),
-    staleTime: 5 * 60 * 1000,
+    staleTime: 60 * 60 * 1000,
   });
   const { data: cloudFilamentIdMap } = useQuery({
     queryKey: ['filament-id-map'],
     queryFn: () => api.getFilamentIdMap(),
-    staleTime: 5 * 60 * 1000,
+    staleTime: 30 * 60 * 1000,
+    retry: false,
   });
 
   const filamentNameByIdx = useMemo(() => {
@@ -63,7 +64,7 @@ export function useFilamentLabels(reqs: readonly FilamentReqLike[] | undefined):
       queryKey: ['color-by-material', color, materialHint],
       queryFn: () => api.getColorByMaterial(color, materialHint),
       enabled: !!color,
-      staleTime: 5 * 60 * 1000,
+      staleTime: 60 * 60 * 1000,
     })),
   });
 
