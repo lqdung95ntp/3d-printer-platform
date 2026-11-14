@@ -426,6 +426,14 @@ registerSettingsSearch({
 	anchor: "card-groups",
 });
 registerSettingsSearch({
+	labelKey: "settings.sessionPolicy.title",
+	labelFallback: "Session Policy",
+	tab: "users",
+	subTab: "users",
+	keywords: "session timeout expiry logout remember me jwt token lifetime",
+	anchor: "card-session-policy",
+});
+registerSettingsSearch({
 	labelKey: "settings.email.smtpSettings",
 	labelFallback: "SMTP Configuration",
 	tab: "users",
@@ -10835,8 +10843,75 @@ export function SettingsPage() {
 
 										{authEnabled && (
 											<div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-												{/* Left Column: Current User + User List */}
+												{/* Left Column: Session Policy + Current User + User List */}
 												<div className="space-y-3">
+													{/* Session Policy (#1706) — admin-set ceiling for user session lifetime */}
+													<Card id="card-session-policy">
+														<CardHeader>
+															<h3 className="text-lg font-semibold text-white flex items-center gap-2">
+																<Lock className="w-5 h-5 text-bambu-green" />
+																{t("settings.sessionPolicy.title")}
+															</h3>
+														</CardHeader>
+														<CardContent>
+															<p className="text-sm text-bambu-gray mb-4">
+																{t("settings.sessionPolicy.description")}
+															</p>
+															<div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
+																{[
+																	{ hours: 24, labelKey: "settings.sessionPolicy.preset24h" },
+																	{ hours: 168, labelKey: "settings.sessionPolicy.preset7d" },
+																	{ hours: 720, labelKey: "settings.sessionPolicy.preset30d" },
+																].map((preset) => {
+																	const current = localSettings?.session_max_hours ?? 24;
+																	const isActive = current === preset.hours;
+																	return (
+																		<button
+																			key={preset.hours}
+																			type="button"
+																			onClick={() => updateSetting("session_max_hours", preset.hours)}
+																			disabled={authEnabled && !hasPermission("settings:update")}
+																			className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+																				isActive
+																					? "bg-bambu-green text-white"
+																					: "bg-bambu-dark-tertiary text-bambu-gray hover:text-white hover:bg-bambu-dark"
+																			} disabled:opacity-50 disabled:cursor-not-allowed`}
+																		>
+																			{t(preset.labelKey)}
+																		</button>
+																	);
+																})}
+																<div className="flex items-center gap-1">
+																	<input
+																		type="number"
+																		min={1}
+																		max={720}
+																		value={localSettings?.session_max_hours ?? 24}
+																		onChange={(e) => {
+																			const raw = parseInt(e.target.value, 10);
+																			if (Number.isNaN(raw)) return;
+																			updateSetting("session_max_hours", Math.max(1, Math.min(720, raw)));
+																		}}
+																		disabled={authEnabled && !hasPermission("settings:update")}
+																		aria-label={t("settings.sessionPolicy.customHoursLabel")}
+																		className="w-20 px-2 py-2 bg-bambu-dark-tertiary text-white text-sm rounded-lg border border-bambu-dark-tertiary focus:border-bambu-green focus:outline-none disabled:opacity-50"
+																	/>
+																	<span className="text-sm text-bambu-gray">
+																		{t("settings.sessionPolicy.hoursSuffix")}
+																	</span>
+																</div>
+															</div>
+															{(localSettings?.session_max_hours ?? 24) > 24 && (
+																<div className="flex items-start gap-2 p-3 rounded-lg bg-yellow-50 dark:bg-yellow-500/10 border border-yellow-300 dark:border-yellow-500/30">
+																	<AlertTriangle className="w-4 h-4 text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5" />
+																	<p className="text-xs text-yellow-800 dark:text-yellow-200">
+																		{t("settings.sessionPolicy.warning")}
+																	</p>
+																</div>
+															)}
+														</CardContent>
+													</Card>
+
 													{/* Current User Card */}
 													{user && (
 														<Card>

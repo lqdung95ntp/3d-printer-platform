@@ -653,6 +653,9 @@ export interface PlateDetectionROI {
 
 export interface PlateDetectionResult {
 	is_empty: boolean;
+	has_pei?: boolean;
+	anomaly_score?: number;
+	threshold?: number;
 	confidence: number;
 	difference_percent: number;
 	message: string;

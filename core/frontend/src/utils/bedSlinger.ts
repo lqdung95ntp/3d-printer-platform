@@ -31,23 +31,49 @@
  * at someone's plate.
  */
 const BED_SLINGER_MODELS: ReadonlySet<string> = new Set([
-  // Display names
-  'A1',
-  'A1MINI',
-  'A2L',
-  // Bambu cloud short code for the A1 Mini (#1649)
-  'A1M',
-  // Internal MQTT / SSDP codes
-  'N1', // A1 Mini
-  'N2S', // A1
-  'N9', // A2L
-  'A04', // A1 Mini (alternate)
-  'A11', // A1
-  'A12', // A1 Mini
+	// Display names
+	"A1",
+	"A1MINI",
+	"A2L",
+	// Bambu cloud short code for the A1 Mini (#1649)
+	"A1M",
+	// Internal MQTT / SSDP codes
+	"N1", // A1 Mini
+	"N2S", // A1
+	"N9", // A2L
+	"A04", // A1 Mini (alternate)
+	"A11", // A1
+	"A12", // A1 Mini
 ]);
 
 /** True when this printer's Z axis moves the toolhead rather than the plate. */
 export function isBedSlinger(model: string | null | undefined): boolean {
-  if (!model) return false;
-  return BED_SLINGER_MODELS.has(model.toUpperCase().replace(/[^A-Z0-9]/g, ''));
+	if (!model) return false;
+	const norm = model.toUpperCase().replace(/[^A-Z0-9]/g, "");
+	if (!norm) return false;
+	if (
+		BED_SLINGER_MODELS.has(norm) ||
+		BED_SLINGER_MODELS.has(norm.replace("BAMBULAB", ""))
+	) {
+		return true;
+	}
+	// Elegoo Neptune series
+	if (norm.includes("NEPTUNE")) return true;
+	// Prusa MK series and Mini
+	if (
+		norm.includes("PRUSAMINI") ||
+		norm === "MINI" ||
+		norm === "MINIPLUS" ||
+		["MK4", "MK3", "MK2"].some(
+			(mk) => norm.startsWith(mk) || norm.includes(`PRUSA${mk}`),
+		)
+	) {
+		return true;
+	}
+	// Creality Ender-3 and CR-10 series
+	if (norm.includes("ENDER3") || norm.includes("CR10")) return true;
+	// Voron Switchwire, Sovol SV06/SV07, Anycubic Kobra
+	if (["SWITCHWIRE", "SV06", "SV07", "KOBRA"].some((k) => norm.includes(k)))
+		return true;
+	return false;
 }

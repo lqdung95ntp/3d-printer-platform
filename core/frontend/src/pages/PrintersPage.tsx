@@ -3237,6 +3237,9 @@ function PrinterCard({
 	const [showFirmwareModal, setShowFirmwareModal] = useState(false);
 	const [plateCheckResult, setPlateCheckResult] = useState<{
 		is_empty: boolean;
+		has_pei?: boolean;
+		anomaly_score?: number;
+		threshold?: number;
 		confidence: number;
 		difference_percent: number;
 		message: string;
@@ -7979,13 +7982,15 @@ function PrinterCard({
 															// since #2579 the jog is a bare move that never touches M211. That
 															// does not make it clamped — the firmware ignores soft endstops on
 															// MQTT G-code entirely, which is what the banner above warns about.
+															// Up arrow sends negative distance (decrease nozzle-bed gap / bed up on
+															// bed-on-Z, backend inverts for bed-slingers like A1 so toolhead goes up).
 															bedJogMutation.mutate(
 																{
 																	distance:
 																		arrow ===
 																		"up"
-																			? bedJogStep
-																			: -bedJogStep,
+																			? -bedJogStep
+																			: bedJogStep,
 																},
 															);
 														};
@@ -8097,7 +8102,7 @@ function PrinterCard({
 																							onClick={() =>
 																								requestXyJog(
 																									0,
-																									-bedJogStep,
+																									bedJogStep,
 																								)
 																							}
 																							disabled={
@@ -8175,7 +8180,7 @@ function PrinterCard({
 																							onClick={() =>
 																								requestXyJog(
 																									0,
-																									bedJogStep,
+																									-bedJogStep,
 																								)
 																							}
 																							disabled={
@@ -12866,15 +12871,21 @@ function PrinterCard({
 								<h2 className="text-lg font-semibold text-white">
 									Build Plate Check
 								</h2>
-								{plateCheckResult.reference_count !==
-									undefined &&
-									plateCheckResult.max_references && (
-										<span className="text-xs text-bambu-gray bg-bambu-dark-tertiary px-2 py-1 rounded">
-											{plateCheckResult.reference_count}/
-											{plateCheckResult.max_references}{" "}
-											refs
-										</span>
-									)}
+								{plateCheckResult.has_pei !== undefined || plateCheckResult.threshold !== undefined ? (
+									<span className="text-[11px] font-medium text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded">
+										AI PEI Detection
+									</span>
+								) : (
+									plateCheckResult.reference_count !==
+										undefined &&
+										plateCheckResult.max_references && (
+											<span className="text-xs text-bambu-gray bg-bambu-dark-tertiary px-2 py-1 rounded">
+												{plateCheckResult.reference_count}/
+												{plateCheckResult.max_references}{" "}
+												refs
+											</span>
+										)
+								)}
 							</div>
 							<button
 								onClick={() => closePlateCheckModal()}
@@ -12919,18 +12930,18 @@ function PrinterCard({
 							) : (
 								<>
 									<div
-										className={`p-3 rounded-lg ${plateCheckResult.is_empty ? "bg-green-100 dark:bg-green-500/20 border border-green-300 dark:border-green-500/50" : "bg-yellow-100 dark:bg-yellow-500/20 border border-yellow-300 dark:border-yellow-500/50"}`}
+										className={`p-3 rounded-lg ${(plateCheckResult.has_pei ?? plateCheckResult.is_empty) ? "bg-green-100 dark:bg-green-500/20 border border-green-300 dark:border-green-500/50" : "bg-yellow-100 dark:bg-yellow-500/20 border border-yellow-300 dark:border-yellow-500/50"}`}
 									>
 										<p
-											className={`font-medium ${plateCheckResult.is_empty ? "text-green-700 dark:text-green-400" : "text-yellow-700 dark:text-yellow-400"}`}
+											className={`font-medium ${(plateCheckResult.has_pei ?? plateCheckResult.is_empty) ? "text-green-700 dark:text-green-400" : "text-yellow-700 dark:text-yellow-400"}`}
 										>
-											{plateCheckResult.is_empty
-												? t(
-														"printers.plateDetection.plateEmpty",
-													)
-												: t(
-														"printers.plateDetection.objectsDetected",
-													)}
+											{plateCheckResult.has_pei !== undefined
+												? plateCheckResult.has_pei
+													? t("printers.plateDetection.peiDetected", "Đã có bàn PEI trên máy in (Sẵn sàng in)")
+													: t("printers.plateDetection.peiMissing", "CẢNH BÁO: Bàn trần - Chưa đặt tấm PEI!")
+												: plateCheckResult.is_empty
+													? t("printers.plateDetection.plateEmpty")
+													: t("printers.plateDetection.objectsDetected")}
 										</p>
 										<p className="text-sm text-bambu-gray mt-1">
 											{t(
@@ -12942,14 +12953,12 @@ function PrinterCard({
 													100,
 											)}
 											% |{" "}
-											{t(
-												"printers.plateDetection.difference",
-											)}
+											{plateCheckResult.threshold !== undefined ? "Score" : t("printers.plateDetection.difference")}
 											:{" "}
 											{plateCheckResult.difference_percent.toFixed(
-												1,
+												2,
 											)}
-											%
+											{plateCheckResult.threshold !== undefined && ` (${t("printers.plateDetection.thresholdLabel", { defaultValue: "Threshold" })}: ${plateCheckResult.threshold.toFixed(2)})`}
 										</p>
 									</div>
 									{plateCheckResult.debug_image_url && (
@@ -12989,13 +12998,29 @@ function PrinterCard({
 										</div>
 									)}
 									<p className="text-xs text-bambu-gray">
-										{plateCheckResult.message}
+										{plateCheckResult.has_pei !== undefined ? (
+											plateCheckResult.has_pei
+												? t("printers.plateDetection.peiDetectedMsg", {
+														defaultValue: plateCheckResult.message,
+														confidence: Math.round(plateCheckResult.confidence * 100),
+														score: (plateCheckResult.anomaly_score ?? plateCheckResult.difference_percent).toFixed(2),
+														threshold: (plateCheckResult.threshold ?? 2.65).toFixed(2),
+												  })
+												: t("printers.plateDetection.peiMissingMsg", {
+														defaultValue: plateCheckResult.message,
+														score: (plateCheckResult.anomaly_score ?? plateCheckResult.difference_percent).toFixed(2),
+														threshold: (plateCheckResult.threshold ?? 2.65).toFixed(2),
+												  })
+										) : (
+											plateCheckResult.message
+										)}
 									</p>
 								</>
 							)}
 
-							{/* Saved References Grid */}
-							{plateReferences &&
+							{/* Saved References Grid (Only for legacy calibration mode) */}
+							{plateCheckResult.has_pei === undefined &&
+								plateReferences &&
 								plateReferences.references.length > 0 && (
 									<div className="mt-4">
 										<div className="flex items-center gap-2 mb-2">
@@ -13158,26 +13183,28 @@ function PrinterCard({
 												onClick={() => {
 													setEditingRoi(
 														plateCheckResult.roi || {
-															x: 0.15,
-															y: 0.35,
-															w: 0.7,
-															h: 0.55,
+															x: 0.0,
+															y: 0.225,
+															w: 1.0,
+															h: 0.425,
 														},
 													);
-													setEditingParams({
-														threshold:
-															printer.plate_detection_threshold ??
-															1.0,
-														blur_size:
-															printer.plate_detection_blur_size ??
-															9,
-														canny_low:
-															printer.plate_detection_canny_low ??
-															50,
-														canny_high:
-															printer.plate_detection_canny_high ??
-															150,
-													});
+													if (plateCheckResult.has_pei === undefined) {
+														setEditingParams({
+															threshold:
+																printer.plate_detection_threshold ??
+																1.0,
+															blur_size:
+																printer.plate_detection_blur_size ??
+																9,
+															canny_low:
+																printer.plate_detection_canny_low ??
+																50,
+															canny_high:
+																printer.plate_detection_canny_high ??
+																150,
+														});
+													}
 												}}
 											>
 												<Pencil className="w-[var(--pc-i3,0.75rem)] h-[var(--pc-i3,0.75rem)] mr-1" />
@@ -13334,8 +13361,8 @@ function PrinterCard({
 												{t("printers.roi.instruction")}
 											</p>
 
-											{/* Detection Parameters Sliders */}
-											{editingParams && (
+											{/* Detection Parameters Sliders (Legacy calibration only) */}
+											{plateCheckResult.has_pei === undefined && editingParams && (
 												<>
 													<div className="border-t border-bambu-dark-tertiary pt-3 mt-3">
 														<p className="text-xs font-semibold text-white mb-2">
@@ -13496,41 +13523,47 @@ function PrinterCard({
 											<p className="text-xs text-bambu-gray">
 												Current ROI: X=
 												{Math.round(
-													(plateCheckResult.roi?.x ||
-														0.15) * 100,
+													(plateCheckResult.roi?.x ??
+														0.0) * 100,
 												)}
 												%, Y=
 												{Math.round(
-													(plateCheckResult.roi?.y ||
-														0.35) * 100,
+													(plateCheckResult.roi?.y ??
+														0.225) * 100,
 												)}
 												%, W=
 												{Math.round(
-													(plateCheckResult.roi?.w ||
-														0.7) * 100,
+													(plateCheckResult.roi?.w ??
+														1.0) * 100,
 												)}
 												%, H=
 												{Math.round(
-													(plateCheckResult.roi?.h ||
-														0.55) * 100,
+													(plateCheckResult.roi?.h ??
+														0.425) * 100,
 												)}
 												%
 											</p>
-											<p className="text-xs text-bambu-gray">
-												Threshold:{" "}
-												{printer.plate_detection_threshold ??
-													1.0}
-												% | Blur:{" "}
-												{printer.plate_detection_blur_size ??
-													9}
-												px | Canny: [
-												{printer.plate_detection_canny_low ??
-													50}
-												,{" "}
-												{printer.plate_detection_canny_high ??
-													150}
-												]
-											</p>
+											{plateCheckResult.has_pei !== undefined ? (
+												<p className="text-xs text-bambu-gray">
+													{t("printers.plateDetection.thresholdLabel", { defaultValue: "Threshold" })}: {plateCheckResult.threshold?.toFixed(2) ?? "2.65"}
+												</p>
+											) : (
+												<p className="text-xs text-bambu-gray">
+													Threshold:{" "}
+													{printer.plate_detection_threshold ??
+														1.0}
+													% | Blur:{" "}
+													{printer.plate_detection_blur_size ??
+														9}
+													px | Canny: [
+													{printer.plate_detection_canny_low ??
+														50}
+													,{" "}
+													{printer.plate_detection_canny_high ??
+														150}
+													]
+												</p>
+											)}
 										</div>
 									)}
 								</div>
@@ -13561,19 +13594,56 @@ function PrinterCard({
 								</>
 							) : (
 								<>
-									<Button
-										variant="ghost"
-										onClick={() => handleCalibratePlate()}
-										disabled={isCalibrating}
-									>
-										{isCalibrating
-											? "Adding..."
-											: `Add Reference (${plateReferences?.references.length || 0}/${plateReferences?.max_references || 5})`}
-									</Button>
+									{plateCheckResult.has_pei !== undefined ? (
+										<Button
+											variant="secondary"
+											onClick={async () => {
+												setIsCheckingPlate(true);
+												try {
+													const result = await api.checkPlateEmpty(printer.id, {
+														includeDebugImage: true,
+													});
+													setPlateCheckResult(result);
+												} catch (error) {
+													showToast(
+														error instanceof Error
+															? error.message
+															: t("printers.toast.failedToCheckPlate"),
+														"error",
+													);
+												} finally {
+													setIsCheckingPlate(false);
+												}
+											}}
+											disabled={isCheckingPlate || isSavingRoi}
+										>
+											{isCheckingPlate ? (
+												<>
+													<Loader2 className="w-[var(--pc-i4,1rem)] h-[var(--pc-i4,1rem)] mr-2 animate-spin" />
+													{t("common.checking", { defaultValue: "Checking..." })}
+												</>
+											) : (
+												<>
+													<RefreshCw className="w-[var(--pc-i4,1rem)] h-[var(--pc-i4,1rem)] mr-2" />
+													{t("common.recheck", { defaultValue: "Re-check" })}
+												</>
+											)}
+										</Button>
+									) : (
+										<Button
+											variant="ghost"
+											onClick={() => handleCalibratePlate()}
+											disabled={isCalibrating}
+										>
+											{isCalibrating
+												? "Adding..."
+												: `Add Reference (${plateReferences?.references.length || 0}/${plateReferences?.max_references || 5})`}
+										</Button>
+									)}
 									<Button
 										onClick={() => closePlateCheckModal()}
 									>
-										Close
+										{t("common.close", { defaultValue: "Close" })}
 									</Button>
 								</>
 							)}
