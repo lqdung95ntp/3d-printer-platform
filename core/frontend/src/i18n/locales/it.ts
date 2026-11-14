@@ -244,6 +244,9 @@ export default {
     // Chamber light
     chamberLightOn: 'Accendi luce camera',
     chamberLightOff: 'Spegni luce camera',
+    // AI detection
+    aiDetectionOn: 'Attiva rilevamento IA',
+    aiDetectionOff: 'Disattiva rilevamento IA',
     // Files
     files: 'File',
     browseFiles: 'Sfoglia file stampante',
@@ -331,6 +334,7 @@ export default {
       failedToPausePrint: 'Impossibile mettere in pausa stampa',
       failedToResumePrint: 'Impossibile riprendere stampa',
       failedToControlChamberLight: 'Impossibile controllare luce camera',
+      failedToControlAiDetection: 'Impossibile controllare rilevamento IA',
       failedToSetSpeed: 'Impossibile impostare la velocità di stampa',
       failedToUpdateSetting: 'Impossibile aggiornare impostazione',
       failedToSkipObjects: 'Impossibile saltare oggetti',
@@ -2671,6 +2675,7 @@ export default {
     startRecording: 'Avvia registrazione',
     stopRecording: 'Ferma registrazione',
     chamberLight: 'Accendi/Spegni luce camera',
+    aiDetection: 'Accendi/Spegni rilevamento IA',
     unavailable: 'Telecamera non disponibile',
     diagnose: {
       button: 'Diagnostica',

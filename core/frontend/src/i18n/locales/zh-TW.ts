@@ -244,6 +244,9 @@ export default {
     // Chamber light
     chamberLightOn: '開啟腔室燈',
     chamberLightOff: '關閉腔室燈',
+    // AI detection
+    aiDetectionOn: '開啟AI檢測',
+    aiDetectionOff: '關閉AI檢測',
     // Files
     files: '檔案',
     browseFiles: '瀏覽印表機檔案',
@@ -331,6 +334,7 @@ export default {
       failedToPausePrint: '暫停列印失敗',
       failedToResumePrint: '繼續列印失敗',
       failedToControlChamberLight: '控制腔室燈失敗',
+      failedToControlAiDetection: '控制AI檢測失敗',
       failedToSetSpeed: '設定列印速度失敗',
       failedToUpdateSetting: '更新設定失敗',
       failedToSkipObjects: '跳過物件失敗',
@@ -2670,6 +2674,7 @@ export default {
     startRecording: '開始錄製',
     stopRecording: '停止錄製',
     chamberLight: '切換腔室燈',
+    aiDetection: '切換AI檢測',
     unavailable: '攝影機無法使用',
     diagnose: {
       button: '診斷',

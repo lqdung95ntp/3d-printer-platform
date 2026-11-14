@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback, type CSSProperties } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { X, RefreshCw, AlertTriangle, Maximize2, Minimize2, GripVertical, WifiOff, ZoomIn, ZoomOut, Fullscreen, Minimize, Stethoscope } from 'lucide-react';
+import { X, RefreshCw, AlertTriangle, Maximize2, Minimize2, GripVertical, WifiOff, ZoomIn, ZoomOut, Fullscreen, Minimize, Stethoscope, ScanEye, Loader2 } from 'lucide-react';
 import { api, getAuthToken, withStreamToken } from '../api/client';
 import { useToast } from '../contexts/ToastContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -158,6 +158,41 @@ export function EmbeddedCameraViewer({ printerId, printerName, viewerIndex = 0, 
         queryClient.setQueryData(['printerStatus', printerId], context.previousStatus);
       }
       showToast(error.message || t('printers.toast.failedToControlChamberLight'), 'error');
+    },
+  });
+
+  // AI detection mutation with optimistic update
+  const aiDetectionMutation = useMutation({
+    mutationFn: (enabled: boolean) => api.setAiDetection(printerId, enabled),
+    onMutate: async (enabled) => {
+      await queryClient.cancelQueries({ queryKey: ['printerStatus', printerId] });
+      const previousStatus = queryClient.getQueryData(['printerStatus', printerId]);
+      queryClient.setQueryData(['printerStatus', printerId], (old: typeof status) => ({
+        ...old,
+        print_options: {
+          ...(old?.print_options ?? {
+            spaghetti_detector: false,
+            printing_monitor: false,
+            first_layer_inspector: false,
+            buildplate_marker_detector: false,
+            halt_print_sensitivity: 'medium',
+            allow_skip_parts: true,
+          }),
+          spaghetti_detector: enabled,
+          printing_monitor: enabled,
+        },
+      }));
+      return { previousStatus };
+    },
+    onSuccess: (_, enabled) => {
+      showToast(enabled ? t('printers.aiDetectionOn') : t('printers.aiDetectionOff'));
+      queryClient.invalidateQueries({ queryKey: ['printers'] });
+    },
+    onError: (error: Error, _, context) => {
+      if (context?.previousStatus) {
+        queryClient.setQueryData(['printerStatus', printerId], context.previousStatus);
+      }
+      showToast(error.message || t('printers.toast.failedToControlAiDetection'), 'error');
     },
   });
 
@@ -626,6 +661,36 @@ export function EmbeddedCameraViewer({ printerId, printerName, viewerIndex = 0, 
           >
             <ChamberLight on={status?.chamber_light ?? false} className="w-3.5 h-3.5" />
           </button>
+          {(() => {
+            const isAiEnabled = Boolean(
+              status?.print_options?.spaghetti_detector ||
+              status?.print_options?.printing_monitor
+            );
+            return (
+              <button
+                onClick={() => aiDetectionMutation.mutate(!isAiEnabled)}
+                disabled={!status?.connected || aiDetectionMutation.isPending || !hasPermission('printers:control')}
+                className={`p-1 rounded disabled:opacity-50 ${
+                  isAiEnabled
+                    ? 'bg-purple-500/20 text-purple-400 hover:bg-purple-500/30'
+                    : 'text-bambu-gray hover:text-white hover:bg-bambu-dark-tertiary'
+                }`}
+                title={
+                  !hasPermission('printers:control')
+                    ? t('printers.permission.noControl')
+                    : isAiEnabled
+                      ? t('printers.aiDetectionOff')
+                      : t('printers.aiDetectionOn')
+                }
+              >
+                {aiDetectionMutation.isPending ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <ScanEye className="w-3.5 h-3.5" />
+                )}
+              </button>
+            );
+          })()}
           <button
             onClick={() => setShowSkipObjectsModal(true)}
             disabled={!isPrintingWithObjects || !hasPermission('printers:control')}

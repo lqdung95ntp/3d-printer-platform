@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { RefreshCw, AlertTriangle, Camera, Maximize, Minimize, WifiOff, ZoomIn, ZoomOut, Stethoscope } from 'lucide-react';
+import { RefreshCw, AlertTriangle, Camera, Maximize, Minimize, WifiOff, ZoomIn, ZoomOut, Stethoscope, ScanEye, Loader2 } from 'lucide-react';
 import { api, getAuthToken, getStreamToken, withStreamToken } from '../api/client';
 import { useToast } from '../contexts/ToastContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -100,6 +100,41 @@ export function CameraPage() {
         queryClient.setQueryData(['printerStatus', id], context.previousStatus);
       }
       showToast(error.message || t('printers.toast.failedToControlChamberLight'), 'error');
+    },
+  });
+
+  // AI detection mutation with optimistic update
+  const aiDetectionMutation = useMutation({
+    mutationFn: (enabled: boolean) => api.setAiDetection(id, enabled),
+    onMutate: async (enabled) => {
+      await queryClient.cancelQueries({ queryKey: ['printerStatus', id] });
+      const previousStatus = queryClient.getQueryData(['printerStatus', id]);
+      queryClient.setQueryData(['printerStatus', id], (old: typeof status) => ({
+        ...old,
+        print_options: {
+          ...(old?.print_options ?? {
+            spaghetti_detector: false,
+            printing_monitor: false,
+            first_layer_inspector: false,
+            buildplate_marker_detector: false,
+            halt_print_sensitivity: 'medium',
+            allow_skip_parts: true,
+          }),
+          spaghetti_detector: enabled,
+          printing_monitor: enabled,
+        },
+      }));
+      return { previousStatus };
+    },
+    onSuccess: (_, enabled) => {
+      showToast(enabled ? t('printers.aiDetectionOn') : t('printers.aiDetectionOff'));
+      queryClient.invalidateQueries({ queryKey: ['printers'] });
+    },
+    onError: (error: Error, _, context) => {
+      if (context?.previousStatus) {
+        queryClient.setQueryData(['printerStatus', id], context.previousStatus);
+      }
+      showToast(error.message || t('printers.toast.failedToControlAiDetection'), 'error');
     },
   });
 
@@ -662,6 +697,37 @@ export function CameraPage() {
           >
             <ChamberLight on={status?.chamber_light ?? false} className="w-4 h-4" />
           </button>
+          {(() => {
+            const isAiEnabled = Boolean(
+              status?.print_options?.spaghetti_detector ||
+              status?.print_options?.printing_monitor ||
+              printer?.plate_detection_enabled
+            );
+            return (
+              <button
+                onClick={() => aiDetectionMutation.mutate(!isAiEnabled)}
+                disabled={!status?.connected || aiDetectionMutation.isPending || !hasPermission('printers:control')}
+                className={`p-1.5 rounded disabled:opacity-50 ${
+                  isAiEnabled
+                    ? 'bg-purple-500/20 text-purple-400 hover:bg-purple-500/30'
+                    : 'text-bambu-gray hover:text-white hover:bg-bambu-dark-tertiary'
+                }`}
+                title={
+                  !hasPermission('printers:control')
+                    ? t('printers.permission.noControl')
+                    : isAiEnabled
+                      ? t('printers.aiDetectionOff')
+                      : t('printers.aiDetectionOn')
+                }
+              >
+                {aiDetectionMutation.isPending ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <ScanEye className="w-4 h-4" />
+                )}
+              </button>
+            );
+          })()}
           <button
             onClick={() => setShowSkipObjectsModal(true)}
             disabled={!isPrintingWithObjects || !hasPermission('printers:control')}

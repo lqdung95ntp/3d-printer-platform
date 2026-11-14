@@ -4386,6 +4386,29 @@ export const api = {
 			},
 		),
 
+	// AI Detection Control
+	setAiDetection: (printerId: number, enabled: boolean) =>
+		request<{ success: boolean; enabled: boolean; message: string }>(
+			`/printers/${printerId}/ai-detection?enabled=${enabled}`,
+			{
+				method: "POST",
+			},
+		),
+
+	// Print Options / AI Modules Control
+	setPrintOption: (
+		printerId: number,
+		moduleName: string,
+		enabled: boolean,
+		sensitivity: string = "medium",
+	) =>
+		request<{ success: boolean; module_name: string; enabled: boolean }>(
+			`/printers/${printerId}/print-options?module_name=${moduleName}&enabled=${enabled}&sensitivity=${sensitivity}`,
+			{
+				method: "POST",
+			},
+		),
+
 	// Fan Speed Control
 	setFanSpeed: (
 		printerId: number,

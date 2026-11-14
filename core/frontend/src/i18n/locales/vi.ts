@@ -270,6 +270,9 @@ export default {
 		// Chamber light
 		chamberLightOn: "Bật đèn buồng",
 		chamberLightOff: "Tắt đèn buồng",
+		// AI detection
+		aiDetectionOn: "Bật giám sát AI",
+		aiDetectionOff: "Tắt giám sát AI",
 		// Files
 		files: "Tập tin",
 		browseFiles: "Duyệt tập tin máy in",
@@ -360,6 +363,7 @@ export default {
 			failedToPausePrint: "Không thể tạm dừng in",
 			failedToResumePrint: "Không thể tiếp tục in",
 			failedToControlChamberLight: "Không thể kiểm soát ánh sáng buồng",
+			failedToControlAiDetection: "Không thể điều khiển tính năng AI detection",
 			failedToSetSpeed: "Không thể đặt tốc độ in",
 			failedToUpdateSetting: "Không cập nhật được cài đặt",
 			failedToSkipObjects: "Không thể bỏ qua các đối tượng",
@@ -3206,6 +3210,7 @@ export default {
 		startRecording: "Bắt đầu ghi",
 		stopRecording: "Dừng ghi",
 		chamberLight: "Chuyển đổi ánh sáng buồng",
+		aiDetection: "Bật/tắt giám sát AI",
 		unavailable: "Máy ảnh không có sẵn",
 		diagnose: {
 			button: "Chẩn đoán",

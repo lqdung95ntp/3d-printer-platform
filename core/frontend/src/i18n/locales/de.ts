@@ -244,6 +244,9 @@ export default {
     // Chamber light
     chamberLightOn: 'Kammerbeleuchtung einschalten',
     chamberLightOff: 'Kammerbeleuchtung ausschalten',
+    // AI detection
+    aiDetectionOn: 'KI-Erkennung einschalten',
+    aiDetectionOff: 'KI-Erkennung ausschalten',
     // Files
     files: 'Dateien',
     browseFiles: 'Druckerdateien durchsuchen',
@@ -331,6 +334,7 @@ export default {
       failedToPausePrint: 'Druck konnte nicht pausiert werden',
       failedToResumePrint: 'Druck konnte nicht fortgesetzt werden',
       failedToControlChamberLight: 'Kammerbeleuchtung konnte nicht gesteuert werden',
+      failedToControlAiDetection: 'KI-Erkennung konnte nicht gesteuert werden',
       failedToSetSpeed: 'Druckgeschwindigkeit konnte nicht eingestellt werden',
       failedToUpdateSetting: 'Einstellung konnte nicht aktualisiert werden',
       failedToSkipObjects: 'Objekte konnten nicht übersprungen werden',
@@ -2692,6 +2696,7 @@ export default {
     startRecording: 'Aufnahme starten',
     stopRecording: 'Aufnahme stoppen',
     chamberLight: 'Kammerbeleuchtung umschalten',
+    aiDetection: 'KI-Erkennung umschalten',
     unavailable: 'Kamera nicht verfügbar',
     diagnose: {
       button: 'Diagnose',

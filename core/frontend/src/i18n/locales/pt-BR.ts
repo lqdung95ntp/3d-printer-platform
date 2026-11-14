@@ -244,6 +244,9 @@ export default {
     // Chamber light
     chamberLightOn: 'Ligar luz da câmara',
     chamberLightOff: 'Desligar luz da câmara',
+    // AI detection
+    aiDetectionOn: 'Ativar detecção por IA',
+    aiDetectionOff: 'Desativar detecção por IA',
     // Files
     files: 'Arquivos',
     browseFiles: 'Procurar arquivos da impressora',
@@ -331,6 +334,7 @@ export default {
       failedToPausePrint: 'Falha ao pausar impressão',
       failedToResumePrint: 'Falha ao retomar impressão',
       failedToControlChamberLight: 'Falha ao controlar a luz da câmara',
+      failedToControlAiDetection: 'Falha ao controlar a detecção por IA',
       failedToSetSpeed: 'Falha ao definir a velocidade de impressão',
       failedToUpdateSetting: 'Falha ao atualizar configuração',
       failedToSkipObjects: 'Falha ao ignorar objetos',
@@ -2671,6 +2675,7 @@ export default {
     startRecording: 'Iniciar gravação',
     stopRecording: 'Parar gravação',
     chamberLight: 'Alternar luz da câmara',
+    aiDetection: 'Alternar detecção por IA',
     unavailable: 'Câmera indisponível',
     diagnose: {
       button: 'Diagnóstico',

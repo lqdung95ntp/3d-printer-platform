@@ -263,6 +263,9 @@ export default {
     // Chamber light
     chamberLightOn: 'Turn on chamber light',
     chamberLightOff: 'Turn off chamber light',
+    // AI detection
+    aiDetectionOn: 'Turn on AI detection',
+    aiDetectionOff: 'Turn off AI detection',
     // Files
     files: 'Files',
     browseFiles: 'Browse printer files',
@@ -350,6 +353,7 @@ export default {
       failedToPausePrint: 'Failed to pause print',
       failedToResumePrint: 'Failed to resume print',
       failedToControlChamberLight: 'Failed to control chamber light',
+      failedToControlAiDetection: 'Failed to control AI detection',
       failedToSetSpeed: 'Failed to set print speed',
       failedToUpdateSetting: 'Failed to update setting',
       failedToSkipObjects: 'Failed to skip objects',
@@ -2895,6 +2899,7 @@ export default {
     startRecording: 'Start Recording',
     stopRecording: 'Stop Recording',
     chamberLight: 'Toggle chamber light',
+    aiDetection: 'Toggle AI detection',
     unavailable: 'Camera unavailable',
     diagnose: {
       button: 'Diagnose',

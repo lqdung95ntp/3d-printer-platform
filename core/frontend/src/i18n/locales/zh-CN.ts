@@ -244,6 +244,9 @@ export default {
     // Chamber light
     chamberLightOn: '打开腔室灯',
     chamberLightOff: '关闭腔室灯',
+    // AI detection
+    aiDetectionOn: '开启AI检测',
+    aiDetectionOff: '关闭AI检测',
     // Files
     files: '文件',
     browseFiles: '浏览打印机文件',
@@ -331,6 +334,7 @@ export default {
       failedToPausePrint: '暂停打印失败',
       failedToResumePrint: '继续打印失败',
       failedToControlChamberLight: '控制腔室灯失败',
+      failedToControlAiDetection: '控制AI检测失败',
       failedToSetSpeed: '设置打印速度失败',
       failedToUpdateSetting: '更新设置失败',
       failedToSkipObjects: '跳过对象失败',
@@ -2670,6 +2674,7 @@ export default {
     startRecording: '开始录制',
     stopRecording: '停止录制',
     chamberLight: '切换腔室灯',
+    aiDetection: '切换AI检测',
     unavailable: '摄像头不可用',
     diagnose: {
       button: '诊断',

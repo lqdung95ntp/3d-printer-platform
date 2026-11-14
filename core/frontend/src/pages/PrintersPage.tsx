@@ -4509,6 +4509,61 @@ function PrinterCard({
 		},
 	});
 
+	// AI detection mutation with optimistic update
+	const aiDetectionMutation = useMutation({
+		mutationFn: (enabled: boolean) =>
+			api.setAiDetection(printer.id, enabled),
+		onMutate: async (enabled) => {
+			await queryClient.cancelQueries({
+				queryKey: ["printerStatus", printer.id],
+			});
+			const previousStatus = queryClient.getQueryData([
+				"printerStatus",
+				printer.id,
+			]);
+			queryClient.setQueryData(
+				["printerStatus", printer.id],
+				(old: typeof status) => ({
+					...old,
+					print_options: {
+						...(old?.print_options ?? {
+							spaghetti_detector: false,
+							printing_monitor: false,
+							first_layer_inspector: false,
+							buildplate_marker_detector: false,
+							halt_print_sensitivity: "medium",
+							allow_skip_parts: true,
+						}),
+						spaghetti_detector: enabled,
+						printing_monitor: enabled,
+					},
+				}),
+			);
+			return { previousStatus };
+		},
+		onSuccess: (_, enabled) => {
+			showToast(
+				enabled
+					? t("printers.aiDetectionOn")
+					: t("printers.aiDetectionOff"),
+			);
+			queryClient.invalidateQueries({ queryKey: ["printers"] });
+		},
+		onError: (error: Error, _, context) => {
+			if (context?.previousStatus) {
+				queryClient.setQueryData(
+					["printerStatus", printer.id],
+					context.previousStatus,
+				);
+			}
+			showToast(
+				error.message ||
+					t("printers.toast.failedToControlAiDetection"),
+				"error",
+			);
+		},
+	});
+
 	// Print speed mutation with optimistic update
 	const printSpeedMutation = useMutation({
 		mutationFn: (mode: number) => api.setPrintSpeed(printer.id, mode),
@@ -7827,6 +7882,62 @@ function PrinterCard({
 															className="w-[var(--pc-i4,1rem)] h-[var(--pc-i4,1rem)]"
 														/>
 													</button>
+
+													{/* AI Detection Toggle */}
+													{(() => {
+														const isAiEnabled =
+															Boolean(
+																status
+																	.print_options
+																	?.spaghetti_detector ||
+																	status
+																		.print_options
+																		?.printing_monitor ||
+																	printer.plate_detection_enabled,
+															);
+														return (
+															<button
+																onClick={() =>
+																	aiDetectionMutation.mutate(
+																		!isAiEnabled,
+																	)
+																}
+																disabled={
+																	!status.connected ||
+																	aiDetectionMutation.isPending ||
+																	!hasPermission(
+																		"printers:control",
+																	)
+																}
+																className={`${iconControlClass} ${
+																	isAiEnabled
+																		? "bg-purple-50 dark:bg-purple-500/10 text-purple-700 dark:text-purple-400 hover:bg-purple-500/20"
+																		: "bg-bambu-dark text-bambu-gray/50 hover:bg-bambu-dark-tertiary hover:text-white"
+																}`}
+																title={
+																	!hasPermission(
+																		"printers:control",
+																	)
+																		? t(
+																				"printers.permission.noControl",
+																			)
+																		: isAiEnabled
+																			? t(
+																					"printers.aiDetectionOff",
+																				)
+																			: t(
+																					"printers.aiDetectionOn",
+																				)
+																}
+															>
+																{aiDetectionMutation.isPending ? (
+																	<Loader2 className="w-[var(--pc-i4,1rem)] h-[var(--pc-i4,1rem)] animate-spin" />
+																) : (
+																	<ScanEye className="w-[var(--pc-i4,1rem)] h-[var(--pc-i4,1rem)]" />
+																)}
+															</button>
+														);
+													})()}
 
 													{/* Airduct Mode (P2S / X2D / H2*) */}
 													{[

@@ -243,6 +243,9 @@ export default {
     // Chamber light
     chamberLightOn: 'チャンバーライトをオンにしました',
     chamberLightOff: 'チャンバーライトをオフにしました',
+    // AI detection
+    aiDetectionOn: 'AI検出をオンにしました',
+    aiDetectionOff: 'AI検出をオフにしました',
     // Files
     files: 'ファイル',
     browseFiles: 'プリンターのファイルを参照',
@@ -330,6 +333,7 @@ export default {
       failedToPausePrint: '印刷の一時停止に失敗しました',
       failedToResumePrint: '印刷の再開に失敗しました',
       failedToControlChamberLight: 'チャンバーライトの制御に失敗しました',
+      failedToControlAiDetection: 'AI検出の制御に失敗しました',
       failedToSetSpeed: '印刷速度の設定に失敗しました',
       failedToUpdateSetting: '設定の更新に失敗しました',
       failedToSkipObjects: 'オブジェクトのスキップに失敗しました',
@@ -2683,6 +2687,7 @@ export default {
     startRecording: '録画開始',
     stopRecording: '録画停止',
     chamberLight: 'チャンバーライト切替',
+    aiDetection: 'AI検出切替',
     unavailable: 'カメラは利用できません',
     diagnose: {
       button: '診断',
