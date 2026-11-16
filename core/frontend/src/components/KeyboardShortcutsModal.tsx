@@ -64,7 +64,6 @@ function getShortcuts(
       { keys: ['Esc'], description: 'Exit selection mode', isExternal: false },
     ]},
     { category: 'General', items: [
-      { keys: ['C'], description: t('shortcuts.openCameras'), isExternal: false },
       { keys: ['?'], description: 'Show this help', isExternal: false },
     ]},
   ];

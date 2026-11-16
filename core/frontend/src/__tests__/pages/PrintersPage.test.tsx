@@ -1563,6 +1563,51 @@ describe('PrintersPage', () => {
         ]));
       });
     });
+
+    it('hides the quick Movement icon button for Klipper / Snapmaker U1 printers', async () => {
+      server.use(
+        http.get('/api/v1/printers/', () => HttpResponse.json([{
+          ...mockPrinters[0],
+          name: 'Snapmaker U1',
+          provider: 'fluidd',
+          model: 'Snapmaker U1',
+        }])),
+        http.get('/api/v1/printers/:id/status', () => HttpResponse.json({
+          ...mockPrinterStatus,
+          connected: true,
+          state: 'IDLE',
+        })),
+      );
+
+      render(<PrintersPage />);
+
+      await waitFor(() => {
+        expect(screen.getAllByText('Snapmaker U1').length).toBeGreaterThan(0);
+      });
+      expect(screen.queryByTitle('Move build plate')).not.toBeInTheDocument();
+    });
+
+    it('shows the quick Movement icon button for Bambu printers when idle in expanded view', async () => {
+      server.use(
+        http.get('/api/v1/printers/', () => HttpResponse.json([{
+          ...mockPrinters[0],
+          name: 'X1 Carbon',
+          provider: 'bambu',
+          model: 'X1 Carbon',
+        }])),
+        http.get('/api/v1/printers/:id/status', () => HttpResponse.json({
+          ...mockPrinterStatus,
+          connected: true,
+          state: 'IDLE',
+        })),
+      );
+
+      render(<PrintersPage />);
+
+      await waitFor(() => {
+        expect(screen.getByTitle('Move build plate')).toBeInTheDocument();
+      });
+    });
   });
 
   describe('printer info', () => {

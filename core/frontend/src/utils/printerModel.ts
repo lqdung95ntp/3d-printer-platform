@@ -1,3 +1,5 @@
+import { isSnapmakerU1 } from './printerCamera';
+
 // Map SSDP model codes to display names
 export function mapModelCode(ssdpModel: string | null): string {
   if (!ssdpModel) return '';
@@ -81,3 +83,44 @@ export function supportsLayerInspect(model: string | null | undefined): boolean 
   }
   return LAYER_INSPECT_MODELS.has(normalized);
 }
+
+/**
+ * Check if the printer model is Bambu Lab A1 (excluding A1 Mini).
+ * Mirrors backend is_bambu_a1 in printer_models.py.
+ */
+export function isBambuA1(model: string | null | undefined): boolean {
+  if (!model) return false;
+  const mapped = mapModelCode(model);
+  const normalized = (mapped || model).trim().toUpperCase().replace(/[\s-]/g, '');
+  if (normalized.includes('MINI') || normalized === 'A12' || normalized === 'N1' || normalized === 'A04') {
+    return false;
+  }
+  return (
+    normalized.includes('A1') ||
+    normalized === 'BAMBULABA1' ||
+    normalized === 'BAMBUA1' ||
+    normalized === 'N2S' ||
+    normalized === 'A11'
+  );
+}
+
+/**
+ * Check if the printer supports on-device AI detection features
+ * (spaghetti detection, build plate marker / detection, print monitoring).
+ * Supported on Snapmaker U1 and Bambu X1 series / X2D.
+ * Excludes Bambu A1 (which uses separate camera-based build plate presence checking).
+ */
+export function supportsAiDetection(
+  model: string | null | undefined,
+  name?: string | null | undefined
+): boolean {
+  if (isSnapmakerU1(model) || (name && isSnapmakerU1(name))) {
+    return true;
+  }
+  if (supportsLayerInspect(model)) {
+    return true;
+  }
+  return false;
+}
+
+

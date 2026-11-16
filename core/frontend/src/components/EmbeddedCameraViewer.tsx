@@ -9,6 +9,7 @@ import { useProLicense } from '../contexts/ProLicenseContext';
 import { ChamberLight } from './icons/ChamberLight';
 import { SkipObjectsModal, SkipObjectsIcon } from './SkipObjectsModal';
 import { CameraDiagnoseModal } from './CameraDiagnoseModal';
+import { supportsAiDetection } from '../utils/printerModel';
 
 interface EmbeddedCameraViewerProps {
   printerId: number;
@@ -180,6 +181,7 @@ export function EmbeddedCameraViewer({ printerId, printerName, viewerIndex = 0, 
           }),
           spaghetti_detector: enabled,
           printing_monitor: enabled,
+          buildplate_marker_detector: enabled,
         },
       }));
       return { previousStatus };
@@ -661,10 +663,11 @@ export function EmbeddedCameraViewer({ printerId, printerName, viewerIndex = 0, 
           >
             <ChamberLight on={status?.chamber_light ?? false} className="w-3.5 h-3.5" />
           </button>
-          {(() => {
+          {supportsAiDetection(printer?.model, printer?.name || printerName) && (() => {
             const isAiEnabled = Boolean(
               status?.print_options?.spaghetti_detector ||
-              status?.print_options?.printing_monitor
+              status?.print_options?.printing_monitor ||
+              status?.print_options?.buildplate_marker_detector
             );
             return (
               <button

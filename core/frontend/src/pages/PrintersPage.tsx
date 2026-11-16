@@ -8,7 +8,7 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { compareFwVersions } from "../utils/firmwareVersion";
-import { mapModelCode } from "../utils/printerModel";
+import { isBambuA1, mapModelCode, supportsAiDetection } from "../utils/printerModel";
 import { formatPrintName } from "../utils/printName";
 import { isBedSlinger } from "../utils/bedSlinger";
 import { isSupportedSwapPeiPrinter } from "../components/PrinterSwapPeiConfig";
@@ -298,7 +298,7 @@ import {
 	getPrinterFileRuleSet,
 	isPrintableForProvider,
 } from "../utils/printerFileRules";
-import { canOpenPrinterCamera } from "../utils/printerCamera";
+import { canOpenPrinterCamera, isSnapmakerU1 } from "../utils/printerCamera";
 import { defaultPrinterComparator } from "../utils/printerSort";
 
 import { KlipperControlPanel } from "../components/KlipperControlPanel";
@@ -3017,10 +3017,15 @@ function PrinterCard({
 	const isMoonrakerProvider =
 		printer.provider === "klipper" ||
 		printer.provider === "mainsail" ||
-		printer.provider === "fluidd";
+		printer.provider === "fluidd" ||
+		(printer.provider as string) === "moonraker";
 	const isElegooSDCPProvider = printer.provider === "elegoo_sdcp";
 	const isCrealityK2Moonraker =
 		isMoonrakerProvider && /creality\s+k2/i.test(printer.model || "");
+	const isSnapmakerU1Printer =
+		isSnapmakerU1(printer.model) || isSnapmakerU1(printer.name);
+	const hasManualControl =
+		(isMoonrakerProvider || isSnapmakerU1Printer) && !isPrusaModelPrinter;
 	const supportsSpoolAssignment = true;
 	const prusaLinkWebUrl = getPrusaLinkWebUrl(printer);
 	const [droppedPrusaFile, setDroppedPrusaFile] = useState<File | null>(null);
@@ -4536,6 +4541,7 @@ function PrinterCard({
 						}),
 						spaghetti_detector: enabled,
 						printing_monitor: enabled,
+						buildplate_marker_detector: enabled,
 					},
 				}),
 			);
@@ -7883,61 +7889,67 @@ function PrinterCard({
 														/>
 													</button>
 
-													{/* AI Detection Toggle */}
-													{(() => {
-														const isAiEnabled =
-															Boolean(
-																status
-																	.print_options
-																	?.spaghetti_detector ||
+													{/* AI Detection Toggle (Snapmaker U1 / X1 series) */}
+													{supportsAiDetection(
+														printer.model,
+														printer.name,
+													) &&
+														(() => {
+															const isAiEnabled =
+																Boolean(
 																	status
 																		.print_options
-																		?.printing_monitor ||
-																	printer.plate_detection_enabled,
-															);
-														return (
-															<button
-																onClick={() =>
-																	aiDetectionMutation.mutate(
-																		!isAiEnabled,
-																	)
-																}
-																disabled={
-																	!status.connected ||
-																	aiDetectionMutation.isPending ||
-																	!hasPermission(
-																		"printers:control",
-																	)
-																}
-																className={`${iconControlClass} ${
-																	isAiEnabled
-																		? "bg-purple-50 dark:bg-purple-500/10 text-purple-700 dark:text-purple-400 hover:bg-purple-500/20"
-																		: "bg-bambu-dark text-bambu-gray/50 hover:bg-bambu-dark-tertiary hover:text-white"
-																}`}
-																title={
-																	!hasPermission(
-																		"printers:control",
-																	)
-																		? t(
-																				"printers.permission.noControl",
-																			)
-																		: isAiEnabled
+																		?.spaghetti_detector ||
+																		status
+																			.print_options
+																			?.printing_monitor ||
+																		status
+																			.print_options
+																			?.buildplate_marker_detector,
+																);
+															return (
+																<button
+																	onClick={() =>
+																		aiDetectionMutation.mutate(
+																			!isAiEnabled,
+																		)
+																	}
+																	disabled={
+																		!status.connected ||
+																		aiDetectionMutation.isPending ||
+																		!hasPermission(
+																			"printers:control",
+																		)
+																	}
+																	className={`${iconControlClass} ${
+																		isAiEnabled
+																			? "bg-purple-50 dark:bg-purple-500/10 text-purple-700 dark:text-purple-400 hover:bg-purple-500/20"
+																			: "bg-bambu-dark text-bambu-gray/50 hover:bg-bambu-dark-tertiary hover:text-white"
+																	}`}
+																	title={
+																		!hasPermission(
+																			"printers:control",
+																		)
 																			? t(
-																					"printers.aiDetectionOff",
+																					"printers.permission.noControl",
 																				)
-																			: t(
-																					"printers.aiDetectionOn",
-																				)
-																}
-															>
-																{aiDetectionMutation.isPending ? (
-																	<Loader2 className="w-[var(--pc-i4,1rem)] h-[var(--pc-i4,1rem)] animate-spin" />
-																) : (
-																	<ScanEye className="w-[var(--pc-i4,1rem)] h-[var(--pc-i4,1rem)]" />
-																)}
-															</button>
-														);
-													})()}
+																			: isAiEnabled
+																				? t(
+																						"printers.aiDetectionOff",
+																					)
+																				: t(
+																						"printers.aiDetectionOn",
+																					)
+																	}
+																>
+																	{aiDetectionMutation.isPending ? (
+																		<Loader2 className="w-[var(--pc-i4,1rem)] h-[var(--pc-i4,1rem)] animate-spin" />
+																	) : (
+																		<ScanEye className="w-[var(--pc-i4,1rem)] h-[var(--pc-i4,1rem)]" />
+																	)}
+																</button>
+															);
+														})()}
 
 													{/* Airduct Mode (P2S / X2D / H2*) */}
 													{[
@@ -8060,8 +8072,8 @@ function PrinterCard({
 															);
 														})()}
 
-													{/* Movement — compact badge, popover holds XY, Z, and home controls */}
-													{(() => {
+													{/* Movement — compact badge, popover holds XY, Z, and home controls (hidden when manual controls are available) */}
+													{!hasManualControl && (() => {
 														const canControl =
 															hasPermission(
 																"printers:control",
@@ -8444,82 +8456,85 @@ function PrinterCard({
 														);
 													})()}
 
-													<div
-														className={`inline-flex rounded-lg ${printer.plate_detection_enabled ? "ring-1 ring-green-500" : ""}`}
-													>
-														<button
-															onClick={
-																handleTogglePlateDetection
-															}
-															disabled={
-																!status.connected ||
-																plateDetectionMutation.isPending ||
-																!hasPermission(
-																	"printers:update",
-																)
-															}
-															className={`${iconControlClass} rounded-r-none ${
-																printer.plate_detection_enabled
-																	? "bg-green-50 dark:bg-green-500/10 text-green-700 dark:text-green-400 hover:bg-green-500/20"
-																	: "bg-bambu-dark text-bambu-gray/50 hover:bg-bambu-dark-tertiary hover:text-white"
-															}`}
-															title={
-																!hasPermission(
-																	"printers:update",
-																)
-																	? t(
-																			"printers.plateDetection.noPermission",
-																		)
-																	: printer.plate_detection_enabled
+													{/* Build Plate Detection (A1 only) */}
+													{isBambuA1(printer.model) && (
+														<div
+															className={`inline-flex rounded-lg ${printer.plate_detection_enabled ? "ring-1 ring-green-500" : ""}`}
+														>
+															<button
+																onClick={
+																	handleTogglePlateDetection
+																}
+																disabled={
+																	!status.connected ||
+																	plateDetectionMutation.isPending ||
+																	!hasPermission(
+																		"printers:update",
+																	)
+																}
+																className={`${iconControlClass} rounded-r-none ${
+																	printer.plate_detection_enabled
+																		? "bg-green-50 dark:bg-green-500/10 text-green-700 dark:text-green-400 hover:bg-green-500/20"
+																		: "bg-bambu-dark text-bambu-gray/50 hover:bg-bambu-dark-tertiary hover:text-white"
+																}`}
+																title={
+																	!hasPermission(
+																		"printers:update",
+																	)
 																		? t(
-																				"printers.plateDetection.enabledClick",
+																				"printers.plateDetection.noPermission",
+																			)
+																		: printer.plate_detection_enabled
+																			? t(
+																					"printers.plateDetection.enabledClick",
+																				)
+																			: t(
+																					"printers.plateDetection.disabledClick",
+																				)
+																}
+															>
+																{plateDetectionMutation.isPending ? (
+																	<Loader2 className="w-[var(--pc-i4,1rem)] h-[var(--pc-i4,1rem)] animate-spin" />
+																) : (
+																	<ScanSearch className="w-[var(--pc-i4,1rem)] h-[var(--pc-i4,1rem)]" />
+																)}
+															</button>
+															<button
+																onClick={
+																	handleOpenPlateManagement
+																}
+																disabled={
+																	!status.connected ||
+																	isCheckingPlate ||
+																	!hasPermission(
+																		"printers:update",
+																	)
+																}
+																className={`flex h-8 w-8 items-center justify-center rounded-r-lg border-l border-bambu-dark-tertiary transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+																	printer.plate_detection_enabled
+																		? "bg-green-50 dark:bg-green-500/10 text-green-700 dark:text-green-400 hover:bg-green-500/20"
+																		: "bg-bambu-dark text-bambu-gray/50 hover:bg-bambu-dark-tertiary hover:text-white"
+																}`}
+																title={
+																	!hasPermission(
+																		"printers:update",
+																	)
+																		? t(
+																				"printers.plateDetection.noPermission",
 																			)
 																		: t(
-																				"printers.plateDetection.disabledClick",
+																				"printers.plateDetection.manageCalibration",
 																			)
-															}
-														>
-															{plateDetectionMutation.isPending ? (
-																<Loader2 className="w-[var(--pc-i4,1rem)] h-[var(--pc-i4,1rem)] animate-spin" />
-															) : (
-																<ScanSearch className="w-[var(--pc-i4,1rem)] h-[var(--pc-i4,1rem)]" />
-															)}
-														</button>
-														<button
-															onClick={
-																handleOpenPlateManagement
-															}
-															disabled={
-																!status.connected ||
-																isCheckingPlate ||
-																!hasPermission(
-																	"printers:update",
-																)
-															}
-															className={`flex h-8 w-8 items-center justify-center rounded-r-lg border-l border-bambu-dark-tertiary transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
-																printer.plate_detection_enabled
-																	? "bg-green-50 dark:bg-green-500/10 text-green-700 dark:text-green-400 hover:bg-green-500/20"
-																	: "bg-bambu-dark text-bambu-gray/50 hover:bg-bambu-dark-tertiary hover:text-white"
-															}`}
-															title={
-																!hasPermission(
-																	"printers:update",
-																)
-																	? t(
-																			"printers.plateDetection.noPermission",
-																		)
-																	: t(
-																			"printers.plateDetection.manageCalibration",
-																		)
-															}
-														>
-															{isCheckingPlate ? (
-																<Loader2 className="w-[var(--pc-i4,1rem)] h-[var(--pc-i4,1rem)] animate-spin" />
-															) : (
-																<ChevronDown className="w-[var(--pc-i4,1rem)] h-[var(--pc-i4,1rem)]" />
-															)}
-														</button>
-													</div>
+																}
+															>
+																{isCheckingPlate ? (
+																	<Loader2 className="w-[var(--pc-i4,1rem)] h-[var(--pc-i4,1rem)] animate-spin" />
+																) : (
+																	<ChevronDown className="w-[var(--pc-i4,1rem)] h-[var(--pc-i4,1rem)]" />
+																)}
+															</button>
+														</div>
+													)}
 
 													{/* Print Speed */}
 													{(() => (
@@ -12495,8 +12510,7 @@ function PrinterCard({
 							)}
 
 						{/* Klipper / Moonraker manual controls */}
-						{isMoonrakerProvider &&
-							!isPrusaModelPrinter &&
+						{hasManualControl &&
 							viewMode === "expanded" && (
 								<Collapsible
 									defaultOpen={false}
@@ -13295,9 +13309,9 @@ function PrinterCard({
 													setEditingRoi(
 														plateCheckResult.roi || {
 															x: 0.0,
-															y: 0.225,
+															y: 0.18,
 															w: 1.0,
-															h: 0.425,
+															h: 0.25,
 														},
 													);
 													if (plateCheckResult.has_pei === undefined) {
@@ -13640,7 +13654,7 @@ function PrinterCard({
 												%, Y=
 												{Math.round(
 													(plateCheckResult.roi?.y ??
-														0.225) * 100,
+														0.18) * 100,
 												)}
 												%, W=
 												{Math.round(
@@ -13650,7 +13664,7 @@ function PrinterCard({
 												%, H=
 												{Math.round(
 													(plateCheckResult.roi?.h ??
-														0.425) * 100,
+														0.25) * 100,
 												)}
 												%
 											</p>

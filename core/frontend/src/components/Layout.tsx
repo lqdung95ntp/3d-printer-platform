@@ -6,7 +6,6 @@ import { useTheme } from '../contexts/ThemeContext';
 import { KeyboardShortcutsModal } from './KeyboardShortcutsModal';
 import { InstallAppButton } from './InstallAppButton';
 import { SwitchbarPopover } from './SwitchbarPopover';
-import { CameraLauncher } from './CameraLauncher';
 import { useQuery, useQueries } from '@tanstack/react-query';
 import { api, supportApi, pendingUploadsApi, type Permission } from '../api/client';
 import { getIconByName } from './IconPicker';
@@ -87,7 +86,6 @@ export function Layout() {
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [showSwitchbar, setShowSwitchbar] = useState(false);
-  const [cameraListOpen, setCameraListOpen] = useState(false);
   const defaultSidebarOrder = useMemo(() => defaultNavItems.map(i => i.id), []);
   const [sidebarOrder, setSidebarOrder] = useState<string[]>(() => getSidebarOrder(defaultNavItems.map(i => i.id)));
   const [hiddenSystemItemIds, setHiddenSystemItemIds] = useState<string[]>(getHiddenSidebarSystemItemIds);
@@ -453,14 +451,8 @@ export function Layout() {
           e.preventDefault();
           setShowShortcuts(true);
           break;
-        case 'c':
-        case 'C':
-          e.preventDefault();
-          setCameraListOpen((open) => !open);
-          break;
         case 'Escape':
           setShowShortcuts(false);
-          setCameraListOpen(false);
           break;
       }
     }
@@ -708,16 +700,6 @@ export function Layout() {
                       </div>
                       {(isSidebarCompact || sidebarExpanded) && <span className="flex-1 truncate">{t(labelKey)}</span>}
                     </NavLink>
-                    {id === 'printers' && (
-                      <div className={isSidebarCompact || sidebarExpanded ? 'pr-2' : 'hidden'}>
-                        <CameraLauncher
-                          placement="side"
-                          size="xs"
-                          open={cameraListOpen}
-                          onOpenChange={setCameraListOpen}
-                        />
-                      </div>
-                    )}
                   </li>
                 );
               }

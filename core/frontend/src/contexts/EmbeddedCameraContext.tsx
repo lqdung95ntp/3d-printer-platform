@@ -126,11 +126,14 @@ export function EmbeddedCameraProvider({ children }: { children: ReactNode }) {
   );
 }
 
+const defaultContext: EmbeddedCameraContextType = {
+  openCameras: [],
+  openEmbeddedCamera: () => {},
+  closeEmbeddedCamera: () => {},
+};
+
 export function useEmbeddedCameras(): EmbeddedCameraContextType {
   const context = useContext(EmbeddedCameraContext);
-  if (!context) {
-    throw new Error('useEmbeddedCameras must be used inside EmbeddedCameraProvider');
-  }
-  return context;
+  return context ?? defaultContext;
 }
 

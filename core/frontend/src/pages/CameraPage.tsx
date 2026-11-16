@@ -12,6 +12,7 @@ import { ChamberLight } from '../components/icons/ChamberLight';
 import { SkipObjectsModal, SkipObjectsIcon } from '../components/SkipObjectsModal';
 import { CameraDiagnoseModal } from '../components/CameraDiagnoseModal';
 import { appAssetPath } from '../utils/assetPaths';
+import { supportsAiDetection } from '../utils/printerModel';
 
 const MAX_RECONNECT_ATTEMPTS = 5;
 const INITIAL_RECONNECT_DELAY = 2000; // 2 seconds
@@ -122,6 +123,7 @@ export function CameraPage() {
           }),
           spaghetti_detector: enabled,
           printing_monitor: enabled,
+          buildplate_marker_detector: enabled,
         },
       }));
       return { previousStatus };
@@ -697,11 +699,11 @@ export function CameraPage() {
           >
             <ChamberLight on={status?.chamber_light ?? false} className="w-4 h-4" />
           </button>
-          {(() => {
+          {supportsAiDetection(printer?.model, printer?.name) && (() => {
             const isAiEnabled = Boolean(
               status?.print_options?.spaghetti_detector ||
               status?.print_options?.printing_monitor ||
-              printer?.plate_detection_enabled
+              status?.print_options?.buildplate_marker_detector
             );
             return (
               <button
