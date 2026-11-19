@@ -1272,7 +1272,7 @@ export function AddNotificationModal({
 										onChange={(e) =>
 											setQuietHoursStart(e.target.value)
 										}
-										className="w-full px-3 py-2 bg-bambu-dark border border-bambu-dark-tertiary rounded-lg text-white focus:border-bambu-green focus:outline-none"
+										className="w-full px-3 py-2 bg-bambu-dark border border-bambu-dark-tertiary rounded-lg text-white focus:border-bambu-green focus:outline-none [color-scheme:dark]"
 									/>
 								</div>
 								<div>
@@ -1285,7 +1285,7 @@ export function AddNotificationModal({
 										onChange={(e) =>
 											setQuietHoursEnd(e.target.value)
 										}
-										className="w-full px-3 py-2 bg-bambu-dark border border-bambu-dark-tertiary rounded-lg text-white focus:border-bambu-green focus:outline-none"
+										className="w-full px-3 py-2 bg-bambu-dark border border-bambu-dark-tertiary rounded-lg text-white focus:border-bambu-green focus:outline-none [color-scheme:dark]"
 									/>
 								</div>
 							</div>
@@ -1319,7 +1319,7 @@ export function AddNotificationModal({
 									onChange={(e) =>
 										setDailyDigestTime(e.target.value)
 									}
-									className="w-full px-3 py-2 bg-bambu-dark border border-bambu-dark-tertiary rounded-lg text-white focus:border-bambu-green focus:outline-none"
+									className="w-full px-3 py-2 bg-bambu-dark border border-bambu-dark-tertiary rounded-lg text-white focus:border-bambu-green focus:outline-none [color-scheme:dark]"
 								/>
 								<p className="text-xs text-bambu-gray mt-1">
 									{t("notifications.digestCollected")}

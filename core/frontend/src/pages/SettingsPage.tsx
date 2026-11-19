@@ -53,7 +53,7 @@ import {
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { api } from "../api/client";
+import { api, supportApi } from "../api/client";
 import { useAuth } from "../contexts/AuthContext";
 import { formatDateOnly } from "../utils/date";
 import { getCurrencySymbol, SUPPORTED_CURRENCIES } from "../utils/currency";
@@ -246,7 +246,8 @@ registerSettingsSearch({
 registerSettingsSearch({
 	labelKey: "settings.dataManagement",
 	tab: "general",
-	keywords: "data reset clear logs notifications preferences",
+	keywords:
+		"data reset clear logs notifications preferences diagnostic report support bundle",
 	anchor: "card-data",
 });
 registerSettingsSearch({
@@ -810,6 +811,7 @@ export function SettingsPage() {
 	});
 	const [changePasswordLoading, setChangePasswordLoading] = useState(false);
 	const [storageUsageRefreshing, setStorageUsageRefreshing] = useState(false);
+	const [downloadingLogs, setDownloadingLogs] = useState(false);
 
 	// User management state
 	const [showCreateUserModal, setShowCreateUserModal] = useState(false);
@@ -902,6 +904,33 @@ export function SettingsPage() {
 			showToast(message, "error");
 		} finally {
 			setStorageUsageRefreshing(false);
+		}
+	};
+
+	const handleDownloadDiagnosticLogs = async () => {
+		setDownloadingLogs(true);
+		try {
+			await supportApi.downloadSupportBundle(true);
+			showToast(
+				t(
+					"settings.toast.downloadLogsSuccess",
+					"Diagnostic logs downloaded successfully",
+				),
+				"success",
+			);
+		} catch (error) {
+			console.error("Failed to download diagnostic logs:", error);
+			showToast(
+				error instanceof Error
+					? error.message
+					: t(
+							"settings.toast.downloadLogsFailed",
+							"Failed to download diagnostic logs",
+						),
+				"error",
+			);
+		} finally {
+			setDownloadingLogs(false);
 		}
 	};
 
@@ -2219,7 +2248,9 @@ export function SettingsPage() {
 		Record<number, ReturnType<typeof setTimeout>>
 	>({});
 	const initializedPrinterSnapshotUrlsRef = useRef<Set<number>>(new Set());
-	const [usbManualEntry, setUsbManualEntry] = useState<Record<number, boolean>>({});
+	const [usbManualEntry, setUsbManualEntry] = useState<
+		Record<number, boolean>
+	>({});
 
 	// Initialize local camera URLs from printer data
 	useEffect(() => {
@@ -2384,8 +2415,10 @@ export function SettingsPage() {
 						<p className="text-bambu-gray mt-1">
 							{t("settings.configurePrintbuddy", {
 								farmName:
-									(localSettings?.farm_name ?? settings?.farm_name)?.trim() ||
-									"Printbuddy",
+									(
+										localSettings?.farm_name ??
+										settings?.farm_name
+									)?.trim() || "Printbuddy",
 							})}
 						</p>
 					</div>
@@ -3586,40 +3619,64 @@ export function SettingsPage() {
 												<div className="flex flex-wrap items-center justify-between pt-2 border-t border-bambu-dark-tertiary/60">
 													<div>
 														<p className="text-sm text-white">
-															{t("settings.tabDisplay")}
+															{t(
+																"settings.tabDisplay",
+															)}
 														</p>
 														<p className="text-xs text-bambu-gray">
-															{t("settings.tabDisplayHint")}
+															{t(
+																"settings.tabDisplayHint",
+															)}
 														</p>
 													</div>
 													<div className="flex rounded-lg bg-bambu-dark-tertiary p-1 border border-bambu-dark-tertiary">
 														<button
 															type="button"
 															onClick={() => {
-																setTabDisplay("percentage");
-																showToast(t("settings.toast.settingsSaved"), "success");
+																setTabDisplay(
+																	"percentage",
+																);
+																showToast(
+																	t(
+																		"settings.toast.settingsSaved",
+																	),
+																	"success",
+																);
 															}}
 															className={`px-3 py-1 text-xs rounded-md font-medium transition-colors ${
-																tabDisplay === "percentage"
+																tabDisplay ===
+																"percentage"
 																	? "bg-bambu-green text-white"
 																	: "text-bambu-gray hover:text-white"
 															}`}
 														>
-															{t("settings.tabDisplayPercentage")}
+															{t(
+																"settings.tabDisplayPercentage",
+															)}
 														</button>
 														<button
 															type="button"
 															onClick={() => {
-																setTabDisplay("time");
-																showToast(t("settings.toast.settingsSaved"), "success");
+																setTabDisplay(
+																	"time",
+																);
+																showToast(
+																	t(
+																		"settings.toast.settingsSaved",
+																	),
+																	"success",
+																);
 															}}
 															className={`px-3 py-1 text-xs rounded-md font-medium transition-colors ${
-																tabDisplay === "time"
+																tabDisplay ===
+																"time"
 																	? "bg-bambu-green text-white"
 																	: "text-bambu-gray hover:text-white"
 															}`}
 														>
-															{t("settings.tabDisplayTime")}
+															{t(
+																"settings.tabDisplayTime",
+															)}
 														</button>
 													</div>
 												</div>
@@ -3989,23 +4046,41 @@ export function SettingsPage() {
 											{/* Chamber Light on Camera */}
 											<div className="border-t border-bambu-dark-tertiary pt-4 mt-4">
 												<label className="block text-sm text-white mb-1">
-													{t("settings.cameraLightMode", "Chamber light for camera")}
+													{t(
+														"settings.cameraLightMode",
+														"Chamber light for camera",
+													)}
 												</label>
 												<select
-													value={localSettings.camera_light_mode ?? "off"}
+													value={
+														localSettings.camera_light_mode ??
+														"off"
+													}
 													onChange={(e) =>
-														updateSetting("camera_light_mode", e.target.value)
+														updateSetting(
+															"camera_light_mode",
+															e.target.value,
+														)
 													}
 													className="w-full px-3 py-2 bg-bambu-dark border border-bambu-dark-tertiary rounded-lg text-white focus:border-bambu-green focus:outline-none"
 												>
 													<option value="off">
-														{t("settings.cameraLightOff", "Off")}
+														{t(
+															"settings.cameraLightOff",
+															"Off",
+														)}
 													</option>
 													<option value="all">
-														{t("settings.cameraLightAll", "Turn on for all printers")}
+														{t(
+															"settings.cameraLightAll",
+															"Turn on for all printers",
+														)}
 													</option>
 													<option value="selected">
-														{t("settings.cameraLightSelected", "Turn on for selected printers")}
+														{t(
+															"settings.cameraLightSelected",
+															"Turn on for selected printers",
+														)}
 													</option>
 												</select>
 												<p className="text-xs text-bambu-gray mt-1">
@@ -4015,7 +4090,8 @@ export function SettingsPage() {
 													)}
 												</p>
 
-												{localSettings.camera_light_mode !== "off" && (
+												{localSettings.camera_light_mode !==
+													"off" && (
 													<div className="mt-3">
 														<label className="block text-xs text-bambu-gray mb-1">
 															{t(
@@ -4028,11 +4104,17 @@ export function SettingsPage() {
 															min={0}
 															max={5}
 															step={0.5}
-															value={localSettings.camera_light_delay ?? 2.0}
+															value={
+																localSettings.camera_light_delay ??
+																2.0
+															}
 															onChange={(e) =>
 																updateSetting(
 																	"camera_light_delay",
-																	parseFloat(e.target.value) || 0,
+																	parseFloat(
+																		e.target
+																			.value,
+																	) || 0,
 																)
 															}
 															className="w-full px-3 py-1.5 bg-bambu-dark border border-bambu-dark-tertiary rounded text-white text-sm focus:border-bambu-green focus:outline-none"
@@ -4096,20 +4178,44 @@ export function SettingsPage() {
 																		</label>
 																	</div>
 
-																	{localSettings.camera_light_mode === "selected" && (
+																	{localSettings.camera_light_mode ===
+																		"selected" && (
 																		<div className="flex items-center justify-between py-1 mb-2 border-b border-bambu-dark-tertiary/40">
 																			<span className="text-xs text-bambu-gray">
-																				{t("settings.cameraLightAutoForPrinter", "Chamber light on camera use")}
+																				{t(
+																					"settings.cameraLightAutoForPrinter",
+																					"Chamber light on camera use",
+																				)}
 																			</span>
 																			<input
 																				type="checkbox"
-																				checked={printer.camera_light_auto ?? false}
-																				onChange={(e) => {
-																					api.updatePrinter(printer.id, {
-																						camera_light_auto: e.target.checked,
-																					}).then(() => {
-																						queryClient.invalidateQueries({ queryKey: ["printers"] });
-																					});
+																				checked={
+																					printer.camera_light_auto ??
+																					false
+																				}
+																				onChange={(
+																					e,
+																				) => {
+																					api.updatePrinter(
+																						printer.id,
+																						{
+																							camera_light_auto:
+																								e
+																									.target
+																									.checked,
+																						},
+																					).then(
+																						() => {
+																							queryClient.invalidateQueries(
+																								{
+																									queryKey:
+																										[
+																											"printers",
+																										],
+																								},
+																							);
+																						},
+																					);
 																				}}
 																				className="rounded border-bambu-dark-tertiary text-bambu-green focus:ring-bambu-green"
 																			/>
@@ -4118,22 +4224,41 @@ export function SettingsPage() {
 
 																	{printer.external_camera_enabled && (
 																		<div className="space-y-2 mt-2">
-																			{printer.external_camera_type === "usb" && !usbManualEntry[printer.id] ? (
+																			{printer.external_camera_type ===
+																				"usb" &&
+																			!usbManualEntry[
+																				printer
+																					.id
+																			] ? (
 																				<UsbCameraDevicePicker
-																					printerName={printer.name}
+																					printerName={
+																						printer.name
+																					}
 																					value={
-																						localCameraUrls[printer.id] ??
+																						localCameraUrls[
+																							printer
+																								.id
+																						] ??
 																						printer.external_camera_url ??
 																						""
 																					}
-																					onSelect={(device) =>
-																						handleCameraUrlChange(printer.id, device)
+																					onSelect={(
+																						device,
+																					) =>
+																						handleCameraUrlChange(
+																							printer.id,
+																							device,
+																						)
 																					}
 																					onEnterManually={() =>
-																						setUsbManualEntry((prev) => ({
-																							...prev,
-																							[printer.id]: true,
-																						}))
+																						setUsbManualEntry(
+																							(
+																								prev,
+																							) => ({
+																								...prev,
+																								[printer.id]: true,
+																							}),
+																						)
 																					}
 																				/>
 																			) : (
@@ -4899,7 +5024,8 @@ export function SettingsPage() {
 												</label>
 											</div>
 
-											{(localSettings.auto_update_enabled ?? true) && (
+											{(localSettings.auto_update_enabled ??
+												true) && (
 												<div className="py-3 border-b border-bambu-dark-tertiary space-y-3">
 													<div className="flex items-center justify-between">
 														<div>
@@ -4929,7 +5055,7 @@ export function SettingsPage() {
 																		.value,
 																)
 															}
-															className="px-3 py-1.5 bg-bambu-dark border border-bambu-dark-tertiary rounded text-sm text-white focus:outline-none focus:border-bambu-green font-mono"
+															className="px-3 py-1.5 bg-bambu-dark border border-bambu-dark-tertiary rounded text-sm text-white focus:outline-none focus:border-bambu-green font-mono [color-scheme:dark]"
 														/>
 													</div>
 													<div className="p-3 bg-bambu-dark rounded border border-bambu-dark-tertiary/60 text-xs text-bambu-gray space-y-1">
@@ -5360,6 +5486,51 @@ export function SettingsPage() {
 												>
 													<Trash2 className="w-4 h-4" />
 													{t("settings.reset")}
+												</Button>
+											</div>
+											<div className="flex items-center justify-between pt-4 border-t border-bambu-dark-tertiary">
+												<div>
+													<p className="text-white">
+														{t(
+															"settings.downloadDiagnosticLogs",
+															"Diagnostic Logs",
+														)}
+													</p>
+													<p className="text-sm text-bambu-gray">
+														{t(
+															"settings.downloadDiagnosticLogsDescription",
+															"Export system logs, hardware metrics, and anonymized diagnostic data as a ZIP file",
+														)}
+													</p>
+													<p className="text-xs text-bambu-gray/70 mt-0.5">
+														{t(
+															"settings.downloadLogsHint",
+															"You can attach this ZIP file when opening a GitHub issue or sending to technical support.",
+														)}
+													</p>
+												</div>
+												<Button
+													variant="secondary"
+													size="sm"
+													onClick={
+														handleDownloadDiagnosticLogs
+													}
+													disabled={downloadingLogs}
+												>
+													{downloadingLogs ? (
+														<Loader2 className="w-4 h-4 animate-spin" />
+													) : (
+														<Download className="w-4 h-4" />
+													)}
+													{downloadingLogs
+														? t(
+																"settings.downloadingLogs",
+																"Downloading...",
+															)
+														: t(
+																"system.downloadLogs",
+																"Download Logs",
+															)}
 												</Button>
 											</div>
 											<div className="pt-4 border-t border-bambu-dark-tertiary">
@@ -10850,62 +11021,139 @@ export function SettingsPage() {
 														<CardHeader>
 															<h3 className="text-lg font-semibold text-white flex items-center gap-2">
 																<Lock className="w-5 h-5 text-bambu-green" />
-																{t("settings.sessionPolicy.title")}
+																{t(
+																	"settings.sessionPolicy.title",
+																)}
 															</h3>
 														</CardHeader>
 														<CardContent>
 															<p className="text-sm text-bambu-gray mb-4">
-																{t("settings.sessionPolicy.description")}
+																{t(
+																	"settings.sessionPolicy.description",
+																)}
 															</p>
 															<div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
 																{[
-																	{ hours: 24, labelKey: "settings.sessionPolicy.preset24h" },
-																	{ hours: 168, labelKey: "settings.sessionPolicy.preset7d" },
-																	{ hours: 720, labelKey: "settings.sessionPolicy.preset30d" },
-																].map((preset) => {
-																	const current = localSettings?.session_max_hours ?? 24;
-																	const isActive = current === preset.hours;
-																	return (
-																		<button
-																			key={preset.hours}
-																			type="button"
-																			onClick={() => updateSetting("session_max_hours", preset.hours)}
-																			disabled={authEnabled && !hasPermission("settings:update")}
-																			className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-																				isActive
-																					? "bg-bambu-green text-white"
-																					: "bg-bambu-dark-tertiary text-bambu-gray hover:text-white hover:bg-bambu-dark"
-																			} disabled:opacity-50 disabled:cursor-not-allowed`}
-																		>
-																			{t(preset.labelKey)}
-																		</button>
-																	);
-																})}
+																	{
+																		hours: 24,
+																		labelKey:
+																			"settings.sessionPolicy.preset24h",
+																	},
+																	{
+																		hours: 168,
+																		labelKey:
+																			"settings.sessionPolicy.preset7d",
+																	},
+																	{
+																		hours: 720,
+																		labelKey:
+																			"settings.sessionPolicy.preset30d",
+																	},
+																].map(
+																	(
+																		preset,
+																	) => {
+																		const current =
+																			localSettings?.session_max_hours ??
+																			24;
+																		const isActive =
+																			current ===
+																			preset.hours;
+																		return (
+																			<button
+																				key={
+																					preset.hours
+																				}
+																				type="button"
+																				onClick={() =>
+																					updateSetting(
+																						"session_max_hours",
+																						preset.hours,
+																					)
+																				}
+																				disabled={
+																					authEnabled &&
+																					!hasPermission(
+																						"settings:update",
+																					)
+																				}
+																				className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+																					isActive
+																						? "bg-bambu-green text-white"
+																						: "bg-bambu-dark-tertiary text-bambu-gray hover:text-white hover:bg-bambu-dark"
+																				} disabled:opacity-50 disabled:cursor-not-allowed`}
+																			>
+																				{t(
+																					preset.labelKey,
+																				)}
+																			</button>
+																		);
+																	},
+																)}
 																<div className="flex items-center gap-1">
 																	<input
 																		type="number"
 																		min={1}
-																		max={720}
-																		value={localSettings?.session_max_hours ?? 24}
-																		onChange={(e) => {
-																			const raw = parseInt(e.target.value, 10);
-																			if (Number.isNaN(raw)) return;
-																			updateSetting("session_max_hours", Math.max(1, Math.min(720, raw)));
+																		max={
+																			720
+																		}
+																		value={
+																			localSettings?.session_max_hours ??
+																			24
+																		}
+																		onChange={(
+																			e,
+																		) => {
+																			const raw =
+																				parseInt(
+																					e
+																						.target
+																						.value,
+																					10,
+																				);
+																			if (
+																				Number.isNaN(
+																					raw,
+																				)
+																			)
+																				return;
+																			updateSetting(
+																				"session_max_hours",
+																				Math.max(
+																					1,
+																					Math.min(
+																						720,
+																						raw,
+																					),
+																				),
+																			);
 																		}}
-																		disabled={authEnabled && !hasPermission("settings:update")}
-																		aria-label={t("settings.sessionPolicy.customHoursLabel")}
+																		disabled={
+																			authEnabled &&
+																			!hasPermission(
+																				"settings:update",
+																			)
+																		}
+																		aria-label={t(
+																			"settings.sessionPolicy.customHoursLabel",
+																		)}
 																		className="w-20 px-2 py-2 bg-bambu-dark-tertiary text-white text-sm rounded-lg border border-bambu-dark-tertiary focus:border-bambu-green focus:outline-none disabled:opacity-50"
 																	/>
 																	<span className="text-sm text-bambu-gray">
-																		{t("settings.sessionPolicy.hoursSuffix")}
+																		{t(
+																			"settings.sessionPolicy.hoursSuffix",
+																		)}
 																	</span>
 																</div>
 															</div>
-															{(localSettings?.session_max_hours ?? 24) > 24 && (
+															{(localSettings?.session_max_hours ??
+																24) > 24 && (
 																<div className="flex items-start gap-2 p-3 rounded-lg bg-yellow-50 dark:bg-yellow-500/10 border border-yellow-300 dark:border-yellow-500/30">
 																	<AlertTriangle className="w-4 h-4 text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5" />
 																	<p className="text-xs text-yellow-800 dark:text-yellow-200">
-																		{t("settings.sessionPolicy.warning")}
+																		{t(
+																			"settings.sessionPolicy.warning",
+																		)}
 																	</p>
 																</div>
 															)}

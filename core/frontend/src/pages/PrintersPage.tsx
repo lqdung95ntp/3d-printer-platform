@@ -8,7 +8,11 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { compareFwVersions } from "../utils/firmwareVersion";
-import { isBambuA1, mapModelCode, supportsAiDetection } from "../utils/printerModel";
+import {
+	isBambuA1,
+	mapModelCode,
+	supportsAiDetection,
+} from "../utils/printerModel";
 import { formatPrintName } from "../utils/printName";
 import { isBedSlinger } from "../utils/bedSlinger";
 import { isSupportedSwapPeiPrinter } from "../components/PrinterSwapPeiConfig";
@@ -259,6 +263,7 @@ import { FileUploadModal } from "../components/FileUploadModal";
 import { PrintModal } from "../components/PrintModal";
 import { PrinterInfoModal } from "../components/PrinterInfoModal";
 import { FeedDirectionModal } from "../components/FeedDirectionModal";
+import { PeiCalibrationModal } from "../components/PeiCalibrationModal";
 import {
 	getAmsLabel,
 	getEmptySlotKind,
@@ -3275,7 +3280,15 @@ function PrinterCard({
 	const { data: status } = useQuery({
 		queryKey: ["printerStatus", printer.id],
 		queryFn: () => api.getPrinterStatus(printer.id),
-		refetchInterval: 30000, // Fallback polling, WebSocket handles real-time
+		staleTime: 2000,
+		refetchInterval: (query) => {
+			const data = query.state.data;
+			// Fast poll (3s) when offline so dashboard auto-connects right after power-on
+			if (!data?.connected) {
+				return 3000;
+			}
+			return 30000;
+		},
 	});
 
 	const canOpenCamera = canOpenPrinterCamera(
@@ -4563,8 +4576,7 @@ function PrinterCard({
 				);
 			}
 			showToast(
-				error.message ||
-					t("printers.toast.failedToControlAiDetection"),
+				error.message || t("printers.toast.failedToControlAiDetection"),
 				"error",
 			);
 		},
@@ -4927,6 +4939,7 @@ function PrinterCard({
 		index: number;
 		label: string;
 	} | null>(null);
+	const [showPeiCalibModal, setShowPeiCalibModal] = useState(false);
 
 	// Fetch plate references
 	const fetchPlateReferences = async () => {
@@ -4961,6 +4974,7 @@ function PrinterCard({
 		try {
 			const result = await api.checkPlateEmpty(printer.id, {
 				includeDebugImage: true,
+				roi: printer.plate_detection_roi ?? undefined,
 			});
 			setPlateCheckResult(result);
 			fetchPlateReferences();
@@ -5083,6 +5097,7 @@ function PrinterCard({
 			// Re-check to see new ROI/parameters in action
 			const checkResult = await api.checkPlateEmpty(printer.id, {
 				includeDebugImage: true,
+				roi: editingRoi,
 			});
 			setPlateCheckResult(checkResult);
 		} catch (error) {
@@ -7900,12 +7915,12 @@ function PrinterCard({
 																	status
 																		.print_options
 																		?.spaghetti_detector ||
-																		status
-																			.print_options
-																			?.printing_monitor ||
-																		status
-																			.print_options
-																			?.buildplate_marker_detector,
+																	status
+																		.print_options
+																		?.printing_monitor ||
+																	status
+																		.print_options
+																		?.buildplate_marker_detector,
 																);
 															return (
 																<button
@@ -8073,391 +8088,399 @@ function PrinterCard({
 														})()}
 
 													{/* Movement — compact badge, popover holds XY, Z, and home controls (hidden when manual controls are available) */}
-													{!hasManualControl && (() => {
-														const canControl =
-															hasPermission(
-																"printers:control",
-															);
-														const isFailed =
-															status?.state ===
-															"FAILED";
-														const disabled =
-															isPrinting ||
-															isFailed ||
-															!canControl;
-														const jogButtonClass =
-															"flex h-8 w-8 items-center justify-center rounded bg-indigo-100 dark:bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 transition-colors hover:bg-indigo-200 dark:hover:bg-indigo-500/30 disabled:cursor-not-allowed disabled:opacity-50";
-														// Which part the Z axis moves (#1334). The endpoint takes a signed
-														// nozzle-bed gap that means the same thing on every printer, so the
-														// arrows are ours to interpret: on a bed-slinger "up" lifts the
-														// toolhead and opens the gap, on a bed-on-Z printer it raises the
-														// plate toward the nozzle and closes it.
-														const zMovesToolhead =
-															isBedSlinger(
-																printer.model,
-															);
-														const requestZJog = (
-															arrow:
-																| "up"
-																| "down",
-														) => {
-															// No not-homed gate here, and no endstop bypass to gate either:
-															// since #2579 the jog is a bare move that never touches M211. That
-															// does not make it clamped — the firmware ignores soft endstops on
-															// MQTT G-code entirely, which is what the banner above warns about.
-															// Up arrow sends negative distance (decrease nozzle-bed gap / bed up on
-															// bed-on-Z, backend inverts for bed-slingers like A1 so toolhead goes up).
-															bedJogMutation.mutate(
-																{
-																	distance:
-																		arrow ===
-																		"up"
-																			? -bedJogStep
-																			: bedJogStep,
-																},
-															);
-														};
-														const requestXyJog = (
-															x: number,
-															y: number,
-														) => {
-															xyJogMutation.mutate(
-																{ x, y },
-															);
-														};
-														const requestExtruderJog =
-															(
-																distance: number,
-															) => {
-																extruderJogMutation.mutate(
-																	distance,
+													{!hasManualControl &&
+														(() => {
+															const canControl =
+																hasPermission(
+																	"printers:control",
 																);
-															};
-														return (
-															<div className="relative">
-																<button
-																	onClick={() =>
-																		setShowBedJogMenu(
-																			showBedJogMenu ===
-																				printer.id
-																				? null
-																				: printer.id,
-																		)
-																	}
-																	disabled={
-																		disabled
-																	}
-																	className={`${iconControlClass} ${
-																		disabled
-																			? "bg-bambu-dark text-bambu-gray/50 cursor-not-allowed"
-																			: "bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 hover:bg-indigo-500/20"
-																	}`}
-																	title={
-																		!canControl
-																			? t(
-																					"printers.permission.noControl",
-																				)
-																			: isPrinting
+															const isFailed =
+																status?.state ===
+																"FAILED";
+															const disabled =
+																isPrinting ||
+																isFailed ||
+																!canControl;
+															const jogButtonClass =
+																"flex h-8 w-8 items-center justify-center rounded bg-indigo-100 dark:bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 transition-colors hover:bg-indigo-200 dark:hover:bg-indigo-500/30 disabled:cursor-not-allowed disabled:opacity-50";
+															// Which part the Z axis moves (#1334). The endpoint takes a signed
+															// nozzle-bed gap that means the same thing on every printer, so the
+															// arrows are ours to interpret: on a bed-slinger "up" lifts the
+															// toolhead and opens the gap, on a bed-on-Z printer it raises the
+															// plate toward the nozzle and closes it.
+															const zMovesToolhead =
+																isBedSlinger(
+																	printer.model,
+																);
+															const requestZJog =
+																(
+																	arrow:
+																		| "up"
+																		| "down",
+																) => {
+																	// No not-homed gate here, and no endstop bypass to gate either:
+																	// since #2579 the jog is a bare move that never touches M211. That
+																	// does not make it clamped — the firmware ignores soft endstops on
+																	// MQTT G-code entirely, which is what the banner above warns about.
+																	// Up arrow sends negative distance (decrease nozzle-bed gap / bed up on
+																	// bed-on-Z, backend inverts for bed-slingers like A1 so toolhead goes up).
+																	bedJogMutation.mutate(
+																		{
+																			distance:
+																				arrow ===
+																				"up"
+																					? -bedJogStep
+																					: bedJogStep,
+																		},
+																	);
+																};
+															const requestXyJog =
+																(
+																	x: number,
+																	y: number,
+																) => {
+																	xyJogMutation.mutate(
+																		{
+																			x,
+																			y,
+																		},
+																	);
+																};
+															const requestExtruderJog =
+																(
+																	distance: number,
+																) => {
+																	extruderJogMutation.mutate(
+																		distance,
+																	);
+																};
+															return (
+																<div className="relative">
+																	<button
+																		onClick={() =>
+																			setShowBedJogMenu(
+																				showBedJogMenu ===
+																					printer.id
+																					? null
+																					: printer.id,
+																			)
+																		}
+																		disabled={
+																			disabled
+																		}
+																		className={`${iconControlClass} ${
+																			disabled
+																				? "bg-bambu-dark text-bambu-gray/50 cursor-not-allowed"
+																				: "bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 hover:bg-indigo-500/20"
+																		}`}
+																		title={
+																			!canControl
 																				? t(
-																						"printers.bedJog.disabledWhilePrinting",
+																						"printers.permission.noControl",
 																					)
-																				: isFailed
+																				: isPrinting
 																					? t(
-																							"printers.bedJog.disabledWhileFailed",
-																							"Dismiss error on printer screen before moving",
+																							"printers.bedJog.disabledWhilePrinting",
 																						)
-																					: t(
-																							"printers.bedJog.title",
-																						)
-																	}
-																>
-																	<Move className="w-[var(--pc-i4,1rem)] h-[var(--pc-i4,1rem)]" />
-																</button>
-																{showBedJogMenu ===
-																	printer.id && (
-																	<>
-																		<div
-																			className="fixed inset-0 z-40"
-																			onClick={() =>
-																				setShowBedJogMenu(
-																					null,
-																				)
-																			}
-																		/>
-																		<div className="absolute bottom-full left-0 mb-1 z-50 flex w-[216px] flex-col overflow-hidden rounded-xl border border-bambu-dark-tertiary bg-bambu-dark-secondary shadow-2xl">
-																			<div className="shrink-0 px-3 py-2.5 text-center text-sm font-medium text-white">
-																				{t(
-																					"printers.bedJog.title",
-																				)}
-																			</div>
-																			<div className="h-px bg-bambu-dark-tertiary" />
-																			{isFailed ? (
-																				<div className="flex items-start gap-1.5 bg-red-500/10 px-3 py-2 text-[length:var(--pc-t11,11px)] leading-snug text-red-700 dark:text-red-400">
-																					<AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-																					<span>
-																						{t(
-																							"printers.bedJog.failedWarning",
-																							"Printer is in FAILED state. Dismiss error on printer touchscreen before moving.",
-																						)}
-																					</span>
+																					: isFailed
+																						? t(
+																								"printers.bedJog.disabledWhileFailed",
+																								"Dismiss error on printer screen before moving",
+																							)
+																						: t(
+																								"printers.bedJog.title",
+																							)
+																		}
+																	>
+																		<Move className="w-[var(--pc-i4,1rem)] h-[var(--pc-i4,1rem)]" />
+																	</button>
+																	{showBedJogMenu ===
+																		printer.id && (
+																		<>
+																			<div
+																				className="fixed inset-0 z-40"
+																				onClick={() =>
+																					setShowBedJogMenu(
+																						null,
+																					)
+																				}
+																			/>
+																			<div className="absolute bottom-full left-0 mb-1 z-50 flex w-[216px] flex-col overflow-hidden rounded-xl border border-bambu-dark-tertiary bg-bambu-dark-secondary shadow-2xl">
+																				<div className="shrink-0 px-3 py-2.5 text-center text-sm font-medium text-white">
+																					{t(
+																						"printers.bedJog.title",
+																					)}
 																				</div>
-																			) : (
-																				/* #2579: Bambu firmware does not enforce soft endstops on
+																				<div className="h-px bg-bambu-dark-tertiary" />
+																				{isFailed ? (
+																					<div className="flex items-start gap-1.5 bg-red-500/10 px-3 py-2 text-[length:var(--pc-t11,11px)] leading-snug text-red-700 dark:text-red-400">
+																						<AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+																						<span>
+																							{t(
+																								"printers.bedJog.failedWarning",
+																								"Printer is in FAILED state. Dismiss error on printer touchscreen before moving.",
+																							)}
+																						</span>
+																					</div>
+																				) : (
+																					/* #2579: Bambu firmware does not enforce soft endstops on
                                        G-code sent over MQTT, so manual moves can drive past the
                                        travel limits and cause a collision. Not fixable from our
                                        side — warn prominently. */
-																				<div className="flex items-start gap-1.5 bg-yellow-500/10 px-3 py-2 text-[length:var(--pc-t11,11px)] leading-snug text-yellow-700 dark:text-yellow-400">
-																					<AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-																					<span>
-																						{t(
-																							"printers.bedJog.limitWarning",
-																							"Firmware does not enforce travel limits during manual moves. Move with care.",
-																						)}
-																					</span>
-																				</div>
-																			)}
-																			<div className="h-px bg-bambu-dark-tertiary" />
-																			<div className="flex justify-center px-3 py-2.5">
-																				<div className="flex items-center justify-center gap-3">
-																					<div className="grid grid-cols-3 gap-1">
-																						<div />
-																						<button
-																							onClick={() =>
-																								requestXyJog(
-																									0,
-																									bedJogStep,
-																								)
-																							}
-																							disabled={
-																								isFailed ||
-																								xyJogMutation.isPending
-																							}
-																							className={
-																								jogButtonClass
-																							}
-																							aria-label="Move Y forward"
-																						>
-																							<ArrowUp className="w-[var(--pc-i4,1rem)] h-[var(--pc-i4,1rem)]" />
-																						</button>
-																						<div />
-																						<button
-																							onClick={() =>
-																								requestXyJog(
-																									-bedJogStep,
-																									0,
-																								)
-																							}
-																							disabled={
-																								isFailed ||
-																								xyJogMutation.isPending
-																							}
-																							className={
-																								jogButtonClass
-																							}
-																							aria-label="Move X left"
-																						>
-																							<ArrowLeft className="w-[var(--pc-i4,1rem)] h-[var(--pc-i4,1rem)]" />
-																						</button>
-																						<button
-																							onClick={() => {
-																								setShowBedJogMenu(
-																									null,
-																								);
-																								homeAxesMutation.mutate(
-																									"all",
-																								);
-																							}}
-																							disabled={
-																								isFailed ||
-																								homeAxesMutation.isPending
-																							}
-																							className={
-																								jogButtonClass
-																							}
-																							aria-label={t(
-																								"printers.bedJog.homeZ",
+																					<div className="flex items-start gap-1.5 bg-yellow-500/10 px-3 py-2 text-[length:var(--pc-t11,11px)] leading-snug text-yellow-700 dark:text-yellow-400">
+																						<AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+																						<span>
+																							{t(
+																								"printers.bedJog.limitWarning",
+																								"Firmware does not enforce travel limits during manual moves. Move with care.",
 																							)}
-																						>
-																							<Home className="w-[var(--pc-i4,1rem)] h-[var(--pc-i4,1rem)]" />
-																						</button>
-																						<button
-																							onClick={() =>
-																								requestXyJog(
-																									bedJogStep,
-																									0,
-																								)
-																							}
-																							disabled={
-																								isFailed ||
-																								xyJogMutation.isPending
-																							}
-																							className={
-																								jogButtonClass
-																							}
-																							aria-label="Move X right"
-																						>
-																							<ArrowRight className="w-[var(--pc-i4,1rem)] h-[var(--pc-i4,1rem)]" />
-																						</button>
-																						<div />
-																						<button
-																							onClick={() =>
-																								requestXyJog(
-																									0,
-																									-bedJogStep,
-																								)
-																							}
-																							disabled={
-																								isFailed ||
-																								xyJogMutation.isPending
-																							}
-																							className={
-																								jogButtonClass
-																							}
-																							aria-label="Move Y back"
-																						>
-																							<ArrowDown className="w-[var(--pc-i4,1rem)] h-[var(--pc-i4,1rem)]" />
-																						</button>
-																						<div />
+																						</span>
 																					</div>
-																					<div className="flex flex-col items-center gap-1">
-																						<button
-																							onClick={() =>
-																								requestZJog(
-																									"up",
-																								)
-																							}
-																							disabled={
-																								isFailed ||
-																								bedJogMutation.isPending
-																							}
-																							className={
-																								jogButtonClass
-																							}
-																							aria-label={t(
-																								zMovesToolhead
-																									? "printers.bedJog.toolheadUp"
-																									: "printers.bedJog.up",
-																							)}
-																						>
-																							<ArrowUp className="w-[var(--pc-i4,1rem)] h-[var(--pc-i4,1rem)]" />
-																						</button>
-																						<div className="flex h-8 w-8 items-center justify-center text-bambu-gray/80">
-																							<Layers className="w-[var(--pc-i4,1rem)] h-[var(--pc-i4,1rem)]" />
-																						</div>
-																						<button
-																							onClick={() =>
-																								requestZJog(
-																									"down",
-																								)
-																							}
-																							disabled={
-																								isFailed ||
-																								bedJogMutation.isPending
-																							}
-																							className={
-																								jogButtonClass
-																							}
-																							aria-label={t(
-																								zMovesToolhead
-																									? "printers.bedJog.toolheadDown"
-																									: "printers.bedJog.down",
-																							)}
-																						>
-																							<ArrowDown className="w-[var(--pc-i4,1rem)] h-[var(--pc-i4,1rem)]" />
-																						</button>
-																					</div>
-																					<div className="flex flex-col items-center gap-1">
-																						<button
-																							onClick={() =>
-																								requestExtruderJog(
-																									-bedJogStep,
-																								)
-																							}
-																							disabled={
-																								isFailed ||
-																								extruderJogMutation.isPending
-																							}
-																							className={
-																								jogButtonClass
-																							}
-																							aria-label="Retract filament"
-																						>
-																							<ArrowUp className="w-[var(--pc-i4,1rem)] h-[var(--pc-i4,1rem)]" />
-																						</button>
-																						<div className="flex h-8 w-8 items-center justify-center text-bambu-gray/80">
-																							<span className="text-sm font-semibold leading-none">
-																								E
-																							</span>
-																						</div>
-																						<button
-																							onClick={() =>
-																								requestExtruderJog(
-																									bedJogStep,
-																								)
-																							}
-																							disabled={
-																								isFailed ||
-																								extruderJogMutation.isPending
-																							}
-																							className={
-																								jogButtonClass
-																							}
-																							aria-label="Extrude filament"
-																						>
-																							<ArrowDown className="w-[var(--pc-i4,1rem)] h-[var(--pc-i4,1rem)]" />
-																						</button>
-																					</div>
-																				</div>
-																			</div>
-																			<div className="h-px bg-bambu-dark-tertiary" />
-																			<div className="px-3 pt-2.5 pb-3">
-																				<div className="mb-1 text-[length:var(--pc-t9,9px)] uppercase tracking-wider text-bambu-gray/70">
-																					{t(
-																						"printers.bedJog.step",
-																					)}
-																				</div>
-																				<div className="flex gap-1">
-																					{[
-																						1,
-																						10,
-																						50,
-																					].map(
-																						(
-																							step,
-																						) => (
+																				)}
+																				<div className="h-px bg-bambu-dark-tertiary" />
+																				<div className="flex justify-center px-3 py-2.5">
+																					<div className="flex items-center justify-center gap-3">
+																						<div className="grid grid-cols-3 gap-1">
+																							<div />
 																							<button
-																								key={
-																									step
-																								}
 																								onClick={() =>
-																									setBedJogStep(
-																										step,
+																									requestXyJog(
+																										0,
+																										bedJogStep,
 																									)
 																								}
-																								className={`flex-1 px-1 py-1 rounded text-[length:var(--pc-t10,10px)] transition-colors ${
-																									bedJogStep ===
-																									step
-																										? "bg-bambu-green/20 text-bambu-green"
-																										: "bg-bambu-dark text-bambu-gray hover:bg-bambu-dark-tertiary"
-																								}`}
-																							>
-																								{
-																									step
+																								disabled={
+																									isFailed ||
+																									xyJogMutation.isPending
 																								}
+																								className={
+																									jogButtonClass
+																								}
+																								aria-label="Move Y forward"
+																							>
+																								<ArrowUp className="w-[var(--pc-i4,1rem)] h-[var(--pc-i4,1rem)]" />
 																							</button>
-																						),
-																					)}
+																							<div />
+																							<button
+																								onClick={() =>
+																									requestXyJog(
+																										-bedJogStep,
+																										0,
+																									)
+																								}
+																								disabled={
+																									isFailed ||
+																									xyJogMutation.isPending
+																								}
+																								className={
+																									jogButtonClass
+																								}
+																								aria-label="Move X left"
+																							>
+																								<ArrowLeft className="w-[var(--pc-i4,1rem)] h-[var(--pc-i4,1rem)]" />
+																							</button>
+																							<button
+																								onClick={() => {
+																									setShowBedJogMenu(
+																										null,
+																									);
+																									homeAxesMutation.mutate(
+																										"all",
+																									);
+																								}}
+																								disabled={
+																									isFailed ||
+																									homeAxesMutation.isPending
+																								}
+																								className={
+																									jogButtonClass
+																								}
+																								aria-label={t(
+																									"printers.bedJog.homeZ",
+																								)}
+																							>
+																								<Home className="w-[var(--pc-i4,1rem)] h-[var(--pc-i4,1rem)]" />
+																							</button>
+																							<button
+																								onClick={() =>
+																									requestXyJog(
+																										bedJogStep,
+																										0,
+																									)
+																								}
+																								disabled={
+																									isFailed ||
+																									xyJogMutation.isPending
+																								}
+																								className={
+																									jogButtonClass
+																								}
+																								aria-label="Move X right"
+																							>
+																								<ArrowRight className="w-[var(--pc-i4,1rem)] h-[var(--pc-i4,1rem)]" />
+																							</button>
+																							<div />
+																							<button
+																								onClick={() =>
+																									requestXyJog(
+																										0,
+																										-bedJogStep,
+																									)
+																								}
+																								disabled={
+																									isFailed ||
+																									xyJogMutation.isPending
+																								}
+																								className={
+																									jogButtonClass
+																								}
+																								aria-label="Move Y back"
+																							>
+																								<ArrowDown className="w-[var(--pc-i4,1rem)] h-[var(--pc-i4,1rem)]" />
+																							</button>
+																							<div />
+																						</div>
+																						<div className="flex flex-col items-center gap-1">
+																							<button
+																								onClick={() =>
+																									requestZJog(
+																										"up",
+																									)
+																								}
+																								disabled={
+																									isFailed ||
+																									bedJogMutation.isPending
+																								}
+																								className={
+																									jogButtonClass
+																								}
+																								aria-label={t(
+																									zMovesToolhead
+																										? "printers.bedJog.toolheadUp"
+																										: "printers.bedJog.up",
+																								)}
+																							>
+																								<ArrowUp className="w-[var(--pc-i4,1rem)] h-[var(--pc-i4,1rem)]" />
+																							</button>
+																							<div className="flex h-8 w-8 items-center justify-center text-bambu-gray/80">
+																								<Layers className="w-[var(--pc-i4,1rem)] h-[var(--pc-i4,1rem)]" />
+																							</div>
+																							<button
+																								onClick={() =>
+																									requestZJog(
+																										"down",
+																									)
+																								}
+																								disabled={
+																									isFailed ||
+																									bedJogMutation.isPending
+																								}
+																								className={
+																									jogButtonClass
+																								}
+																								aria-label={t(
+																									zMovesToolhead
+																										? "printers.bedJog.toolheadDown"
+																										: "printers.bedJog.down",
+																								)}
+																							>
+																								<ArrowDown className="w-[var(--pc-i4,1rem)] h-[var(--pc-i4,1rem)]" />
+																							</button>
+																						</div>
+																						<div className="flex flex-col items-center gap-1">
+																							<button
+																								onClick={() =>
+																									requestExtruderJog(
+																										-bedJogStep,
+																									)
+																								}
+																								disabled={
+																									isFailed ||
+																									extruderJogMutation.isPending
+																								}
+																								className={
+																									jogButtonClass
+																								}
+																								aria-label="Retract filament"
+																							>
+																								<ArrowUp className="w-[var(--pc-i4,1rem)] h-[var(--pc-i4,1rem)]" />
+																							</button>
+																							<div className="flex h-8 w-8 items-center justify-center text-bambu-gray/80">
+																								<span className="text-sm font-semibold leading-none">
+																									E
+																								</span>
+																							</div>
+																							<button
+																								onClick={() =>
+																									requestExtruderJog(
+																										bedJogStep,
+																									)
+																								}
+																								disabled={
+																									isFailed ||
+																									extruderJogMutation.isPending
+																								}
+																								className={
+																									jogButtonClass
+																								}
+																								aria-label="Extrude filament"
+																							>
+																								<ArrowDown className="w-[var(--pc-i4,1rem)] h-[var(--pc-i4,1rem)]" />
+																							</button>
+																						</div>
+																					</div>
+																				</div>
+																				<div className="h-px bg-bambu-dark-tertiary" />
+																				<div className="px-3 pt-2.5 pb-3">
+																					<div className="mb-1 text-[length:var(--pc-t9,9px)] uppercase tracking-wider text-bambu-gray/70">
+																						{t(
+																							"printers.bedJog.step",
+																						)}
+																					</div>
+																					<div className="flex gap-1">
+																						{[
+																							1,
+																							10,
+																							50,
+																						].map(
+																							(
+																								step,
+																							) => (
+																								<button
+																									key={
+																										step
+																									}
+																									onClick={() =>
+																										setBedJogStep(
+																											step,
+																										)
+																									}
+																									className={`flex-1 px-1 py-1 rounded text-[length:var(--pc-t10,10px)] transition-colors ${
+																										bedJogStep ===
+																										step
+																											? "bg-bambu-green/20 text-bambu-green"
+																											: "bg-bambu-dark text-bambu-gray hover:bg-bambu-dark-tertiary"
+																									}`}
+																								>
+																									{
+																										step
+																									}
+																								</button>
+																							),
+																						)}
+																					</div>
 																				</div>
 																			</div>
-																		</div>
-																	</>
-																)}
-															</div>
-														);
-													})()}
+																		</>
+																	)}
+																</div>
+															);
+														})()}
 
 													{/* Build Plate Detection (A1 only) */}
-													{isBambuA1(printer.model) && (
+													{isBambuA1(
+														printer.model,
+													) && (
 														<div
 															className={`inline-flex rounded-lg ${printer.plate_detection_enabled ? "ring-1 ring-green-500" : ""}`}
 														>
@@ -12510,40 +12533,38 @@ function PrinterCard({
 							)}
 
 						{/* Klipper / Moonraker manual controls */}
-						{hasManualControl &&
-							viewMode === "expanded" && (
-								<Collapsible
-									defaultOpen={false}
-									className="mt-4 pt-3 border-t border-bambu-dark-tertiary"
-									summaryClassName="rounded-lg border border-bambu-dark-tertiary bg-bambu-dark/50 px-3 py-2 hover:bg-bambu-dark transition-colors"
-									summary={
-										<div className="flex items-center justify-between gap-3">
-											<div className="flex items-center gap-2 min-w-0">
-												<SlidersHorizontal className="w-4 h-4 text-bambu-green flex-shrink-0" />
-												<div className="min-w-0">
-													<p className="text-xs font-semibold text-white truncate">
-														Manual controls
-													</p>
-													<p className="text-[10px] text-bambu-gray truncate">
-														Klipper movement,
-														extrusion, and
-														temperatures
-													</p>
-												</div>
+						{hasManualControl && viewMode === "expanded" && (
+							<Collapsible
+								defaultOpen={false}
+								className="mt-4 pt-3 border-t border-bambu-dark-tertiary"
+								summaryClassName="rounded-lg border border-bambu-dark-tertiary bg-bambu-dark/50 px-3 py-2 hover:bg-bambu-dark transition-colors"
+								summary={
+									<div className="flex items-center justify-between gap-3">
+										<div className="flex items-center gap-2 min-w-0">
+											<SlidersHorizontal className="w-4 h-4 text-bambu-green flex-shrink-0" />
+											<div className="min-w-0">
+												<p className="text-xs font-semibold text-white truncate">
+													Manual controls
+												</p>
+												<p className="text-[10px] text-bambu-gray truncate">
+													Klipper movement, extrusion,
+													and temperatures
+												</p>
 											</div>
-											<span className="hidden sm:inline text-[10px] uppercase tracking-wide text-bambu-gray bg-bambu-dark-secondary rounded px-2 py-1">
-												collapsed
-											</span>
 										</div>
-									}
-								>
-									<KlipperControlPanel
-										printer={printer}
-										status={status}
-										showToast={showToast}
-									/>
-								</Collapsible>
-							)}
+										<span className="hidden sm:inline text-[10px] uppercase tracking-wide text-bambu-gray bg-bambu-dark-secondary rounded px-2 py-1">
+											collapsed
+										</span>
+									</div>
+								}
+							>
+								<KlipperControlPanel
+									printer={printer}
+									status={status}
+									showToast={showToast}
+								/>
+							</Collapsible>
+						)}
 
 						{/* Connection Info & Actions */}
 						<div className="pt-4">
@@ -12996,20 +13017,21 @@ function PrinterCard({
 								<h2 className="text-lg font-semibold text-white">
 									Build Plate Check
 								</h2>
-								{plateCheckResult.has_pei !== undefined || plateCheckResult.threshold !== undefined ? (
+								{plateCheckResult.has_pei !== undefined ||
+								plateCheckResult.threshold !== undefined ? (
 									<span className="text-[11px] font-medium text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded">
 										AI PEI Detection
 									</span>
 								) : (
 									plateCheckResult.reference_count !==
 										undefined &&
-										plateCheckResult.max_references && (
-											<span className="text-xs text-bambu-gray bg-bambu-dark-tertiary px-2 py-1 rounded">
-												{plateCheckResult.reference_count}/
-												{plateCheckResult.max_references}{" "}
-												refs
-											</span>
-										)
+									plateCheckResult.max_references && (
+										<span className="text-xs text-bambu-gray bg-bambu-dark-tertiary px-2 py-1 rounded">
+											{plateCheckResult.reference_count}/
+											{plateCheckResult.max_references}{" "}
+											refs
+										</span>
+									)
 								)}
 							</div>
 							<button
@@ -13060,13 +13082,24 @@ function PrinterCard({
 										<p
 											className={`font-medium ${(plateCheckResult.has_pei ?? plateCheckResult.is_empty) ? "text-green-700 dark:text-green-400" : "text-yellow-700 dark:text-yellow-400"}`}
 										>
-											{plateCheckResult.has_pei !== undefined
+											{plateCheckResult.has_pei !==
+											undefined
 												? plateCheckResult.has_pei
-													? t("printers.plateDetection.peiDetected", "Đã có bàn PEI trên máy in (Sẵn sàng in)")
-													: t("printers.plateDetection.peiMissing", "CẢNH BÁO: Bàn trần - Chưa đặt tấm PEI!")
+													? t(
+															"printers.plateDetection.peiDetected",
+															"Đã có bàn PEI trên máy in (Sẵn sàng in)",
+														)
+													: t(
+															"printers.plateDetection.peiMissing",
+															"CẢNH BÁO: Bàn trần - Chưa đặt tấm PEI!",
+														)
 												: plateCheckResult.is_empty
-													? t("printers.plateDetection.plateEmpty")
-													: t("printers.plateDetection.objectsDetected")}
+													? t(
+															"printers.plateDetection.plateEmpty",
+														)
+													: t(
+															"printers.plateDetection.objectsDetected",
+														)}
 										</p>
 										<p className="text-sm text-bambu-gray mt-1">
 											{t(
@@ -13078,12 +13111,19 @@ function PrinterCard({
 													100,
 											)}
 											% |{" "}
-											{plateCheckResult.threshold !== undefined ? "Score" : t("printers.plateDetection.difference")}
+											{plateCheckResult.threshold !==
+											undefined
+												? "Score"
+												: t(
+														"printers.plateDetection.difference",
+													)}
 											:{" "}
 											{plateCheckResult.difference_percent.toFixed(
 												2,
 											)}
-											{plateCheckResult.threshold !== undefined && ` (${t("printers.plateDetection.thresholdLabel", { defaultValue: "Threshold" })}: ${plateCheckResult.threshold.toFixed(2)})`}
+											{plateCheckResult.threshold !==
+												undefined &&
+												` (${t("printers.plateDetection.thresholdLabel", { defaultValue: "Threshold" })}: ${plateCheckResult.threshold.toFixed(2)})`}
 										</p>
 									</div>
 									{plateCheckResult.debug_image_url && (
@@ -13123,22 +13163,44 @@ function PrinterCard({
 										</div>
 									)}
 									<p className="text-xs text-bambu-gray">
-										{plateCheckResult.has_pei !== undefined ? (
-											plateCheckResult.has_pei
-												? t("printers.plateDetection.peiDetectedMsg", {
-														defaultValue: plateCheckResult.message,
-														confidence: Math.round(plateCheckResult.confidence * 100),
-														score: (plateCheckResult.anomaly_score ?? plateCheckResult.difference_percent).toFixed(2),
-														threshold: (plateCheckResult.threshold ?? 2.65).toFixed(2),
-												  })
-												: t("printers.plateDetection.peiMissingMsg", {
-														defaultValue: plateCheckResult.message,
-														score: (plateCheckResult.anomaly_score ?? plateCheckResult.difference_percent).toFixed(2),
-														threshold: (plateCheckResult.threshold ?? 2.65).toFixed(2),
-												  })
-										) : (
-											plateCheckResult.message
-										)}
+										{plateCheckResult.has_pei !== undefined
+											? plateCheckResult.has_pei
+												? t(
+														"printers.plateDetection.peiDetectedMsg",
+														{
+															defaultValue:
+																plateCheckResult.message,
+															confidence:
+																Math.round(
+																	plateCheckResult.confidence *
+																		100,
+																),
+															score: (
+																plateCheckResult.anomaly_score ??
+																plateCheckResult.difference_percent
+															).toFixed(2),
+															threshold: (
+																plateCheckResult.threshold ??
+																2.65
+															).toFixed(2),
+														},
+													)
+												: t(
+														"printers.plateDetection.peiMissingMsg",
+														{
+															defaultValue:
+																plateCheckResult.message,
+															score: (
+																plateCheckResult.anomaly_score ??
+																plateCheckResult.difference_percent
+															).toFixed(2),
+															threshold: (
+																plateCheckResult.threshold ??
+																2.65
+															).toFixed(2),
+														},
+													)
+											: plateCheckResult.message}
 									</p>
 								</>
 							)}
@@ -13314,7 +13376,10 @@ function PrinterCard({
 															h: 0.25,
 														},
 													);
-													if (plateCheckResult.has_pei === undefined) {
+													if (
+														plateCheckResult.has_pei ===
+														undefined
+													) {
 														setEditingParams({
 															threshold:
 																printer.plate_detection_threshold ??
@@ -13487,161 +13552,171 @@ function PrinterCard({
 											</p>
 
 											{/* Detection Parameters Sliders (Legacy calibration only) */}
-											{plateCheckResult.has_pei === undefined && editingParams && (
-												<>
-													<div className="border-t border-bambu-dark-tertiary pt-3 mt-3">
-														<p className="text-xs font-semibold text-white mb-2">
-															{t(
-																"printers.roi.parametersTitle",
-															)}
-														</p>
-													</div>
-													<div className="grid grid-cols-2 gap-3">
-														<div>
-															<label className="text-xs text-bambu-gray">
+											{plateCheckResult.has_pei ===
+												undefined &&
+												editingParams && (
+													<>
+														<div className="border-t border-bambu-dark-tertiary pt-3 mt-3">
+															<p className="text-xs font-semibold text-white mb-2">
 																{t(
-																	"printers.roi.threshold",
+																	"printers.roi.parametersTitle",
 																)}
-															</label>
-															<input
-																type="range"
-																min="0.1"
-																max="5.0"
-																step="0.1"
-																value={
-																	editingParams.threshold
-																}
-																onChange={(e) =>
-																	setEditingParams(
-																		{
-																			...editingParams,
-																			threshold:
-																				parseFloat(
-																					e
-																						.target
-																						.value,
-																				),
-																		},
-																	)
-																}
-																className="w-full h-1.5 bg-bambu-dark-tertiary rounded-lg cursor-pointer accent-green-500"
-															/>
-															<span className="text-xs text-bambu-gray">
-																{editingParams.threshold.toFixed(
-																	1,
-																)}
-																%
-															</span>
+															</p>
 														</div>
-														<div>
-															<label className="text-xs text-bambu-gray">
-																{t(
-																	"printers.roi.blurSize",
-																)}
-															</label>
-															<input
-																type="range"
-																min="1"
-																max="21"
-																step="2"
-																value={
-																	editingParams.blur_size
-																}
-																onChange={(e) =>
-																	setEditingParams(
-																		{
-																			...editingParams,
-																			blur_size:
-																				parseInt(
-																					e
-																						.target
-																						.value,
-																				),
-																		},
-																	)
-																}
-																className="w-full h-1.5 bg-bambu-dark-tertiary rounded-lg cursor-pointer accent-green-500"
-															/>
-															<span className="text-xs text-bambu-gray">
-																{
-																	editingParams.blur_size
-																}
-																px
-															</span>
+														<div className="grid grid-cols-2 gap-3">
+															<div>
+																<label className="text-xs text-bambu-gray">
+																	{t(
+																		"printers.roi.threshold",
+																	)}
+																</label>
+																<input
+																	type="range"
+																	min="0.1"
+																	max="5.0"
+																	step="0.1"
+																	value={
+																		editingParams.threshold
+																	}
+																	onChange={(
+																		e,
+																	) =>
+																		setEditingParams(
+																			{
+																				...editingParams,
+																				threshold:
+																					parseFloat(
+																						e
+																							.target
+																							.value,
+																					),
+																			},
+																		)
+																	}
+																	className="w-full h-1.5 bg-bambu-dark-tertiary rounded-lg cursor-pointer accent-green-500"
+																/>
+																<span className="text-xs text-bambu-gray">
+																	{editingParams.threshold.toFixed(
+																		1,
+																	)}
+																	%
+																</span>
+															</div>
+															<div>
+																<label className="text-xs text-bambu-gray">
+																	{t(
+																		"printers.roi.blurSize",
+																	)}
+																</label>
+																<input
+																	type="range"
+																	min="1"
+																	max="21"
+																	step="2"
+																	value={
+																		editingParams.blur_size
+																	}
+																	onChange={(
+																		e,
+																	) =>
+																		setEditingParams(
+																			{
+																				...editingParams,
+																				blur_size:
+																					parseInt(
+																						e
+																							.target
+																							.value,
+																					),
+																			},
+																		)
+																	}
+																	className="w-full h-1.5 bg-bambu-dark-tertiary rounded-lg cursor-pointer accent-green-500"
+																/>
+																<span className="text-xs text-bambu-gray">
+																	{
+																		editingParams.blur_size
+																	}
+																	px
+																</span>
+															</div>
+															<div>
+																<label className="text-xs text-bambu-gray">
+																	{t(
+																		"printers.roi.cannyLow",
+																	)}
+																</label>
+																<input
+																	type="range"
+																	min="10"
+																	max="150"
+																	step="5"
+																	value={
+																		editingParams.canny_low
+																	}
+																	onChange={(
+																		e,
+																	) =>
+																		setEditingParams(
+																			{
+																				...editingParams,
+																				canny_low:
+																					parseInt(
+																						e
+																							.target
+																							.value,
+																					),
+																			},
+																		)
+																	}
+																	className="w-full h-1.5 bg-bambu-dark-tertiary rounded-lg cursor-pointer accent-green-500"
+																/>
+																<span className="text-xs text-bambu-gray">
+																	{
+																		editingParams.canny_low
+																	}
+																</span>
+															</div>
+															<div>
+																<label className="text-xs text-bambu-gray">
+																	{t(
+																		"printers.roi.cannyHigh",
+																	)}
+																</label>
+																<input
+																	type="range"
+																	min="50"
+																	max="300"
+																	step="5"
+																	value={
+																		editingParams.canny_high
+																	}
+																	onChange={(
+																		e,
+																	) =>
+																		setEditingParams(
+																			{
+																				...editingParams,
+																				canny_high:
+																					parseInt(
+																						e
+																							.target
+																							.value,
+																					),
+																			},
+																		)
+																	}
+																	className="w-full h-1.5 bg-bambu-dark-tertiary rounded-lg cursor-pointer accent-green-500"
+																/>
+																<span className="text-xs text-bambu-gray">
+																	{
+																		editingParams.canny_high
+																	}
+																</span>
+															</div>
 														</div>
-														<div>
-															<label className="text-xs text-bambu-gray">
-																{t(
-																	"printers.roi.cannyLow",
-																)}
-															</label>
-															<input
-																type="range"
-																min="10"
-																max="150"
-																step="5"
-																value={
-																	editingParams.canny_low
-																}
-																onChange={(e) =>
-																	setEditingParams(
-																		{
-																			...editingParams,
-																			canny_low:
-																				parseInt(
-																					e
-																						.target
-																						.value,
-																				),
-																		},
-																	)
-																}
-																className="w-full h-1.5 bg-bambu-dark-tertiary rounded-lg cursor-pointer accent-green-500"
-															/>
-															<span className="text-xs text-bambu-gray">
-																{
-																	editingParams.canny_low
-																}
-															</span>
-														</div>
-														<div>
-															<label className="text-xs text-bambu-gray">
-																{t(
-																	"printers.roi.cannyHigh",
-																)}
-															</label>
-															<input
-																type="range"
-																min="50"
-																max="300"
-																step="5"
-																value={
-																	editingParams.canny_high
-																}
-																onChange={(e) =>
-																	setEditingParams(
-																		{
-																			...editingParams,
-																			canny_high:
-																				parseInt(
-																					e
-																						.target
-																						.value,
-																				),
-																		},
-																	)
-																}
-																className="w-full h-1.5 bg-bambu-dark-tertiary rounded-lg cursor-pointer accent-green-500"
-															/>
-															<span className="text-xs text-bambu-gray">
-																{
-																	editingParams.canny_high
-																}
-															</span>
-														</div>
-													</div>
-												</>
-											)}
+													</>
+												)}
 										</div>
 									) : (
 										<div className="space-y-1">
@@ -13668,9 +13743,20 @@ function PrinterCard({
 												)}
 												%
 											</p>
-											{plateCheckResult.has_pei !== undefined ? (
+											{plateCheckResult.has_pei !==
+											undefined ? (
 												<p className="text-xs text-bambu-gray">
-													{t("printers.plateDetection.thresholdLabel", { defaultValue: "Threshold" })}: {plateCheckResult.threshold?.toFixed(2) ?? "2.65"}
+													{t(
+														"printers.plateDetection.thresholdLabel",
+														{
+															defaultValue:
+																"Threshold",
+														},
+													)}
+													:{" "}
+													{plateCheckResult.threshold?.toFixed(
+														2,
+													) ?? "2.65"}
 												</p>
 											) : (
 												<p className="text-xs text-bambu-gray">
@@ -13704,60 +13790,90 @@ function PrinterCard({
 										{t("common.cancel")}
 									</Button>
 									<Button
-										onClick={() => handleCalibratePlate()}
-										disabled={isCalibrating}
+										onClick={() => {
+											closePlateCheckModal();
+											setShowPeiCalibModal(true);
+										}}
 									>
-										{isCalibrating ? (
-											<>
-												<Loader2 className="w-[var(--pc-i4,1rem)] h-[var(--pc-i4,1rem)] mr-2 animate-spin" />
-												Calibrating...
-											</>
-										) : (
-											"Calibrate Empty Plate"
-										)}
+										{t("printers.peiCalib.modalTitle")}
 									</Button>
 								</>
 							) : (
 								<>
 									{plateCheckResult.has_pei !== undefined ? (
-										<Button
-											variant="secondary"
-											onClick={async () => {
-												setIsCheckingPlate(true);
-												try {
-													const result = await api.checkPlateEmpty(printer.id, {
-														includeDebugImage: true,
-													});
-													setPlateCheckResult(result);
-												} catch (error) {
-													showToast(
-														error instanceof Error
-															? error.message
-															: t("printers.toast.failedToCheckPlate"),
-														"error",
-													);
-												} finally {
-													setIsCheckingPlate(false);
+										<>
+											<Button
+												variant="secondary"
+												onClick={() => {
+													closePlateCheckModal();
+													setShowPeiCalibModal(true);
+												}}
+											>
+												{t(
+													"printers.peiCalib.modalTitle",
+												)}
+											</Button>
+											<Button
+												variant="secondary"
+												onClick={async () => {
+													setIsCheckingPlate(true);
+													try {
+														const result =
+															await api.checkPlateEmpty(
+																printer.id,
+																{
+																	includeDebugImage: true,
+																},
+															);
+														setPlateCheckResult(
+															result,
+														);
+													} catch (error) {
+														showToast(
+															error instanceof
+																Error
+																? error.message
+																: t(
+																		"printers.toast.failedToCheckPlate",
+																	),
+															"error",
+														);
+													} finally {
+														setIsCheckingPlate(
+															false,
+														);
+													}
+												}}
+												disabled={
+													isCheckingPlate ||
+													isSavingRoi
 												}
-											}}
-											disabled={isCheckingPlate || isSavingRoi}
-										>
-											{isCheckingPlate ? (
-												<>
-													<Loader2 className="w-[var(--pc-i4,1rem)] h-[var(--pc-i4,1rem)] mr-2 animate-spin" />
-													{t("common.checking", { defaultValue: "Checking..." })}
-												</>
-											) : (
-												<>
-													<RefreshCw className="w-[var(--pc-i4,1rem)] h-[var(--pc-i4,1rem)] mr-2" />
-													{t("common.recheck", { defaultValue: "Re-check" })}
-												</>
-											)}
-										</Button>
+											>
+												{isCheckingPlate ? (
+													<>
+														<Loader2 className="w-[var(--pc-i4,1rem)] h-[var(--pc-i4,1rem)] mr-2 animate-spin" />
+														{t("common.checking", {
+															defaultValue:
+																"Checking...",
+														})}
+													</>
+												) : (
+													<>
+														<RefreshCw className="w-[var(--pc-i4,1rem)] h-[var(--pc-i4,1rem)] mr-2" />
+														{t("common.recheck", {
+															defaultValue:
+																"Re-check",
+														})}
+													</>
+												)}
+											</Button>
+										</>
 									) : (
 										<Button
 											variant="ghost"
-											onClick={() => handleCalibratePlate()}
+											onClick={() =>
+												handleCalibratePlate()
+											}
 											disabled={isCalibrating}
 										>
 											{isCalibrating
@@ -13768,13 +13884,33 @@ function PrinterCard({
 									<Button
 										onClick={() => closePlateCheckModal()}
 									>
-										{t("common.close", { defaultValue: "Close" })}
+										{t("common.close", {
+											defaultValue: "Close",
+										})}
 									</Button>
 								</>
 							)}
 						</div>
 					</div>
 				</div>
+			)}
+
+			{/* PEI AI Calibration Wizard Modal */}
+			{showPeiCalibModal && (
+				<PeiCalibrationModal
+					printer={printer}
+					onClose={() => setShowPeiCalibModal(false)}
+					onSuccess={(newRoi) => {
+						fetchPlateReferences();
+						queryClient.invalidateQueries({
+							queryKey: ["printers"],
+						});
+						if (newRoi) {
+							printer.plate_detection_roi = newRoi;
+						}
+					}}
+					showToast={showToast}
+				/>
 			)}
 
 			{/* Power On Confirmation */}
@@ -16847,7 +16983,14 @@ function usePrinterOfflineStatus(printerId: number) {
 	const { data: status } = useQuery({
 		queryKey: ["printerStatus", printerId],
 		queryFn: () => api.getPrinterStatus(printerId),
-		refetchInterval: 30000,
+		staleTime: 2000,
+		refetchInterval: (query) => {
+			const data = query.state.data;
+			if (!data?.connected) {
+				return 3000;
+			}
+			return 30000;
+		},
 	});
 	return !status?.connected;
 }

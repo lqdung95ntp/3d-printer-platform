@@ -363,7 +363,8 @@ export default {
 			failedToPausePrint: "Không thể tạm dừng in",
 			failedToResumePrint: "Không thể tiếp tục in",
 			failedToControlChamberLight: "Không thể kiểm soát ánh sáng buồng",
-			failedToControlAiDetection: "Không thể điều khiển tính năng AI detection",
+			failedToControlAiDetection:
+				"Không thể điều khiển tính năng AI detection",
 			failedToSetSpeed: "Không thể đặt tốc độ in",
 			failedToUpdateSetting: "Không cập nhật được cài đặt",
 			failedToSkipObjects: "Không thể bỏ qua các đối tượng",
@@ -650,8 +651,10 @@ export default {
 			peiDetected: "Đã có bàn PEI trên máy in (Sẵn sàng in)",
 			peiMissing: "CẢNH BÁO: Bàn trần - Chưa đặt tấm PEI!",
 			thresholdLabel: "Ngưỡng",
-			peiDetectedMsg: "Phát hiện bàn PEI hợp lệ (Độ tin cậy: {{confidence}}%, Score: {{score}} >= Ngưỡng: {{threshold}})",
-			peiMissingMsg: "CẢNH BÁO: Bàn in trần - Chưa đặt tấm PEI! (Score: {{score}} < Ngưỡng: {{threshold}})",
+			peiDetectedMsg:
+				"Phát hiện bàn PEI hợp lệ (Độ tin cậy: {{confidence}}%, Score: {{score}} >= Ngưỡng: {{threshold}})",
+			peiMissingMsg:
+				"CẢNH BÁO: Bàn in trần - Chưa đặt tấm PEI! (Score: {{score}} < Ngưỡng: {{threshold}})",
 			confidence: "sự tự tin",
 			difference: "Sự khác biệt",
 			analysisPreview: "Xem trước phân tích:",
@@ -662,6 +665,55 @@ export default {
 			labelPlaceholder: "Nhãn...",
 			clickToEdit: "{{label}} - Nhấp để chỉnh sửa",
 			clickToAddLabel: "Nhấp để thêm nhãn",
+		},
+		peiCalib: {
+			modalTitle: "Hiệu chuẩn nhận diện Bàn PEI",
+			step1: "1. Chuẩn bị máy in",
+			step2: "2. Chụp ảnh & Chọn ROI",
+			step3: "3. Huấn luyện & Xác minh",
+			step1Desc:
+				"Đưa các trục về vị trí Home (G28) và bật đèn buồng in để đảm bảo góc nhìn và ánh sáng chuẩn xác.",
+			homeAndLightBtn: "Về Home (G28) & Bật đèn buồng",
+			homingProgress: "Đang về Home và bật đèn buồng in...",
+			printerReady: "Máy in đã về Home và đèn buồng in đã bật.",
+			step2Desc:
+				"Gỡ tấm PEI ra khỏi bàn in, chụp 1 ảnh và chọn vùng không có PEI (vùng bàn trần).",
+			warningTitle: "Lưu ý quan trọng: Gỡ tấm PEI",
+			warningText:
+				"Vui lòng gỡ tấm thép PEI ra khỏi bàn in. Đảm bảo bề mặt đệm từ tính / nhôm trần lộ rõ trước khi chụp ảnh.",
+			confirmNoPei: "Tôi xác nhận đã gỡ tấm PEI ra khỏi bàn in.",
+			captureSnapshot: "Chụp ảnh bàn in",
+			capturingSnapshot: "Đang chụp ảnh...",
+			noSnapshotYet:
+				"Bấm Chụp ảnh bàn in ở trên để lấy khung hình từ camera máy in.",
+			roiInstruction:
+				"Điều chỉnh thanh trượt để khoanh vùng chính xác bề mặt bàn trần không có PEI.",
+			xStart: "Tọa độ X bắt đầu",
+			yStart: "Tọa độ Y bắt đầu",
+			width: "Chiều rộng",
+			height: "Chiều cao",
+			startTraining: "Bắt đầu huấn luyện AI",
+			trainingProgress:
+				"Đang trích xuất đặc trưng ONNX & tối ưu hóa Memory Bank...",
+			trainSuccess: "Đã huấn luyện model và nạp vào RAM thành công!",
+			threshold: "Ngưỡng phát hiện",
+			vectorsCount: "Số lượng Vector đặc trưng",
+			elapsedTime: "Thời gian xử lý",
+			verifyTitle: "Xác minh nhận diện PEI",
+			verifyDesc:
+				"Đặt lại tấm PEI lên bàn in và bấm Kiểm tra nhận diện để xác nhận.",
+			testDetectionBtn: "Kiểm tra nhận diện",
+			testingDetection: "Đang kiểm tra...",
+			peiDetectedBadge: "Đã nhận diện tấm PEI",
+			bareBedBadge: "Bàn trần / Chưa có tấm PEI",
+			resetFactoryBtn: "Khôi phục Model xuất xưởng",
+			resetFactoryConfirm:
+				"Khôi phục model nhận diện PEI về bản gốc ban đầu?",
+			resetSuccess: "Đã khôi phục model gốc thành công.",
+			nextStep: "Tiếp tục",
+			confirmHomed: "Xác nhận đã về Home",
+			prevStep: "Quay lại",
+			finish: "Hoàn tất",
 		},
 		// Speed
 		speed: {
@@ -1291,13 +1343,16 @@ export default {
 			updateFailed: "Không thể cập nhật các mục",
 			bulkCancelled: "Đã hủy {{count}} mục",
 			bulkCancelFailed: "Không thể hủy các mục",
-			keptForOrder: "Đã hủy thay vì xóa: đây là lượt in duy nhất để đơn hàng theo lô có thể xếp hàng lại đĩa này",
-			historyKeptForOrders: "Đã xóa lịch sử (giữ lại {{kept}} cho đơn hàng theo lô đang hoạt động)",
-			batchCreated: "Đã tạo lô \"{{name}}\"",
+			keptForOrder:
+				"Đã hủy thay vì xóa: đây là lượt in duy nhất để đơn hàng theo lô có thể xếp hàng lại đĩa này",
+			historyKeptForOrders:
+				"Đã xóa lịch sử (giữ lại {{kept}} cho đơn hàng theo lô đang hoạt động)",
+			batchCreated: 'Đã tạo lô "{{name}}"',
 			batchCreateFailed: "Tạo lô thất bại",
 			batchUngrouped: "Đã hủy nhóm {{count}} mục",
 			batchUngroupFailed: "Hủy nhóm thất bại",
-			resumedAfterFailure: "Đã tiếp tục hàng đợi — khôi phục {{restored}} lệnh in về chờ",
+			resumedAfterFailure:
+				"Đã tiếp tục hàng đợi — khôi phục {{restored}} lệnh in về chờ",
 			resumeAfterFailureFailed: "Không thể tiếp tục hàng đợi sau sự cố",
 		},
 		// Timeline view
@@ -1306,13 +1361,13 @@ export default {
 			timelineView: "Dòng thời gian",
 			unassigned: "Chưa phân máy",
 			noData: "Không có lịch in nào cho ngày này",
-			allDoneBy:
-				"Tất cả các bản in ước tính hoàn thành trước {{time}}",
+			allDoneBy: "Tất cả các bản in ước tính hoàn thành trước {{time}}",
 			staged: "Xếp lịch sẵn",
 			filterAll: "Hiển thị tất cả",
 			filterPrinting: "Đang in",
 			filterQueued: "Đang xếp hàng",
-			nothingCommitted: "Không có lịch in cố định trong khoảng thời gian này.",
+			nothingCommitted:
+				"Không có lịch in cố định trong khoảng thời gian này.",
 			printerColumnHeader: "Máy in",
 			window: {
 				back12h: "Lùi 12 giờ",
@@ -2332,6 +2387,12 @@ export default {
 			"Xóa nhật ký thông báo cũ hơn 30 ngày",
 		resetUiPreferencesDescription:
 			"Đặt lại thứ tự thanh bên, chủ đề, chế độ xem và tùy chọn bố cục. Máy in, kho lưu trữ và cài đặt không bị ảnh hưởng.",
+		downloadDiagnosticLogs: "Nhật ký chẩn đoán",
+		downloadDiagnosticLogsDescription:
+			"Xuất nhật ký hệ thống, thông số phần cứng và dữ liệu chẩn đoán dưới dạng file ZIP",
+		downloadLogsHint:
+			"Bạn có thể đính kèm file ZIP này khi tạo báo cáo lỗi trên GitHub hoặc gửi cho đội hỗ trợ kỹ thuật.",
+		downloadingLogs: "Đang tải...",
 		enableHomeAssistant: "Bật Trợ lý tại nhà",
 		enableMqtt: "Kích hoạt MQTT",
 		useTls: "Sử dụng TLS",
@@ -2354,6 +2415,8 @@ export default {
 			copyFailed: "Không sao chép được chìa khóa",
 			keyAddedToBrowser: "Đã thêm khóa vào Trình duyệt API",
 			clearLogsFailed: "Không thể xóa nhật ký",
+			downloadLogsSuccess: "Đã tải xuống nhật ký chẩn đoán thành công",
+			downloadLogsFailed: "Không thể tải xuống nhật ký chẩn đoán",
 			uiPreferencesReset:
 				"Đặt lại tùy chọn giao diện người dùng. Đang làm mới...",
 			authDisabled: "Đã tắt xác thực thành công",
@@ -2618,11 +2681,14 @@ export default {
 		printbuddySoftware: "Phần mềm Printbuddy",
 		autoCheckDescription: "Tự động kiểm tra phiên bản mới khi khởi động",
 		autoUpdateScheduled: "Tự động cập nhật an toàn theo lịch",
-		autoUpdateScheduledDescription: "Tự động nâng cấp hệ thống vào khung giờ đã đặt chỉ khi toàn bộ tác vụ và máy in đang rảnh",
+		autoUpdateScheduledDescription:
+			"Tự động nâng cấp hệ thống vào khung giờ đã đặt chỉ khi toàn bộ tác vụ và máy in đang rảnh",
 		autoUpdateTime: "Khung giờ cập nhật hàng ngày",
-		autoUpdateTimeHint: "Thời gian trong ngày để kiểm tra và cập nhật (mặc định 03:00)",
+		autoUpdateTimeHint:
+			"Thời gian trong ngày để kiểm tra và cập nhật (mặc định 03:00)",
 		autoUpdateGuardrailTitle: "Cơ chế bảo vệ an toàn Graceful Update",
-		autoUpdateGuardrailDesc: "Trước khi cập nhật, hệ thống sẽ xác minh không có tác vụ truyền file (G-code/3MF), không có lệnh điều phối queue, không có thao tác đẩy bàn in hoặc sao lưu đang chạy. Nếu bận, hệ thống sẽ chờ 30 giây và kiểm tra lại tối đa 15 phút. Nếu vẫn bận, việc cập nhật sẽ được hoãn sang ngày hôm sau.",
+		autoUpdateGuardrailDesc:
+			"Trước khi cập nhật, hệ thống sẽ xác minh không có tác vụ truyền file (G-code/3MF), không có lệnh điều phối queue, không có thao tác đẩy bàn in hoặc sao lưu đang chạy. Nếu bận, hệ thống sẽ chờ 30 giây và kiểm tra lại tối đa 15 phút. Nếu vẫn bận, việc cập nhật sẽ được hoãn sang ngày hôm sau.",
 		autoUpdateStatusLabel: "Trạng thái hiện tại:",
 		autoUpdateStatusBusy: "Đang bận",
 		autoUpdateStatusIdle: "Đang rảnh (Sẵn sàng cập nhật an toàn)",
@@ -4691,12 +4757,15 @@ export default {
 		requirePreviousSuccess: "Chỉ bắt đầu nếu bản in trước thành công",
 		autoOffAfter: "Tắt máy in khi hoàn thành",
 		helpAsap: "Bản in sẽ bắt đầu ngay khi máy in rảnh.",
-		helpSchedule: "Bản in sẽ bắt đầu vào thời gian đã lên lịch nếu máy in rảnh. Nếu máy bận, bản in sẽ đợi cho đến khi máy in sẵn sàng.",
-		helpQueue: "Bản in sẽ được xếp lịch sẵn nhưng không tự động bắt đầu. Sử dụng nút Bắt đầu để chuyển vào hàng đợi.",
+		helpSchedule:
+			"Bản in sẽ bắt đầu vào thời gian đã lên lịch nếu máy in rảnh. Nếu máy bận, bản in sẽ đợi cho đến khi máy in sẵn sàng.",
+		helpQueue:
+			"Bản in sẽ được xếp lịch sẵn nhưng không tự động bắt đầu. Sử dụng nút Bắt đầu để chuyển vào hàng đợi.",
 		ams: "AMS",
 		totalCostForQuantity: "tổng cộng: {{cost}}",
 		insufficientBudget: "Không đủ ngân sách cho trung tâm chi phí này.",
-		noObjectsFoundInFile: "Không tìm thấy đối tượng có thể in trong tấm/tệp này.",
+		noObjectsFoundInFile:
+			"Không tìm thấy đối tượng có thể in trong tấm/tệp này.",
 		clickPlateToSelect: "Nhấp vào bàn in để bật/tắt",
 	},
 

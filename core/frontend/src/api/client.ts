@@ -7076,7 +7076,12 @@ export const api = {
 	// Plate Detection - Multi-reference calibration (stores up to 5 references per printer)
 	checkPlateEmpty: (
 		printerId: number,
-		options?: { useExternal?: boolean; includeDebugImage?: boolean },
+		options?: {
+			useExternal?: boolean;
+			includeDebugImage?: boolean;
+			roi?: { x: number; y: number; w: number; h: number };
+			threshold?: number;
+		},
 	) => {
 		const params = new URLSearchParams();
 		// Only forward use_external when the caller explicitly sets it. Omitted →
@@ -7089,6 +7094,15 @@ export const api = {
 			"include_debug_image",
 			String(options?.includeDebugImage ?? false),
 		);
+		if (options?.roi) {
+			params.set("roi_x", String(options.roi.x));
+			params.set("roi_y", String(options.roi.y));
+			params.set("roi_w", String(options.roi.w));
+			params.set("roi_h", String(options.roi.h));
+		}
+		if (options?.threshold !== undefined) {
+			params.set("threshold", String(options.threshold));
+		}
 		return request<PlateDetectionResult>(
 			`/printers/${printerId}/camera/check-plate?${params.toString()}`,
 		);
@@ -7144,6 +7158,38 @@ export const api = {
 		return request<{ success: boolean; message: string }>(
 			`/printers/${printerId}/camera/plate-detection/references/${index}`,
 			{ method: "DELETE" },
+		);
+	},
+	preparePlateDetection: (printerId: number) => {
+		return request<{ success: boolean; message: string }>(
+			`/printers/${printerId}/camera/plate-detection/prepare`,
+			{ method: "POST" },
+		);
+	},
+	calibratePeiDetection: (
+		printerId: number,
+		data: {
+			roi: [number, number, number, number];
+			image_base64?: string;
+			use_external?: boolean;
+		},
+	) => {
+		return request<{
+			success: boolean;
+			threshold: number;
+			vectors_count: number;
+			bare_bed_score: number;
+			elapsed_ms: number;
+			message: string;
+		}>(`/printers/${printerId}/camera/plate-detection/calibrate-pei`, {
+			method: "POST",
+			body: JSON.stringify(data),
+		});
+	},
+	resetDefaultPeiDetection: (printerId: number) => {
+		return request<{ success: boolean; message: string }>(
+			`/printers/${printerId}/camera/plate-detection/reset-default-pei`,
+			{ method: "POST" },
 		);
 	},
 
@@ -8899,12 +8945,15 @@ export const supportApi = {
 			body: JSON.stringify({ enabled }),
 		}),
 
-	downloadSupportBundle: async () => {
+	downloadSupportBundle: async (force: boolean = false) => {
 		const headers: Record<string, string> = {};
 		if (authToken) {
 			headers["Authorization"] = `Bearer ${authToken}`;
 		}
-		const response = await fetch(`${API_BASE}/support/bundle`, { headers });
+		const url = force
+			? `${API_BASE}/support/bundle?force=true`
+			: `${API_BASE}/support/bundle`;
+		const response = await fetch(url, { headers });
 		if (!response.ok) {
 			const error = await response.json().catch(() => ({}));
 			throw new Error(error.detail || `HTTP ${response.status}`);
@@ -8913,18 +8962,18 @@ export const supportApi = {
 		const disposition = response.headers.get("Content-Disposition");
 		const filename =
 			parseContentDispositionFilename(disposition) ||
-			"printbuddy-support.zip";
+			"bee-diagnostics.zip";
 
 		// Download the blob
 		const blob = await response.blob();
-		const url = window.URL.createObjectURL(blob);
+		const downloadUrl = window.URL.createObjectURL(blob);
 		const a = document.createElement("a");
-		a.href = url;
+		a.href = downloadUrl;
 		a.download = filename;
 		document.body.appendChild(a);
 		a.click();
 		document.body.removeChild(a);
-		window.URL.revokeObjectURL(url);
+		window.URL.revokeObjectURL(downloadUrl);
 	},
 
 	getLogs: (params?: { limit?: number; level?: string; search?: string }) => {
