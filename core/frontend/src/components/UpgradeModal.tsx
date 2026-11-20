@@ -14,6 +14,7 @@ import {
 	CheckCircle,
 	ArrowUpRight,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "../api/client";
 import { useProLicense } from "../contexts/ProLicenseContext";
@@ -36,6 +37,7 @@ const BANK_DISPLAY_NAMES: Record<string, string> = {
 };
 
 export function UpgradeModal() {
+	const { t } = useTranslation();
 	const {
 		isUpgradeModalOpen,
 		closeUpgradeModal,
@@ -209,67 +211,67 @@ export function UpgradeModal() {
 	const plans = [
 		{
 			id: "beginner",
-			name: "Beginner",
-			printers: "1 printer",
+			name: t("upgradeModal.plans.beginner.name"),
+			printers: t("upgradeModal.plans.beginner.printers"),
 			price: isVnd ? "0 ₫" : "$0",
-			period: "lifetime",
+			period: t("upgradeModal.billing.lifetime"),
 			badge: "",
 			features: [
-				"Manage & monitor 1 printer",
-				"Full core printing features",
-				"Spoolman filament management",
-				"Basic print queue",
+				t("upgradeModal.plans.beginner.feat1"),
+				t("upgradeModal.plans.beginner.feat2"),
+				t("upgradeModal.plans.beginner.feat3"),
+				t("upgradeModal.plans.beginner.feat4"),
 			],
 		},
 		{
 			id: "hobby",
-			name: "Hobby",
-			printers: "1 – 5 printers",
+			name: t("upgradeModal.plans.hobby.name"),
+			printers: t("upgradeModal.plans.hobby.printers"),
 			priceMonth: isVnd ? "69,000 ₫" : "$4.99",
 			priceYear: isVnd ? "690,000 ₫" : "$49",
-			periodMonth: "/ month",
-			periodYear: "/ year",
-			badge: "Most Popular",
+			periodMonth: t("upgradeModal.billing.perMonth"),
+			periodYear: t("upgradeModal.billing.perYear"),
+			badge: t("upgradeModal.badges.mostPopular"),
 			features: [
-				"Manage 1 to 5 printers",
-				"Full BeE Pro: Continuous 24/7 Auto Swap PEI",
-				"Full BeE Pro: Smart Power auto shutoff",
-				"Real-time Skip Objects (Save multi-part plates)",
-				"Technical support via Zalo",
+				t("upgradeModal.plans.hobby.feat1"),
+				t("upgradeModal.plans.hobby.feat2"),
+				t("upgradeModal.plans.hobby.feat3"),
+				t("upgradeModal.plans.hobby.feat4"),
+				t("upgradeModal.plans.hobby.feat5"),
 			],
 		},
 		{
 			id: "farm_pro",
-			name: "Farm Pro",
-			printers: "6 – 15 printers",
+			name: t("upgradeModal.plans.farmPro.name"),
+			printers: t("upgradeModal.plans.farmPro.printers"),
 			priceMonth: isVnd ? "169,000 ₫" : "$12.99",
 			priceYear: isVnd ? "1,690,000 ₫" : "$129",
-			periodMonth: "/ month",
-			periodYear: "/ year",
-			badge: "Best for Small Farms",
+			periodMonth: t("upgradeModal.billing.perMonth"),
+			periodYear: t("upgradeModal.billing.perYear"),
+			badge: t("upgradeModal.badges.bestForSmallFarms"),
 			features: [
-				"Manage 6 to 15 printers",
-				"Full BeE Pro for all farm printers",
-				"Real-time Skip Objects for multi-part plates",
-				"Optimized performance for medium farms",
-				"Priority technical support via Zalo",
+				t("upgradeModal.plans.farmPro.feat1"),
+				t("upgradeModal.plans.farmPro.feat2"),
+				t("upgradeModal.plans.farmPro.feat3"),
+				t("upgradeModal.plans.farmPro.feat4"),
+				t("upgradeModal.plans.farmPro.feat5"),
 			],
 		},
 		{
 			id: "farm_max",
-			name: "Farm Max",
-			printers: "16 – 30 printers",
+			name: t("upgradeModal.plans.farmMax.name"),
+			printers: t("upgradeModal.plans.farmMax.printers"),
 			priceMonth: isVnd ? "349,000 ₫" : "$29.99",
 			priceYear: isVnd ? "3,490,000 ₫" : "$299",
-			periodMonth: "/ month",
-			periodYear: "/ year",
-			badge: "Maximum Power",
+			periodMonth: t("upgradeModal.billing.perMonth"),
+			periodYear: t("upgradeModal.billing.perYear"),
+			badge: t("upgradeModal.badges.maximumPower"),
 			features: [
-				"Manage 16 to 30 printers",
-				"Full BeE Pro maxed out on single Pi / Mini PC",
-				"Real-time Skip Objects for multi-part plates",
-				"Optimized MQTT & camera streaming",
-				"Dedicated 1-on-1 technical support",
+				t("upgradeModal.plans.farmMax.feat1"),
+				t("upgradeModal.plans.farmMax.feat2"),
+				t("upgradeModal.plans.farmMax.feat3"),
+				t("upgradeModal.plans.farmMax.feat4"),
+				t("upgradeModal.plans.farmMax.feat5"),
 			],
 		},
 	];
@@ -362,6 +364,15 @@ export function UpgradeModal() {
 		accountName,
 	)}&amount=${getVndAmount()}&memo=${encodeURIComponent(orderMemo)}`;
 
+	const getPlanRank = (planStr?: string) => {
+		const s = (planStr || "").toLowerCase().replace(/[\s_-]+/g, "");
+		if (s.includes("enterprise")) return PLAN_RANKS.enterprise;
+		if (s.includes("max")) return PLAN_RANKS.farm_max;
+		if (s.includes("pro") || s.includes("farm")) return PLAN_RANKS.farm_pro;
+		if (s.includes("hobby")) return PLAN_RANKS.hobby;
+		return PLAN_RANKS.beginner;
+	};
+
 	// Polling payment status via local proxy to comply with SPA Content Security Policy
 	useEffect(() => {
 		if (activeTab !== "qr" || !isUpgradeModalOpen || isPaymentSuccess)
@@ -373,15 +384,21 @@ export function UpgradeModal() {
 				const devParam = deviceId
 					? `&device_id=${encodeURIComponent(deviceId)}`
 					: "";
+				// Poll strictly by order code & device_id.
+				// Omitting farm_id prevents server from falsely returning pre-existing active license of an older tier.
 				const res = await fetch(
 					`/api/v1/pro/payments/check-order?code=${encodeURIComponent(
 						memo,
-					)}&farm_id=${encodeURIComponent(farmId)}${devParam}`,
+					)}${devParam}`,
 				);
 				if (res.ok) {
 					const data = await res.json();
 					const tokenToUse = data.license_token || data.license_key;
-					if (data.paid && tokenToUse) {
+					const returnedRank = getPlanRank(data.plan);
+					const targetRank = PLAN_RANKS[selectedPlan] || 0;
+
+					// Only complete payment if paid flag is true AND license matches or exceeds the target upgraded plan
+					if (data.paid && tokenToUse && returnedRank >= targetRank) {
 						setIsPaymentSuccess(true);
 						setActivatedKeyResult(tokenToUse);
 						await activateKey(tokenToUse);
@@ -399,10 +416,10 @@ export function UpgradeModal() {
 		isUpgradeModalOpen,
 		isPaymentSuccess,
 		selectedPlan,
-		farmId,
 		deviceId,
 		activateKey,
 		isVietinBank,
+		farmId,
 	]);
 
 	if (!isUpgradeModalOpen) return null;
@@ -428,18 +445,16 @@ export function UpgradeModal() {
 				<div className="text-center space-y-2">
 					<div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-semibold">
 						<Sparkles className="w-4 h-4" />
-						<span>ELEVATE YOUR 3D PRINTING AUTOMATION</span>
+						<span>{t("upgradeModal.banner")}</span>
 					</div>
 					<h2 className="text-2xl md:text-3xl font-extrabold tracking-tight">
-						Upgrade to{" "}
+						{t("upgradeModal.title")}{" "}
 						<span className="text-bambu-green-light">
-							3D Printer Platform PRO
+							{t("upgradeModal.productName")}
 						</span>
 					</h2>
 					<p className="text-sm text-bambu-gray max-w-2xl mx-auto">
-						Transform your printers into a 24/7 automated production
-						line: Continuous overnight Auto Swap PEI, smart power
-						shutoff, and smooth uninterrupted monitoring.
+						{t("upgradeModal.subtitle")}
 					</p>
 
 					{selectedFeature && (
@@ -448,27 +463,21 @@ export function UpgradeModal() {
 							<span>
 								{selectedFeature.includes("Add printer") ? (
 									<>
-										<strong className="text-white font-bold">
-											{selectedFeature}
-										</strong>
-										. Upgrade to{" "}
-										<strong className="underline text-amber-300 font-extrabold">
-											{nextPlanId === "farm_pro"
-												? "Farm Pro (6–15 printers)"
-												: nextPlanId === "farm_max"
-													? "Farm Max (16–30 printers)"
-													: "Next Plan"}
-										</strong>{" "}
-										to unlock more printer slots.
+										{t("upgradeModal.featureSlotRequirement", {
+											feature: selectedFeature,
+											nextPlan:
+												nextPlanId === "farm_pro"
+													? t("upgradeModal.planLabels.farmProWithPrinters")
+													: nextPlanId === "farm_max"
+														? t("upgradeModal.planLabels.farmMaxWithPrinters")
+														: t("upgradeModal.planLabels.nextPlanDefault"),
+										})}
 									</>
 								) : (
 									<>
-										The{" "}
-										<strong className="underline text-white font-bold">
-											{selectedFeature}
-										</strong>{" "}
-										feature requires an active PRO
-										subscription.
+										{t("upgradeModal.featureProRequirement", {
+											feature: selectedFeature,
+										})}
 									</>
 								)}
 							</span>
@@ -488,7 +497,7 @@ export function UpgradeModal() {
 							}`}
 						>
 							<Zap className="w-4 h-4" />
-							<span>Pricing & Plans</span>
+							<span>{t("upgradeModal.tabs.plans")}</span>
 						</button>
 						<button
 							onClick={() => setActiveTab("qr")}
@@ -499,7 +508,7 @@ export function UpgradeModal() {
 							}`}
 						>
 							<QrCode className="w-4 h-4" />
-							<span>VietQR Payment</span>
+							<span>{t("upgradeModal.tabs.qr")}</span>
 						</button>
 						<button
 							onClick={() => setActiveTab("key")}
@@ -510,20 +519,20 @@ export function UpgradeModal() {
 							}`}
 						>
 							<KeyRound className="w-4 h-4" />
-							<span>Activate License Key</span>
+							<span>{t("upgradeModal.tabs.key")}</span>
 						</button>
 					</div>
 					{deviceId && (
 						<div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-bambu-dark/80 border border-bambu-dark-tertiary text-xs font-mono text-bambu-gray">
 							<ShieldCheck className="w-3.5 h-3.5 text-bambu-green" />
 							<span>
-								Device ID:{" "}
+								{t("upgradeModal.deviceId")}{" "}
 								<strong className="text-white">
 									{deviceId}
 								</strong>
 							</span>
 							<span className="text-[10px] px-1.5 py-0.2 rounded bg-bambu-green/15 text-bambu-green font-semibold">
-								1 Machine Lock
+								{t("upgradeModal.machineLock")}
 							</span>
 						</div>
 					)}
@@ -534,12 +543,10 @@ export function UpgradeModal() {
 								<Sparkles className="w-5 h-5 text-amber-400 shrink-0" />
 								<div>
 									<span className="font-bold text-amber-300 block">
-										7-Day Free Trial with Full PRO Features
+										{t("upgradeModal.trial.title")}
 									</span>
 									<span className="text-[11px] text-bambu-gray">
-										Unlock Auto Swap PEI, Smart Power, and
-										AI Voice for up to 5 printers. Bound to
-										Device ID (one-time trial).
+										{t("upgradeModal.trial.description")}
 									</span>
 								</div>
 							</div>
@@ -552,8 +559,8 @@ export function UpgradeModal() {
 								<Sparkles className="w-3.5 h-3.5" />
 								<span>
 									{isActivatingTrial
-										? "Activating..."
-										: "Activate Free Trial"}
+										? t("upgradeModal.trial.activating")
+										: t("upgradeModal.trial.activate")}
 								</span>
 							</button>
 						</div>
@@ -574,7 +581,7 @@ export function UpgradeModal() {
 											: "text-bambu-gray"
 									}
 								>
-									Monthly
+									{t("upgradeModal.billing.monthly")}
 								</span>
 								<button
 									type="button"
@@ -602,9 +609,9 @@ export function UpgradeModal() {
 											: "text-bambu-gray"
 									}
 								>
-									Annual{" "}
+									{t("upgradeModal.billing.annual")}{" "}
 									<span className="text-xs px-2 py-0.5 rounded bg-bambu-green/20 text-bambu-green font-bold">
-										Save 2 months
+										{t("upgradeModal.billing.save2Months")}
 									</span>
 								</span>
 							</div>
@@ -621,7 +628,7 @@ export function UpgradeModal() {
 											: "text-bambu-gray hover:text-white"
 									}`}
 								>
-									USD ($)
+									{t("upgradeModal.billing.usd")}
 								</button>
 								<button
 									type="button"
@@ -632,7 +639,7 @@ export function UpgradeModal() {
 											: "text-bambu-gray hover:text-white"
 									}`}
 								>
-									VND (₫)
+									{t("upgradeModal.billing.vnd")}
 								</button>
 							</div>
 						</div>
@@ -660,13 +667,13 @@ export function UpgradeModal() {
 										{isCurrent && (
 											<span className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full bg-emerald-500 text-black text-[10px] font-black uppercase tracking-wider shadow flex items-center gap-1 whitespace-nowrap">
 												<Check className="w-3 h-3 stroke-[3]" />
-												YOU ARE HERE
+												{t("upgradeModal.badges.youAreHere")}
 											</span>
 										)}
 										{isNext && (
 											<span className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full bg-amber-400 text-black text-[10px] font-black uppercase tracking-wider shadow flex items-center gap-1 whitespace-nowrap animate-pulse">
 												<Sparkles className="w-3 h-3" />
-												NEXT PLAN (RECOMMENDED)
+												{t("upgradeModal.badges.nextPlan")}
 											</span>
 										)}
 										{!isCurrent &&
@@ -684,7 +691,7 @@ export function UpgradeModal() {
 													<span>{p.name}</span>
 													{isCurrent && (
 														<span className="text-[10px] text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-1.5 py-0.5 rounded font-semibold">
-															Current
+															{t("upgradeModal.badges.current")}
 														</span>
 													)}
 												</h3>
@@ -739,12 +746,11 @@ export function UpgradeModal() {
 																			: p.priceYear}
 																	</span>
 																	<span>
-																		(Prorated
-																		-
-																		{isVnd
-																			? `${getCurrentCreditVnd().toLocaleString("vi-VN")} ₫`
-																			: `$${getCurrentCreditUsd()}`}
-																		)
+																		{t("upgradeModal.prorated.lineItem", {
+																			credit: isVnd
+																				? `${getCurrentCreditVnd().toLocaleString("vi-VN")} ₫`
+																				: `$${getCurrentCreditUsd()}`,
+																		})}
 																	</span>
 																</div>
 															)}
@@ -782,14 +788,14 @@ export function UpgradeModal() {
 													className="w-full py-2.5 px-3 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-xs font-bold flex items-center justify-center gap-1.5 cursor-default"
 												>
 													<Check className="w-3.5 h-3.5 stroke-[3]" />
-													Current Plan (Active)
+													{t("upgradeModal.actions.currentPlanActive")}
 												</button>
 											) : isLower ? (
 												<button
 													disabled
 													className="w-full py-2.5 px-3 rounded-lg bg-bambu-dark-tertiary/40 text-bambu-gray text-xs font-medium cursor-default"
 												>
-													Included in current plan
+													{t("upgradeModal.actions.includedInCurrent")}
 												</button>
 											) : isNext ? (
 												<button
@@ -805,7 +811,7 @@ export function UpgradeModal() {
 													className="w-full py-2.5 px-3 rounded-lg text-xs font-black transition-all shadow-md bg-amber-500 hover:bg-amber-400 text-black shadow-amber-500/25 flex items-center justify-center gap-1.5 cursor-pointer"
 												>
 													<ArrowUpRight className="w-4 h-4 stroke-[2.5]" />
-													Upgrade to {p.name}
+													{t("upgradeModal.actions.upgradeToPlan", { name: p.name })}
 												</button>
 											) : (
 												<button
@@ -821,7 +827,7 @@ export function UpgradeModal() {
 													className="w-full py-2.5 px-3 rounded-lg text-xs font-bold transition-all shadow-md bg-white/10 hover:bg-white/20 text-white flex items-center justify-center gap-1.5 cursor-pointer"
 												>
 													<ArrowUpRight className="w-4 h-4" />
-													Upgrade to {p.name}
+													{t("upgradeModal.actions.upgradeToPlan", { name: p.name })}
 												</button>
 											)}
 										</div>
@@ -842,18 +848,16 @@ export function UpgradeModal() {
 								<div className="flex items-center gap-2">
 									<h4 className="font-bold text-sm text-white flex items-center gap-2">
 										<ShieldCheck className="w-4 h-4 text-bambu-green" />
-										Large Farm / Enterprise (30+ printers)
+										{t("upgradeModal.enterprise.title")}
 									</h4>
 									{nextPlanId === "enterprise" && (
 										<span className="px-2.5 py-0.5 rounded-full bg-amber-400 text-black text-[10px] font-black uppercase tracking-wider">
-											NEXT PLAN (RECOMMENDED)
+											{t("upgradeModal.badges.nextPlan")}
 										</span>
 									)}
 								</div>
 								<p className="text-xs text-bambu-gray mt-0.5">
-									Distributed multi-node architecture
-									consulting, on-site setup, dedicated SLA
-									support & VAT invoicing.
+									{t("upgradeModal.enterprise.description")}
 								</p>
 							</div>
 							<a
@@ -867,7 +871,7 @@ export function UpgradeModal() {
 								}`}
 							>
 								<PhoneCall className="w-3.5 h-3.5" />
-								<span>Contact Enterprise</span>
+								<span>{t("upgradeModal.enterprise.contact")}</span>
 							</a>
 						</div>
 					</div>
@@ -881,36 +885,36 @@ export function UpgradeModal() {
 						</div>
 						<div>
 							<h3 className="text-2xl font-black text-white">
-								Payment Confirmed!
+								{t("upgradeModal.payment.confirmedTitle")}
 							</h3>
 							<p className="text-sm text-bambu-green-light mt-1 font-semibold">
-								BeE Pro is now fully activated for this farm.
+								{t("upgradeModal.payment.confirmedSubtitle")}
 							</p>
 							<p className="text-xs text-bambu-gray mt-2">
-								Your farm is unlocked for 24/7 Auto Swap PEI,
-								Smart Power auto-shutoff, and continuous
-								multi-printer automation.
+								{t("upgradeModal.payment.confirmedDesc")}
 							</p>
 						</div>
 
 						<div className="p-3 bg-bambu-dark rounded-xl border border-bambu-dark-tertiary text-left text-xs space-y-1.5 font-mono">
 							<div className="flex justify-between">
 								<span className="text-bambu-gray">
-									Farm ID:
+									{t("upgradeModal.payment.farmId")}
 								</span>
 								<span className="text-white font-bold">
 									{farmId}
 								</span>
 							</div>
 							<div className="flex justify-between">
-								<span className="text-bambu-gray">Plan:</span>
+								<span className="text-bambu-gray">
+									{t("upgradeModal.payment.plan")}
+								</span>
 								<span className="text-amber-400 font-bold uppercase">
 									{selectedPlan}
 								</span>
 							</div>
 							<div className="flex justify-between items-center pt-1 border-t border-bambu-dark-tertiary">
 								<span className="text-bambu-gray">
-									License Key:
+									{t("upgradeModal.payment.licenseKey")}
 								</span>
 								<div className="flex items-center gap-1">
 									<span className="text-white font-bold truncate max-w-[200px]">
@@ -946,7 +950,7 @@ export function UpgradeModal() {
 							onClick={closeUpgradeModal}
 							className="w-full py-3 px-4 bg-bambu-green hover:bg-bambu-green-light text-white font-bold rounded-xl shadow-lg shadow-bambu-green/20 transition-all cursor-pointer"
 						>
-							Start Using BeE Pro Now
+							{t("upgradeModal.payment.startUsing")}
 						</button>
 					</div>
 				)}
@@ -961,8 +965,7 @@ export function UpgradeModal() {
 								className="w-64 h-64 object-contain rounded-lg"
 							/>
 							<p className="text-black text-xs font-bold mt-2 text-center">
-								Scan with any banking app (MB, VCB, ACB,
-								Techcombank, MoMo...)
+								{t("upgradeModal.qr.scanHint")}
 							</p>
 						</div>
 
@@ -970,21 +973,21 @@ export function UpgradeModal() {
 						<div className="space-y-4 text-left">
 							<div>
 								<span className="text-xs font-semibold text-bambu-green uppercase tracking-wider">
-									Automated Payment Details
+									{t("upgradeModal.qr.autoPaymentDetails")}
 								</span>
 
 								{/* Quick Plan Switcher */}
 								<div className="flex items-center gap-2 mt-2 mb-2 flex-wrap">
 									{(
 										[
-											{ id: "hobby", label: "Hobby (5)" },
+											{ id: "hobby", label: t("upgradeModal.plans.hobby.shortPrinters") },
 											{
 												id: "farm_pro",
-												label: "Farm Pro (15)",
+												label: t("upgradeModal.plans.farmPro.shortPrinters"),
 											},
 											{
 												id: "farm_max",
-												label: "Farm Max (30)",
+												label: t("upgradeModal.plans.farmMax.shortPrinters"),
 											},
 										] as const
 									).map((p) => {
@@ -1013,7 +1016,7 @@ export function UpgradeModal() {
 																: "bg-amber-500/20 text-amber-300"
 														}`}
 													>
-														Next
+														{t("upgradeModal.badges.next")}
 													</span>
 												)}
 											</button>
@@ -1022,12 +1025,12 @@ export function UpgradeModal() {
 								</div>
 
 								<h3 className="text-xl font-extrabold text-white mt-1">
-									Plan:{" "}
+									{t("upgradeModal.qr.planPrefix")}{" "}
 									{selectedPlan === "hobby"
-										? "Hobby (1–5 printers)"
+										? t("upgradeModal.planLabels.hobbyWithPrinters")
 										: selectedPlan === "farm_pro"
-											? "Farm Pro (6–15 printers)"
-											: "Farm Max (16–30 printers)"}
+											? t("upgradeModal.planLabels.farmProWithPrinters")
+											: t("upgradeModal.planLabels.farmMaxWithPrinters")}
 								</h3>
 								<div className="flex items-baseline gap-2 mt-1 flex-wrap">
 									<div className="text-2xl font-black text-amber-400">
@@ -1042,8 +1045,8 @@ export function UpgradeModal() {
 									<span className="text-xs text-bambu-gray font-normal">
 										(~{getUsdAmount()} USD{" "}
 										{billingCycle === "month"
-											? "/ mo"
-											: "/ yr"}
+											? t("upgradeModal.billing.moShort")
+											: t("upgradeModal.billing.yrShort")}
 										)
 									</span>
 								</div>
@@ -1052,10 +1055,12 @@ export function UpgradeModal() {
 									<div className="inline-flex items-center gap-1.5 mt-2 px-3 py-1 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-xs font-semibold">
 										<Check className="w-3.5 h-3.5 shrink-0" />
 										<span>
-											Prorated upgrade: Credited{" "}
-											{getCurrentCreditVnd().toLocaleString()}{" "}
-											VND from your current{" "}
-											{currentPlanId.toUpperCase()} plan
+											{t("upgradeModal.prorated.notice", {
+												credit: isVnd
+													? `${getCurrentCreditVnd().toLocaleString("vi-VN")} ₫`
+													: `$${getCurrentCreditUsd()}`,
+												plan: currentPlanId.toUpperCase(),
+											})}
 										</span>
 									</div>
 								)}
@@ -1065,7 +1070,7 @@ export function UpgradeModal() {
 								<div className="p-3 bg-bambu-dark rounded-lg border border-bambu-dark-tertiary space-y-2">
 									<div className="flex items-center justify-between">
 										<span className="text-bambu-gray">
-											Transfer Memo:
+											{t("upgradeModal.qr.transferMemo")}
 										</span>
 										<div className="flex items-center gap-1.5">
 											<span className="font-mono font-bold text-amber-400 select-all">
@@ -1087,7 +1092,7 @@ export function UpgradeModal() {
 													);
 												}}
 												className="p-1 rounded bg-bambu-dark-tertiary hover:bg-bambu-gray/20 text-bambu-gray hover:text-white transition-colors"
-												title="Copy Memo"
+												title={t("upgradeModal.qr.copyMemo")}
 											>
 												{copiedMemo ? (
 													<Check className="w-3 h-3 text-bambu-green" />
@@ -1100,7 +1105,7 @@ export function UpgradeModal() {
 
 									<div className="flex items-center justify-between">
 										<span className="text-bambu-gray">
-											Account No:
+											{t("upgradeModal.qr.accountNo")}
 										</span>
 										<div className="flex items-center gap-1.5">
 											<span className="font-bold text-white font-mono select-all">
@@ -1122,7 +1127,7 @@ export function UpgradeModal() {
 													);
 												}}
 												className="p-1 rounded bg-bambu-dark-tertiary hover:bg-bambu-gray/20 text-bambu-gray hover:text-white transition-colors"
-												title="Copy Account No"
+												title={t("upgradeModal.qr.copyAccountNo")}
 											>
 												{copiedAccount ? (
 													<Check className="w-3 h-3 text-bambu-green" />
@@ -1135,7 +1140,7 @@ export function UpgradeModal() {
 
 									<div className="flex justify-between">
 										<span className="text-bambu-gray">
-											Account Holder:
+											{t("upgradeModal.qr.accountHolder")}
 										</span>
 										<span className="font-bold text-white">
 											{accountName}
@@ -1143,7 +1148,7 @@ export function UpgradeModal() {
 									</div>
 									<div className="flex justify-between">
 										<span className="text-bambu-gray">
-											Bank:
+											{t("upgradeModal.qr.bank")}
 										</span>
 										<span className="font-bold text-white">
 											{BANK_DISPLAY_NAMES[
@@ -1154,7 +1159,7 @@ export function UpgradeModal() {
 									</div>
 									<div className="flex justify-between">
 										<span className="text-bambu-gray">
-											Farm ID:
+											{t("upgradeModal.qr.farmId")}
 										</span>
 										<span className="font-mono font-semibold text-bambu-gray">
 											{farmId}
@@ -1163,7 +1168,7 @@ export function UpgradeModal() {
 									{deviceId && (
 										<div className="flex justify-between">
 											<span className="text-bambu-gray">
-												Device ID:
+												{t("upgradeModal.qr.deviceId")}
 											</span>
 											<span className="font-mono font-semibold text-bambu-green text-xs">
 												{deviceId}
@@ -1174,8 +1179,7 @@ export function UpgradeModal() {
 
 								<div>
 									<label className="block text-bambu-gray mb-1">
-										Phone number for receipt & technical
-										support (optional):
+										{t("upgradeModal.qr.phoneLabel")}
 									</label>
 									<input
 										type="tel"
@@ -1183,7 +1187,7 @@ export function UpgradeModal() {
 										onChange={(e) =>
 											setCustomerPhone(e.target.value)
 										}
-										placeholder="e.g. 0912345678 or +84..."
+										placeholder={t("upgradeModal.qr.phonePlaceholder")}
 										className="w-full px-3 py-1.5 bg-bambu-dark border border-bambu-dark-tertiary rounded-lg text-white placeholder-bambu-gray focus:outline-none focus:border-bambu-green text-xs"
 									/>
 								</div>
@@ -1191,17 +1195,15 @@ export function UpgradeModal() {
 
 							<div className="text-xs text-bambu-gray space-y-1">
 								<p className="text-[11px] text-amber-400/90">
-									🌐 For international payments (PayPal,
-									Stripe, Card), contact
-									support@beestemsolutions.com.vn.
+									{t("upgradeModal.qr.internationalNotice")}
 								</p>
 								<p>
-									Already have a key?{" "}
+									{t("upgradeModal.qr.alreadyHaveKey")}{" "}
 									<button
 										onClick={() => setActiveTab("key")}
 										className="text-amber-400 font-semibold underline hover:text-amber-300"
 									>
-										Click here to paste activation key
+										{t("upgradeModal.qr.pasteActivationKey")}
 									</button>
 								</p>
 							</div>
@@ -1217,7 +1219,7 @@ export function UpgradeModal() {
 					>
 						<div>
 							<label className="block text-sm font-semibold text-white mb-2">
-								Paste your License Key:
+								{t("upgradeModal.key.pasteLabel")}
 							</label>
 							<textarea
 								rows={5}
@@ -1226,7 +1228,7 @@ export function UpgradeModal() {
 								onChange={(e) =>
 									setLicenseKeyInput(e.target.value)
 								}
-								placeholder="Paste the full content of bee_license.key here..."
+								placeholder={t("upgradeModal.key.placeholder")}
 								className="w-full p-3 bg-bambu-dark border border-bambu-dark-tertiary rounded-xl font-mono text-xs text-white placeholder-bambu-gray focus:outline-none focus:ring-2 focus:ring-bambu-green"
 							/>
 						</div>
@@ -1236,21 +1238,16 @@ export function UpgradeModal() {
 								<div className="flex items-center gap-1.5 font-semibold text-white">
 									<ShieldCheck className="w-4 h-4 text-bambu-green" />
 									<span>
-										Digital Signature & Device Binding
+										{t("upgradeModal.key.signatureTitle")}
 									</span>
 								</div>
 								<p>
-									Your license is cryptographically signed and
-									bound exclusively to this machine (
-									<strong className="text-white font-mono">
-										{deviceId}
-									</strong>
-									). One license key per device.
+									{t("upgradeModal.key.signatureDesc", {
+										deviceId,
+									})}
 								</p>
 								<p className="text-bambu-green font-medium">
-									✅ After activation, the system runs 100%
-									offline without requiring internet access on
-									boot.
+									{t("upgradeModal.key.offlineNotice")}
 								</p>
 							</div>
 						)}
@@ -1261,8 +1258,8 @@ export function UpgradeModal() {
 							className="w-full py-3 px-4 bg-bambu-green hover:bg-bambu-green-light text-white font-bold rounded-xl shadow-lg shadow-bambu-green/20 disabled:opacity-50 transition-all cursor-pointer"
 						>
 							{isActivating
-								? "Verifying license..."
-								: "Activate Now"}
+								? t("upgradeModal.key.verifying")
+								: t("upgradeModal.key.activateNow")}
 						</button>
 
 						<div className="text-center pt-2">
@@ -1273,7 +1270,7 @@ export function UpgradeModal() {
 								className="inline-flex items-center gap-1 text-xs text-bambu-gray hover:text-bambu-green transition-colors"
 							>
 								<span>
-									Technical Support: BeE STEM Solutions
+									{t("upgradeModal.key.techSupport")}
 								</span>
 								<ExternalLink className="w-3 h-3" />
 							</a>

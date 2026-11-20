@@ -1,4 +1,5 @@
 import { Zap, Crown } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../api/client';
 import { useProLicense } from '../contexts/ProLicenseContext';
@@ -8,6 +9,7 @@ interface PlanSidebarWidgetProps {
 }
 
 export function PlanSidebarWidget({ isExpanded }: PlanSidebarWidgetProps) {
+  const { t } = useTranslation();
   const { isPro, isTrial, planName, maxPrinters, openUpgradeModal } = useProLicense();
 
   const { data: settings } = useQuery({
@@ -21,21 +23,26 @@ export function PlanSidebarWidget({ isExpanded }: PlanSidebarWidgetProps) {
 
   const planShortName = isPro
     ? planName.includes('Hobby')
-      ? 'Hobby Pro'
+      ? t('upgradeModal.widget.hobbyPro')
       : planName.includes('Farm Max')
-      ? 'Farm Max'
+      ? t('upgradeModal.widget.farmMax')
       : planName.includes('Farm Pro')
-      ? 'Farm Pro'
+      ? t('upgradeModal.widget.farmPro')
       : planName.includes('Enterprise')
-      ? 'Enterprise'
+      ? t('upgradeModal.widget.enterprise')
       : isTrial
-      ? '7-Day Trial'
-      : 'BeE Pro'
+      ? t('upgradeModal.widget.trial7Day')
+      : t('upgradeModal.widget.beePro')
     : isTrial
-    ? '7-Day Trial'
-    : 'Beginner';
+    ? t('upgradeModal.widget.trial7Day')
+    : t('upgradeModal.widget.beginner');
 
-  const printerQuota = maxPrinters === -1 ? 'Unlimited' : maxPrinters === 1 ? '1 printer' : `1–${maxPrinters} printers`;
+  const printerQuota =
+    maxPrinters === -1
+      ? t('upgradeModal.widget.unlimited')
+      : maxPrinters === 1
+      ? t('upgradeModal.widget.onePrinter')
+      : t('upgradeModal.widget.printersQuota', { count: maxPrinters });
 
   if (!isExpanded) {
     return (
@@ -43,7 +50,7 @@ export function PlanSidebarWidget({ isExpanded }: PlanSidebarWidgetProps) {
         <button
           type="button"
           onClick={() => openUpgradeModal()}
-          title={`Current Plan: ${planName} — Click to upgrade or manage`}
+          title={t('upgradeModal.widget.currentPlanTitle', { plan: planName })}
           className="p-2.5 rounded-xl bg-gradient-to-tr from-amber-500/20 to-orange-500/20 hover:from-amber-500/30 hover:to-orange-500/30 border border-amber-500/40 text-amber-300 transition-all hover:scale-105 active:scale-95 shadow-md group relative"
         >
           {isPro ? (
@@ -51,7 +58,7 @@ export function PlanSidebarWidget({ isExpanded }: PlanSidebarWidgetProps) {
           ) : (
             <Zap className="w-5 h-5 text-amber-400 fill-amber-400 animate-pulse" />
           )}
-          <span className="sr-only">Upgrade to Pro</span>
+          <span className="sr-only">{t('upgradeModal.widget.upgradeToProSr')}</span>
         </button>
       </div>
     );
@@ -98,7 +105,11 @@ export function PlanSidebarWidget({ isExpanded }: PlanSidebarWidgetProps) {
         }`}
       >
         <Zap className="w-3.5 h-3.5 fill-current shrink-0" />
-        <span>{isPro ? 'Manage License' : `Upgrade Pro (${priceDisplay})`}</span>
+        <span>
+          {isPro
+            ? t('upgradeModal.widget.manageLicense')
+            : t('upgradeModal.widget.upgradePro', { price: priceDisplay })}
+        </span>
       </button>
     </div>
   );

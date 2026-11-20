@@ -1,6 +1,11 @@
 import { useState, useRef, useCallback, useMemo, useEffect } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+	useQuery,
+	useMutation,
+	useQueryClient,
+	keepPreviousData,
+} from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import {
 	FolderOpen,
@@ -1545,6 +1550,8 @@ export function FileManagerPage() {
 	const { data: folders, isLoading: foldersLoading } = useQuery({
 		queryKey: ["library-folders"],
 		queryFn: () => api.getLibraryFolders(),
+		placeholderData: keepPreviousData,
+		staleTime: 60 * 1000,
 	});
 
 	// Trash count for the header badge (#1008). Empty/error are silently treated
@@ -1559,7 +1566,7 @@ export function FileManagerPage() {
 				return 0;
 			}
 		},
-		staleTime: 30_000,
+		staleTime: 60 * 1000,
 	});
 
 	const { data: files, isLoading: filesLoading } = useQuery({
@@ -1568,11 +1575,15 @@ export function FileManagerPage() {
 		// so include_root must be false — true would scope the result to files at
 		// the library root only and hide everything nested in subfolders (#1499).
 		queryFn: () => api.getLibraryFiles(selectedFolderId, false),
+		placeholderData: keepPreviousData,
+		staleTime: 30 * 1000,
 	});
 
 	const { data: stats } = useQuery({
 		queryKey: ["library-stats"],
 		queryFn: () => api.getLibraryStats(),
+		placeholderData: keepPreviousData,
+		staleTime: 60 * 1000,
 	});
 
 	// Get users for the username filter autocomplete
@@ -2017,7 +2028,7 @@ export function FileManagerPage() {
 		localStorage.setItem("library-view-mode", mode);
 	};
 
-	const isLoading = foldersLoading || filesLoading;
+	const isLoading = (foldersLoading || filesLoading) && !files && !folders;
 
 	// Find the selected folder in the tree to check external status
 	const selectedFolder = useMemo(() => {

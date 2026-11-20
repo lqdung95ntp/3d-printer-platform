@@ -5,6 +5,7 @@ import {
 	useQueries,
 	useMutation,
 	useQueryClient,
+	keepPreviousData,
 } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import {
@@ -2444,6 +2445,7 @@ export function QueuePage() {
 		queryFn: () =>
 			api.getQueue(filterPrinter || undefined, filterStatus || undefined),
 		refetchInterval: 15000,
+		placeholderData: keepPreviousData,
 	});
 
 	const { data: printers } = useQuery({
@@ -3649,18 +3651,31 @@ export function QueuePage() {
 					t={t}
 					focusBatchId={focusBatchId}
 				/>
-			) : isLoading ? (
-				<div className="text-center py-12 text-bambu-gray">
-					{t("common.loading")}
+			) : isLoading && !queue ? (
+				<div className="text-center py-12 text-bambu-gray flex flex-col items-center justify-center gap-3">
+					<RefreshCw className="w-8 h-8 text-bambu-gray animate-spin" />
+					<p>{t("common.loading")}</p>
 				</div>
-			) : queue?.length === 0 ? (
+			) : (activeTab === "queue" &&
+					activeItems.length === 0 &&
+					pendingItems.length === 0) ||
+			  (activeTab === "history" && historyItems.length === 0) ||
+			  queue?.length === 0 ? (
 				<Card className="p-12 text-center border-dashed">
 					<Calendar className="w-16 h-16 text-bambu-gray mx-auto mb-4 opacity-50" />
 					<h3 className="text-xl font-medium text-white mb-2">
-						{t("queue.empty.title")}
+						{activeTab === "history"
+							? t("queue.emptyHistory.title", {
+									defaultValue: t("queue.empty.title"),
+								})
+							: t("queue.empty.title")}
 					</h3>
 					<p className="text-bambu-gray max-w-md mx-auto">
-						{t("queue.empty.description")}
+						{activeTab === "history"
+							? t("queue.emptyHistory.description", {
+									defaultValue: t("queue.empty.description"),
+								})
+							: t("queue.empty.description")}
 					</p>
 				</Card>
 			) : activeTab === "timeline" ? (
