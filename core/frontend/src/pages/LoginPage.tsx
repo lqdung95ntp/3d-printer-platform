@@ -714,11 +714,11 @@ export function LoginPage() {
 				<div className="text-center">
 					<div
 						className="flex items-center justify-center gap-3 mb-6"
-						aria-label={farmName || "Printbuddy"}
+						aria-label={farmName || "3D Printer Platform"}
 					>
 						<img
 							src={brandAvatarSrc}
-							alt={farmName || "Printbuddy app icon"}
+							alt={farmName || "3D Printer Platform app icon"}
 							className={`h-12 w-12 rounded-xl ${farmAvatar ? "object-cover shadow-sm border border-bambu-dark-tertiary" : "object-contain"}`}
 							onError={(e) => {
 								e.currentTarget.onerror = null;

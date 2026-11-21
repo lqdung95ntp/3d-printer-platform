@@ -21,7 +21,7 @@ type ActivePrintStatus = {
 	state: string;
 };
 
-const DEFAULT_TITLE = "Printbuddy";
+const DEFAULT_TITLE = "3D Printer Platform";
 
 function parseNumber(value: number | string | null | undefined): number | null {
 	if (value === null || value === undefined || value === "") return null;

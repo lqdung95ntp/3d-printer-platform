@@ -17,15 +17,16 @@ export function useFarmBrandingSync() {
 	useEffect(() => {
 		if (typeof document === "undefined") return;
 
+		const defaultTitle = "3D Printer Platform";
+		const effectiveTitle = farmName || defaultTitle;
+
 		// 1. Sync title if not actively showing print progress
-		if (farmName) {
-			if (!document.title || !/^\d+% · /.test(document.title)) {
-				document.title = farmName;
-			}
+		if (!document.title || !/^\d+% · /.test(document.title)) {
+			document.title = effectiveTitle;
 		}
 
 		// 2. Sync mobile web app titles
-		const title = farmName || "Printbuddy";
+		const title = effectiveTitle;
 
 		let appleMeta = document.querySelector<HTMLMetaElement>(
 			'meta[name="apple-mobile-web-app-title"]',
