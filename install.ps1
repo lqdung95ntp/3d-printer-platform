@@ -87,23 +87,54 @@ try {
 # 4. Check and Download Project Files if running from an empty directory
 if (-not (Test-Path "docker-compose.yml")) {
     $installDir = "3d-printer-platform"
+    if (Test-Path $installDir) {
+        Set-Location $installDir
+    } else {
+        New-Item -ItemType Directory -Force -Path $installDir | Out-Null
+        Set-Location $installDir
+    }
+}
+
+if (-not (Test-Path "docker-compose.yml")) {
     Write-Host "Dang tai ma nguon BeE Printer Platform tu GitHub..." -ForegroundColor Cyan
     if (Get-Command git -ErrorAction SilentlyContinue) {
-        git clone https://github.com/lqdung95ntp/3d-printer-platform.git $installDir
-        Set-Location $installDir
+        if (-not (Test-Path ".git")) {
+            try {
+                git clone https://github.com/lqdung95ntp/3d-printer-platform.git . 2>$null
+            } catch {
+                # Fallback if directory not empty
+            }
+            if (-not (Test-Path "docker-compose.yml")) {
+                git init
+                git checkout -B main 2>$null
+                git remote add origin https://github.com/lqdung95ntp/3d-printer-platform.git 2>$null
+                git fetch origin main --depth=1
+                git checkout -f main
+            }
+        } else {
+            git pull origin main
+        }
     } else {
         $zipUrl = "https://github.com/lqdung95ntp/3d-printer-platform/archive/refs/heads/main.zip"
         $zipFile = "$env:TEMP\bee_repo.zip"
         $extractDir = "$env:TEMP\bee_extracted"
         Invoke-WebRequest -Uri $zipUrl -OutFile $zipFile
         Expand-Archive -Path $zipFile -DestinationPath $extractDir -Force
-        Move-Item -Path "$extractDir\3d-printer-platform-main" -Destination $installDir
+        $innerFolder = Get-ChildItem -Path $extractDir -Directory | Select-Object -First 1
+        if ($innerFolder) {
+            Copy-Item -Path "$($innerFolder.FullName)\*" -Destination . -Recurse -Force
+        }
         Remove-Item $zipFile -Force -ErrorAction SilentlyContinue
         Remove-Item $extractDir -Recurse -Force -ErrorAction SilentlyContinue
-        Set-Location $installDir
     }
-    Write-Host "[OK] Da chuan bi ma nguon tai thu muc hien tai." -ForegroundColor Green
 }
+
+if (-not (Test-Path "docker-compose.yml")) {
+    Write-Host "Dang tai truc tiep docker-compose.yml tu GitHub..." -ForegroundColor Yellow
+    Invoke-WebRequest -Uri "https://raw.githubusercontent.com/lqdung95ntp/3d-printer-platform/main/docker-compose.yml" -OutFile "docker-compose.yml" -ErrorAction SilentlyContinue
+}
+
+Write-Host "[OK] Da chuan bi ma nguon tai: $(Get-Location)" -ForegroundColor Green
 
 # 5. Setup Directories & .env
 New-Item -ItemType Directory -Force -Path "data/core", "data/pro", "logs" | Out-Null

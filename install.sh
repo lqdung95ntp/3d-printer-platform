@@ -141,33 +141,58 @@ WORKDIR="$(pwd)"
 if [ ! -f "docker-compose.yml" ]; then
     INSTALL_DIR="3d-printer-platform"
     if [ -d "$INSTALL_DIR" ]; then
-        echo -e "${CYAN}[INFO]${NC} Thư mục ${INSTALL_DIR} đã tồn tại, đang đồng bộ phiên bản mới nhất..."
         cd "$INSTALL_DIR"
-        if command -v git >/dev/null 2>&1 && [ -d ".git" ]; then
-            git pull origin main || true
-        fi
         WORKDIR="$(pwd)"
     else
-        echo -e "${CYAN}[INFO]${NC} Đang tải mã nguồn BeE Printer Platform từ GitHub..."
-        if command -v git >/dev/null 2>&1; then
-            git clone https://github.com/lqdung95ntp/3d-printer-platform.git "$INSTALL_DIR"
-            cd "$INSTALL_DIR"
-            WORKDIR="$(pwd)"
-        else
-            mkdir -p "$INSTALL_DIR" && cd "$INSTALL_DIR"
-            curl -fsSL https://github.com/lqdung95ntp/3d-printer-platform/archive/refs/heads/main.tar.gz | tar -xz --strip-components=1
-            WORKDIR="$(pwd)"
-        fi
+        mkdir -p "$INSTALL_DIR"
+        cd "$INSTALL_DIR"
+        WORKDIR="$(pwd)"
     fi
-    echo -e "${GREEN}[✓] Đã chuẩn bị mã nguồn tại: ${WORKDIR}${NC}"
 fi
+
+# Ensure docker-compose.yml and repository files exist in WORKDIR
+if [ ! -f "${WORKDIR}/docker-compose.yml" ]; then
+    echo -e "${CYAN}[INFO]${NC} Đang tải bộ cài đặt BeE Printer Platform từ GitHub..."
+    if command -v git >/dev/null 2>&1; then
+        if [ ! -d "${WORKDIR}/.git" ]; then
+            git clone https://github.com/lqdung95ntp/3d-printer-platform.git . 2>/dev/null || {
+                # If directory not empty, fallback to fetch/checkout or tarball
+                git init
+                git checkout -B main 2>/dev/null || true
+                git remote add origin https://github.com/lqdung95ntp/3d-printer-platform.git 2>/dev/null || git remote set-url origin https://github.com/lqdung95ntp/3d-printer-platform.git
+                git fetch origin main --depth=1 || true
+                git checkout -f main || true
+            }
+        else
+            git pull origin main || true
+        fi
+    else
+        curl -fsSL https://github.com/lqdung95ntp/3d-printer-platform/archive/refs/heads/main.tar.gz | tar -xz --strip-components=1
+    fi
+else
+    # Directory already has docker-compose.yml, pull updates if git repository
+    if command -v git >/dev/null 2>&1 && [ -d "${WORKDIR}/.git" ]; then
+        echo -e "${CYAN}[INFO]${NC} Đang đồng bộ phiên bản mới nhất từ GitHub..."
+        git pull origin main || true
+    fi
+fi
+
+# Final check for docker-compose.yml
+if [ ! -f "${WORKDIR}/docker-compose.yml" ]; then
+    echo -e "${YELLOW}[WARN]${NC} Đang tải trực tiếp docker-compose.yml từ GitHub..."
+    curl -fsSL https://raw.githubusercontent.com/lqdung95ntp/3d-printer-platform/main/docker-compose.yml -o "${WORKDIR}/docker-compose.yml" || true
+fi
+
+echo -e "${GREEN}[✓] Đã chuẩn bị mã nguồn tại: ${WORKDIR}${NC}"
 
 # Hand off to the freshly updated local script if invoked from curl pipe
 if [ -z "$BEE_INSTALL_REEXEC" ] && [ -f "${WORKDIR}/install.sh" ]; then
     export BEE_INSTALL_REEXEC=1
+    cd "${WORKDIR}"
     exec bash "${WORKDIR}/install.sh" "$@"
 fi
 
+cd "${WORKDIR}"
 echo -e "${BLUE}[INFO]${NC} Thư mục triển khai: ${BOLD}${WORKDIR}${NC}"
 
 mkdir -p "${WORKDIR}/data/core" "${WORKDIR}/data/pro" "${WORKDIR}/logs"
