@@ -3061,7 +3061,7 @@ export default {
 	printerFiles: {
 		title: "Quản lý tệp",
 		storageUsed: "Đã sử dụng:",
-		storageFree: "miễn phí:",
+		storageFree: "Bộ nhớ còn lại:",
 		filterPlaceholder: "Lọc tập tin...",
 		deleteButton: "Xóa",
 		deleteFiles: "Xóa tệp {{count}}",
@@ -3787,11 +3787,11 @@ export default {
 		listView: "Chế độ xem danh sách",
 		lowDiskSpaceWarning: "Cảnh báo dung lượng ổ đĩa thấp",
 		lowDiskSpaceDetails:
-			"Chỉ {{free}} miễn phí trong tổng số {{total}}. Ngưỡng được đặt thành {{threshold}} GB trong cài đặt.",
+			"Chỉ {{free}} còn lại trong tổng số {{total}}. Ngưỡng được đặt thành {{threshold}} GB trong cài đặt.",
 		files: "Tập tin",
 		folders: "Thư mục",
 		size: "Kích thước",
-		free: "miễn phí",
+		free: "Còn lại",
 		allFiles: "Tất cả các tệp",
 		wrap: "Bọc",
 		enableTextWrapping: "Bật tính năng ngắt dòng văn bản",
@@ -6943,7 +6943,8 @@ export default {
 			unlimited: "Không giới hạn",
 			onePrinter: "1 máy in",
 			printersQuota: "1–{{count}} máy in",
-			currentPlanTitle: "Gói hiện tại: {{plan}} — Bấm để nâng cấp hoặc quản lý",
+			currentPlanTitle:
+				"Gói hiện tại: {{plan}} — Bấm để nâng cấp hoặc quản lý",
 			upgradeToProSr: "Nâng cấp lên Pro",
 			trial7Day: "Dùng thử 7 ngày",
 			beginner: "Beginner",
@@ -6956,9 +6957,12 @@ export default {
 		banner: "NÂNG TẦM TỰ ĐỘNG HÓA IN 3D",
 		title: "Nâng cấp lên",
 		productName: "3D Printer Platform PRO",
-		subtitle: "Biến các máy in của bạn thành dây chuyền sản xuất tự động 24/7: Tự động đổi bàn in Auto Swap PEI xuyên đêm, tự ngắt nguồn thông minh và giám sát mượt mà liên tục.",
-		featureSlotRequirement: "{{feature}}. Nâng cấp lên {{nextPlan}} để mở khóa thêm số lượng máy in.",
-		featureProRequirement: "Tính năng {{feature}} yêu cầu gói đăng ký PRO đang hoạt động.",
+		subtitle:
+			"Biến các máy in của bạn thành dây chuyền sản xuất tự động 24/7: Tự động đổi bàn in Auto Swap PEI xuyên đêm, tự ngắt nguồn thông minh và giám sát mượt mà liên tục.",
+		featureSlotRequirement:
+			"{{feature}}. Nâng cấp lên {{nextPlan}} để mở khóa thêm số lượng máy in.",
+		featureProRequirement:
+			"Tính năng {{feature}} yêu cầu gói đăng ký PRO đang hoạt động.",
 		deviceId: "Mã thiết bị:",
 		machineLock: "Khóa theo 1 máy",
 		tabs: {
@@ -6968,7 +6972,8 @@ export default {
 		},
 		trial: {
 			title: "Dùng thử miễn phí 7 ngày đầy đủ tính năng PRO",
-			description: "Mở khóa Auto Swap PEI, Ngắt nguồn thông minh và Giọng nói AI cho tối đa 5 máy in. Gắn liền theo Mã thiết bị (dùng thử 1 lần).",
+			description:
+				"Mở khóa Auto Swap PEI, Ngắt nguồn thông minh và Giọng nói AI cho tối đa 5 máy in. Gắn liền theo Mã thiết bị (dùng thử 1 lần).",
 			activating: "Đang kích hoạt...",
 			activate: "Kích hoạt dùng thử",
 		},
@@ -7049,21 +7054,25 @@ export default {
 			notice: "Nâng cấp bù trừ: Khấu trừ {{credit}} từ gói {{plan}} hiện tại",
 		},
 		enterprise: {
-			title: "Large Farm / Doanh nghiệp (30+ máy in)",
-			description: "Tư vấn kiến trúc đa node phân tán, lắp đặt tận nơi, hỗ trợ SLA chuyên biệt & xuất hóa đơn VAT.",
+			title: "Farm lớn / Doanh nghiệp (30+ máy in)",
+			description:
+				"Tư vấn kiến trúc đa node phân tán, lắp đặt tận nơi, hỗ trợ SLA chuyên biệt & xuất hóa đơn VAT.",
 			contact: "Liên hệ Doanh nghiệp",
 		},
 		payment: {
 			confirmedTitle: "Thanh toán thành công!",
-			confirmedSubtitle: "BeE Pro đã được kích hoạt thành công cho trang trại này.",
-			confirmedDesc: "Trang trại của bạn đã mở khóa 24/7 Auto Swap PEI, Tự ngắt điện Smart Power và tự động hóa đa máy liên tục.",
+			confirmedSubtitle:
+				"BeE Pro đã được kích hoạt thành công cho trang trại này.",
+			confirmedDesc:
+				"Trang trại của bạn đã mở khóa 24/7 Auto Swap PEI, Tự ngắt điện Smart Power và tự động hóa đa máy liên tục.",
 			farmId: "Mã Farm:",
 			plan: "Gói:",
 			licenseKey: "Mã bản quyền:",
 			startUsing: "Bắt đầu sử dụng BeE Pro ngay",
 		},
 		qr: {
-			scanHint: "Quét bằng ứng dụng ngân hàng bất kỳ (MB, VCB, ACB, Techcombank, MoMo...)",
+			scanHint:
+				"Quét bằng ứng dụng ngân hàng bất kỳ (MB, VCB, ACB, Techcombank, MoMo...)",
 			autoPaymentDetails: "Thông tin thanh toán tự động",
 			planPrefix: "Gói:",
 			transferMemo: "Nội dung chuyển khoản:",
@@ -7072,9 +7081,11 @@ export default {
 			bank: "Ngân hàng:",
 			farmId: "Mã Farm:",
 			deviceId: "Mã thiết bị:",
-			phoneLabel: "Số điện thoại nhận hóa đơn & hỗ trợ kỹ thuật (tùy chọn):",
+			phoneLabel:
+				"Số điện thoại nhận hóa đơn & hỗ trợ kỹ thuật (tùy chọn):",
 			phonePlaceholder: "ví dụ: 0912345678 hoặc +84...",
-			internationalNotice: "🌐 Đối với thanh toán quốc tế (PayPal, Stripe, Thẻ quốc tế), vui lòng liên hệ support@beestemsolutions.com.vn.",
+			internationalNotice:
+				"Đối với thanh toán quốc tế (PayPal, Stripe, Thẻ quốc tế), vui lòng liên hệ support@beestemsolutions.com.vn.",
 			alreadyHaveKey: "Đã có sẵn mã bản quyền?",
 			pasteActivationKey: "Nhấp vào đây để dán mã kích hoạt",
 			copyMemo: "Sao chép nội dung",
@@ -7084,8 +7095,10 @@ export default {
 			pasteLabel: "Dán mã bản quyền License Key của bạn:",
 			placeholder: "Dán toàn bộ nội dung file bee_license.key vào đây...",
 			signatureTitle: "Chữ ký số & Khóa theo phần cứng thiết bị",
-			signatureDesc: "Bản quyền được ký số mã hóa và gắn chặt duy nhất với máy này ({{deviceId}}). Mỗi thiết bị một mã bản quyền riêng.",
-			offlineNotice: "✅ Sau khi kích hoạt, hệ thống hoạt động 100% offline không cần internet khi khởi động lại.",
+			signatureDesc:
+				"Bản quyền được ký số mã hóa và gắn chặt duy nhất với máy này ({{deviceId}}). Mỗi thiết bị một mã bản quyền riêng.",
+			offlineNotice:
+				"✅ Sau khi kích hoạt, hệ thống hoạt động 100% offline không cần internet khi khởi động lại.",
 			verifying: "Đang xác thực bản quyền...",
 			activateNow: "Kích hoạt ngay",
 			techSupport: "Hỗ trợ kỹ thuật: BeE STEM Solutions",

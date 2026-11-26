@@ -444,7 +444,6 @@ export function UpgradeModal() {
 				{/* Header */}
 				<div className="text-center space-y-2">
 					<div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-semibold">
-						<Sparkles className="w-4 h-4" />
 						<span>{t("upgradeModal.banner")}</span>
 					</div>
 					<h2 className="text-2xl md:text-3xl font-extrabold tracking-tight">
@@ -463,21 +462,34 @@ export function UpgradeModal() {
 							<span>
 								{selectedFeature.includes("Add printer") ? (
 									<>
-										{t("upgradeModal.featureSlotRequirement", {
-											feature: selectedFeature,
-											nextPlan:
-												nextPlanId === "farm_pro"
-													? t("upgradeModal.planLabels.farmProWithPrinters")
-													: nextPlanId === "farm_max"
-														? t("upgradeModal.planLabels.farmMaxWithPrinters")
-														: t("upgradeModal.planLabels.nextPlanDefault"),
-										})}
+										{t(
+											"upgradeModal.featureSlotRequirement",
+											{
+												feature: selectedFeature,
+												nextPlan:
+													nextPlanId === "farm_pro"
+														? t(
+																"upgradeModal.planLabels.farmProWithPrinters",
+															)
+														: nextPlanId ===
+															  "farm_max"
+															? t(
+																	"upgradeModal.planLabels.farmMaxWithPrinters",
+																)
+															: t(
+																	"upgradeModal.planLabels.nextPlanDefault",
+																),
+											},
+										)}
 									</>
 								) : (
 									<>
-										{t("upgradeModal.featureProRequirement", {
-											feature: selectedFeature,
-										})}
+										{t(
+											"upgradeModal.featureProRequirement",
+											{
+												feature: selectedFeature,
+											},
+										)}
 									</>
 								)}
 							</span>
@@ -524,7 +536,6 @@ export function UpgradeModal() {
 					</div>
 					{deviceId && (
 						<div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-bambu-dark/80 border border-bambu-dark-tertiary text-xs font-mono text-bambu-gray">
-							<ShieldCheck className="w-3.5 h-3.5 text-bambu-green" />
 							<span>
 								{t("upgradeModal.deviceId")}{" "}
 								<strong className="text-white">
@@ -540,7 +551,6 @@ export function UpgradeModal() {
 					{!isPro && (
 						<div className="flex flex-col sm:flex-row items-center justify-between gap-3 w-full max-w-2xl px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500/15 via-amber-500/5 to-bambu-green/15 border border-amber-500/40 text-xs shadow-lg">
 							<div className="flex items-center gap-2.5 text-amber-200 text-left">
-								<Sparkles className="w-5 h-5 text-amber-400 shrink-0" />
 								<div>
 									<span className="font-bold text-amber-300 block">
 										{t("upgradeModal.trial.title")}
@@ -556,7 +566,6 @@ export function UpgradeModal() {
 								disabled={isActivatingTrial}
 								className="shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-black font-extrabold text-xs shadow-md transition-all disabled:opacity-50 cursor-pointer"
 							>
-								<Sparkles className="w-3.5 h-3.5" />
 								<span>
 									{isActivatingTrial
 										? t("upgradeModal.trial.activating")
@@ -667,13 +676,17 @@ export function UpgradeModal() {
 										{isCurrent && (
 											<span className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full bg-emerald-500 text-black text-[10px] font-black uppercase tracking-wider shadow flex items-center gap-1 whitespace-nowrap">
 												<Check className="w-3 h-3 stroke-[3]" />
-												{t("upgradeModal.badges.youAreHere")}
+												{t(
+													"upgradeModal.badges.youAreHere",
+												)}
 											</span>
 										)}
 										{isNext && (
 											<span className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full bg-amber-400 text-black text-[10px] font-black uppercase tracking-wider shadow flex items-center gap-1 whitespace-nowrap animate-pulse">
 												<Sparkles className="w-3 h-3" />
-												{t("upgradeModal.badges.nextPlan")}
+												{t(
+													"upgradeModal.badges.nextPlan",
+												)}
 											</span>
 										)}
 										{!isCurrent &&
@@ -691,7 +704,9 @@ export function UpgradeModal() {
 													<span>{p.name}</span>
 													{isCurrent && (
 														<span className="text-[10px] text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-1.5 py-0.5 rounded font-semibold">
-															{t("upgradeModal.badges.current")}
+															{t(
+																"upgradeModal.badges.current",
+															)}
 														</span>
 													)}
 												</h3>
@@ -746,11 +761,14 @@ export function UpgradeModal() {
 																			: p.priceYear}
 																	</span>
 																	<span>
-																		{t("upgradeModal.prorated.lineItem", {
-																			credit: isVnd
-																				? `${getCurrentCreditVnd().toLocaleString("vi-VN")} ₫`
-																				: `$${getCurrentCreditUsd()}`,
-																		})}
+																		{t(
+																			"upgradeModal.prorated.lineItem",
+																			{
+																				credit: isVnd
+																					? `${getCurrentCreditVnd().toLocaleString("vi-VN")} ₫`
+																					: `$${getCurrentCreditUsd()}`,
+																			},
+																		)}
 																	</span>
 																</div>
 															)}
@@ -788,14 +806,18 @@ export function UpgradeModal() {
 													className="w-full py-2.5 px-3 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-xs font-bold flex items-center justify-center gap-1.5 cursor-default"
 												>
 													<Check className="w-3.5 h-3.5 stroke-[3]" />
-													{t("upgradeModal.actions.currentPlanActive")}
+													{t(
+														"upgradeModal.actions.currentPlanActive",
+													)}
 												</button>
 											) : isLower ? (
 												<button
 													disabled
 													className="w-full py-2.5 px-3 rounded-lg bg-bambu-dark-tertiary/40 text-bambu-gray text-xs font-medium cursor-default"
 												>
-													{t("upgradeModal.actions.includedInCurrent")}
+													{t(
+														"upgradeModal.actions.includedInCurrent",
+													)}
 												</button>
 											) : isNext ? (
 												<button
@@ -811,7 +833,10 @@ export function UpgradeModal() {
 													className="w-full py-2.5 px-3 rounded-lg text-xs font-black transition-all shadow-md bg-amber-500 hover:bg-amber-400 text-black shadow-amber-500/25 flex items-center justify-center gap-1.5 cursor-pointer"
 												>
 													<ArrowUpRight className="w-4 h-4 stroke-[2.5]" />
-													{t("upgradeModal.actions.upgradeToPlan", { name: p.name })}
+													{t(
+														"upgradeModal.actions.upgradeToPlan",
+														{ name: p.name },
+													)}
 												</button>
 											) : (
 												<button
@@ -827,7 +852,10 @@ export function UpgradeModal() {
 													className="w-full py-2.5 px-3 rounded-lg text-xs font-bold transition-all shadow-md bg-white/10 hover:bg-white/20 text-white flex items-center justify-center gap-1.5 cursor-pointer"
 												>
 													<ArrowUpRight className="w-4 h-4" />
-													{t("upgradeModal.actions.upgradeToPlan", { name: p.name })}
+													{t(
+														"upgradeModal.actions.upgradeToPlan",
+														{ name: p.name },
+													)}
 												</button>
 											)}
 										</div>
@@ -847,7 +875,6 @@ export function UpgradeModal() {
 							<div>
 								<div className="flex items-center gap-2">
 									<h4 className="font-bold text-sm text-white flex items-center gap-2">
-										<ShieldCheck className="w-4 h-4 text-bambu-green" />
 										{t("upgradeModal.enterprise.title")}
 									</h4>
 									{nextPlanId === "enterprise" && (
@@ -871,7 +898,9 @@ export function UpgradeModal() {
 								}`}
 							>
 								<PhoneCall className="w-3.5 h-3.5" />
-								<span>{t("upgradeModal.enterprise.contact")}</span>
+								<span>
+									{t("upgradeModal.enterprise.contact")}
+								</span>
 							</a>
 						</div>
 					</div>
@@ -980,14 +1009,23 @@ export function UpgradeModal() {
 								<div className="flex items-center gap-2 mt-2 mb-2 flex-wrap">
 									{(
 										[
-											{ id: "hobby", label: t("upgradeModal.plans.hobby.shortPrinters") },
+											{
+												id: "hobby",
+												label: t(
+													"upgradeModal.plans.hobby.shortPrinters",
+												),
+											},
 											{
 												id: "farm_pro",
-												label: t("upgradeModal.plans.farmPro.shortPrinters"),
+												label: t(
+													"upgradeModal.plans.farmPro.shortPrinters",
+												),
 											},
 											{
 												id: "farm_max",
-												label: t("upgradeModal.plans.farmMax.shortPrinters"),
+												label: t(
+													"upgradeModal.plans.farmMax.shortPrinters",
+												),
 											},
 										] as const
 									).map((p) => {
@@ -1016,7 +1054,9 @@ export function UpgradeModal() {
 																: "bg-amber-500/20 text-amber-300"
 														}`}
 													>
-														{t("upgradeModal.badges.next")}
+														{t(
+															"upgradeModal.badges.next",
+														)}
 													</span>
 												)}
 											</button>
@@ -1027,10 +1067,16 @@ export function UpgradeModal() {
 								<h3 className="text-xl font-extrabold text-white mt-1">
 									{t("upgradeModal.qr.planPrefix")}{" "}
 									{selectedPlan === "hobby"
-										? t("upgradeModal.planLabels.hobbyWithPrinters")
+										? t(
+												"upgradeModal.planLabels.hobbyWithPrinters",
+											)
 										: selectedPlan === "farm_pro"
-											? t("upgradeModal.planLabels.farmProWithPrinters")
-											: t("upgradeModal.planLabels.farmMaxWithPrinters")}
+											? t(
+													"upgradeModal.planLabels.farmProWithPrinters",
+												)
+											: t(
+													"upgradeModal.planLabels.farmMaxWithPrinters",
+												)}
 								</h3>
 								<div className="flex items-baseline gap-2 mt-1 flex-wrap">
 									<div className="text-2xl font-black text-amber-400">
@@ -1092,7 +1138,9 @@ export function UpgradeModal() {
 													);
 												}}
 												className="p-1 rounded bg-bambu-dark-tertiary hover:bg-bambu-gray/20 text-bambu-gray hover:text-white transition-colors"
-												title={t("upgradeModal.qr.copyMemo")}
+												title={t(
+													"upgradeModal.qr.copyMemo",
+												)}
 											>
 												{copiedMemo ? (
 													<Check className="w-3 h-3 text-bambu-green" />
@@ -1127,7 +1175,9 @@ export function UpgradeModal() {
 													);
 												}}
 												className="p-1 rounded bg-bambu-dark-tertiary hover:bg-bambu-gray/20 text-bambu-gray hover:text-white transition-colors"
-												title={t("upgradeModal.qr.copyAccountNo")}
+												title={t(
+													"upgradeModal.qr.copyAccountNo",
+												)}
 											>
 												{copiedAccount ? (
 													<Check className="w-3 h-3 text-bambu-green" />
@@ -1187,7 +1237,9 @@ export function UpgradeModal() {
 										onChange={(e) =>
 											setCustomerPhone(e.target.value)
 										}
-										placeholder={t("upgradeModal.qr.phonePlaceholder")}
+										placeholder={t(
+											"upgradeModal.qr.phonePlaceholder",
+										)}
 										className="w-full px-3 py-1.5 bg-bambu-dark border border-bambu-dark-tertiary rounded-lg text-white placeholder-bambu-gray focus:outline-none focus:border-bambu-green text-xs"
 									/>
 								</div>
@@ -1203,7 +1255,9 @@ export function UpgradeModal() {
 										onClick={() => setActiveTab("key")}
 										className="text-amber-400 font-semibold underline hover:text-amber-300"
 									>
-										{t("upgradeModal.qr.pasteActivationKey")}
+										{t(
+											"upgradeModal.qr.pasteActivationKey",
+										)}
 									</button>
 								</p>
 							</div>
@@ -1269,9 +1323,7 @@ export function UpgradeModal() {
 								rel="noopener noreferrer"
 								className="inline-flex items-center gap-1 text-xs text-bambu-gray hover:text-bambu-green transition-colors"
 							>
-								<span>
-									{t("upgradeModal.key.techSupport")}
-								</span>
+								<span>{t("upgradeModal.key.techSupport")}</span>
 								<ExternalLink className="w-3 h-3" />
 							</a>
 						</div>

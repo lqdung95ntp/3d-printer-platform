@@ -6136,7 +6136,7 @@ export default {
       deviceId: '设备ID:',
       phoneLabel: '收据和技术支持电话号码（可选）:',
       phonePlaceholder: '例如 0912345678 或 +84...',
-      internationalNotice: '🌐 国际付款（PayPal、Stripe、信用卡），请联系 support@beestemsolutions.com.vn。',
+      internationalNotice: '国际付款（PayPal、Stripe、信用卡），请联系 support@beestemsolutions.com.vn。',
       alreadyHaveKey: '已有密钥？',
       pasteActivationKey: '点击此处粘贴激活密钥',
       copyMemo: '复制转账附言',

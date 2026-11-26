@@ -3,6 +3,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ExternalLinksSettings } from '../../components/ExternalLinksSettings';
 import {
+  DEFAULT_HIDDEN_SIDEBAR_SYSTEM_ITEM_IDS,
   getHiddenSidebarSystemItemIds,
 } from '../../utils/sidebarLayout';
 
@@ -88,12 +89,14 @@ describe('ExternalLinksSettings (Sidebar Layout)', () => {
     fireEvent.click(hideButtons[0]);
 
     await waitFor(() => {
-      expect(screen.getByText('Hidden from sidebar')).toBeInTheDocument();
+      expect(screen.getAllByText('Hidden from sidebar').length).toBe(
+        DEFAULT_HIDDEN_SIDEBAR_SYSTEM_ITEM_IDS.length + 1
+      );
       expect(getHiddenSidebarSystemItemIds()).toContain('printers');
     });
 
-    const showButton = await screen.findByRole('button', { name: /Show page/i });
-    fireEvent.click(showButton);
+    const showButtons = await screen.findAllByRole('button', { name: /Show page/i });
+    fireEvent.click(showButtons[0]);
 
     await waitFor(() => {
       expect(getHiddenSidebarSystemItemIds()).not.toContain('printers');

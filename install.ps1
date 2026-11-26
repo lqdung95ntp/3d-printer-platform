@@ -1,4 +1,4 @@
-# ==============================================================================
+﻿# ==============================================================================
 # BeE Printer Platform - Official 1-Command Windows PowerShell Installer
 # Supported OS: Windows 10, Windows 11 (PowerShell 5.1+)
 # Website: https://beestemsolutions.com.vn
@@ -127,12 +127,111 @@ docker compose pull
 Write-Host "Dang khoi dong he thong BeE Printer Platform..." -ForegroundColor Cyan
 docker compose up -d
 
+# 7. Detect Local / LAN IP Address
+$serverIp = "localhost"
+try {
+    $foundIp = (Get-NetIPAddress -AddressFamily IPv4 -ErrorAction SilentlyContinue | Where-Object { 
+        $_.IPAddress -notmatch "^127\." -and 
+        $_.IPAddress -notmatch "^169\.254\." -and 
+        $_.IPAddress -notmatch "^172\.(1[6-9]|2[0-9]|3[0-1])\." -and 
+        $_.InterfaceAlias -notmatch "vEthernet|Loopback|Docker"
+    } | Select-Object -First 1).IPAddress
+    if ($foundIp) { $serverIp = $foundIp }
+} catch {}
+
+# Read port from .env
+$beePort = "8000"
+if (Test-Path ".env") {
+    $portLine = Get-Content ".env" | Where-Object { $_ -match "^BEE_PORT=(\d+)" } | Select-Object -First 1
+    if ($portLine -match "^BEE_PORT=(\d+)") {
+        $beePort = $matches[1]
+    }
+}
+
+# 8. Optional Tailscale Remote Access
+$tailscaleIp = ""
+$tsCmd = Get-Command tailscale -ErrorAction SilentlyContinue
+if (-not $tsCmd) {
+    $tsDefaultDir = "${env:ProgramFiles}\Tailscale"
+    if (Test-Path "$tsDefaultDir\tailscale.exe") {
+        $env:PATH = "$tsDefaultDir;$env:PATH"
+        $tsCmd = Get-Command tailscale -ErrorAction SilentlyContinue
+    }
+}
+
+if ($tsCmd) {
+    try {
+        $tsStatus = & tailscale status 2>$null
+        if ($tsStatus -and ($tsStatus -notmatch "NeedsLogin|Logged out|stopped")) {
+            $tailscaleIp = (& tailscale ip -4 2>$null).Trim()
+        }
+    } catch {}
+}
+
+if ($tailscaleIp) {
+    Write-Host "[✓] Da phat hien ket noi Tailscale (IP: $tailscaleIp)" -ForegroundColor Green
+} else {
+    Write-Host ""
+    Write-Host "--------------------------------------------------------------------------------" -ForegroundColor Cyan
+    Write-Host "CAU HINH TRUY CAP TU XA NGOAI MANG LAN (TAILSCALE)" -ForegroundColor Cyan
+    Write-Host "--------------------------------------------------------------------------------" -ForegroundColor Cyan
+    Write-Host "Tailscale cho phep ban theo doi va dieu khien may in tu 4G / mang ngoai an toan."
+    Write-Host "Dang nhap nhanh bang tai khoan Google, Apple, Microsoft hoac GitHub."
+    Write-Host ""
+    
+    $choice = Read-Host "Ban co muon cai dat / ket noi Tailscale ngay khong? [y/N]"
+    if ($choice -match "^[yY]") {
+        Write-Host "Dang chuan bi Tailscale..." -ForegroundColor Cyan
+        if (-not (Get-Command tailscale -ErrorAction SilentlyContinue)) {
+            if (Get-Command winget -ErrorAction SilentlyContinue) {
+                Write-Host "Dang cai dat Tailscale qua winget..." -ForegroundColor Cyan
+                try {
+                    winget install -e --id Tailscale.Tailscale --accept-source-agreements --accept-package-agreements
+                } catch {}
+            }
+            if (-not (Get-Command tailscale -ErrorAction SilentlyContinue)) {
+                $installerPath = "$env:TEMP\tailscale-setup.exe"
+                Write-Host "Dang tai bo cai dat Tailscale..." -ForegroundColor Cyan
+                Invoke-WebRequest -Uri "https://pkgs.tailscale.com/stable/tailscale-setup-latest.exe" -OutFile $installerPath
+                Start-Process -FilePath $installerPath -ArgumentList "/quiet" -Wait
+                Remove-Item $installerPath -Force -ErrorAction SilentlyContinue
+            }
+            if (Test-Path "${env:ProgramFiles}\Tailscale\tailscale.exe") {
+                $env:PATH = "${env:ProgramFiles}\Tailscale;$env:PATH"
+            }
+        }
+
+        if (Get-Command tailscale -ErrorAction SilentlyContinue) {
+            Write-Host "Khoi dong xac thuc Tailscale..." -ForegroundColor Cyan
+            Write-Host "Vui long mo lien ket xac thuc hien thi duoi day tren trinh duyet de dang nhap:"
+            & tailscale up
+            $tailscaleIp = (& tailscale ip -4 2>$null).Trim()
+            if ($tailscaleIp) {
+                Write-Host ""
+                Write-Host "[✓] Da ket noi Tailscale thanh cong! (IP: $tailscaleIp)" -ForegroundColor Green
+            } else {
+                Write-Host "[!] Chua hoan tat xac thuc Tailscale. Ban co the chay lai 'tailscale up' bat cu luc nao." -ForegroundColor Yellow
+            }
+        } else {
+            Write-Host "[!] Khong the tu dong cai dat Tailscale. Ban co the cai thu cong tu: https://tailscale.com/download" -ForegroundColor Yellow
+        }
+    }
+}
+
 Write-Host ""
 Write-Host "================================================================================" -ForegroundColor Green
 Write-Host "          BeE PRINTER PLATFORM DA KHOI CHAY THANH CONG                          " -ForegroundColor Green
 Write-Host "================================================================================" -ForegroundColor Green
 Write-Host "Mo trinh duyet web va truy cap Dashboard tai:"
-Write-Host "   URL: http://localhost:8000" -ForegroundColor Cyan
+Write-Host "   - Mang noi bo (LAN):      http://${serverIp}:${beePort}" -ForegroundColor Cyan
+if ($tailscaleIp) {
+    Write-Host "   - Mang tu xa (Tailscale): http://${tailscaleIp}:${beePort}" -ForegroundColor Cyan
+} else {
+    Write-Host "   - Truy cap tu xa (4G):    Chua cau hinh (Chay 'tailscale up' sau khi cai Tailscale)" -ForegroundColor Yellow
+}
+if ($serverIp -ne "localhost") {
+    Write-Host "   - Cuc bo (Localhost):     http://localhost:${beePort}" -ForegroundColor Cyan
+}
 Write-Host ""
 Write-Host "Lenh quan ly thong dung:"
 Write-Host "   - Xem log:       docker compose logs -f"

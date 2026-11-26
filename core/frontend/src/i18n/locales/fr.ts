@@ -6139,7 +6139,7 @@ export default {
       deviceId: 'ID de l\'appareil :',
       phoneLabel: 'Numéro de téléphone pour reçu et support (facultatif) :',
       phonePlaceholder: 'ex. 0912345678 ou +84...',
-      internationalNotice: '🌐 Pour les paiements internationaux (PayPal, Stripe, Carte), contactez support@beestemsolutions.com.vn.',
+      internationalNotice: 'Pour les paiements internationaux (PayPal, Stripe, Carte), contactez support@beestemsolutions.com.vn.',
       alreadyHaveKey: 'Vous avez déjà une clé ?',
       pasteActivationKey: 'Cliquez ici pour coller la clé d\'activation',
       copyMemo: 'Copier le libellé',

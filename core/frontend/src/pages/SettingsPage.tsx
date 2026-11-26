@@ -31,7 +31,7 @@ import {
 	X,
 	Shield,
 	ShieldCheck,
-	Printer,
+	// Printer, // [HIDDEN] Virtual printer tab hidden until needed
 	Cylinder,
 	Wifi,
 	Home,
@@ -118,7 +118,8 @@ import { APIBrowser } from "../components/APIBrowser";
 import { Toggle } from "../components/Toggle";
 import { CopyButton } from "../components/CopyButton";
 import { NumberInput } from "../components/NumberInput";
-import { virtualPrinterApi } from "../api/client";
+// [HIDDEN] Virtual printer tab hidden until needed
+// import { virtualPrinterApi } from "../api/client";
 import {
 	defaultNavItems,
 	getDefaultView,
@@ -398,13 +399,14 @@ registerSettingsSearch({
 	keywords: "camera token long-lived home assistant frigate kiosk stream",
 	anchor: "card-camera-tokens",
 });
-registerSettingsSearch({
-	labelKey: "settings.tabs.virtualPrinter",
-	tab: "virtual-printer",
-	keywords:
-		"virtual printer proxy archive slicer bambustudio orcaslicer ip bind",
-	anchor: "card-vp",
-});
+// [HIDDEN] Virtual printer tab hidden until needed
+// registerSettingsSearch({
+// 	labelKey: "settings.tabs.virtualPrinter",
+// 	tab: "virtual-printer",
+// 	keywords:
+// 		"virtual printer proxy archive slicer bambustudio orcaslicer ip bind",
+// 	anchor: "card-vp",
+// });
 registerSettingsSearch({
 	labelKey: "settings.currentUser",
 	tab: "users",
@@ -1063,14 +1065,15 @@ export function SettingsPage() {
 			queryFn: api.getNotificationTemplates,
 		});
 
-	// Virtual printer status for tab indicator
-	const { data: virtualPrinterSettings } = useQuery({
-		queryKey: ["virtual-printer-settings"],
-		queryFn: virtualPrinterApi.getSettings,
-		refetchInterval: 10000,
-	});
-	const virtualPrinterRunning =
-		virtualPrinterSettings?.status?.running ?? false;
+	// [HIDDEN] Virtual printer tab hidden until needed
+	// // Virtual printer status for tab indicator
+	// const { data: virtualPrinterSettings } = useQuery({
+	// 	queryKey: ["virtual-printer-settings"],
+	// 	queryFn: virtualPrinterApi.getSettings,
+	// 	refetchInterval: 10000,
+	// });
+	// const virtualPrinterRunning =
+	// 	virtualPrinterSettings?.status?.running ?? false;
 
 	// Obico failure-detection service status for tab indicator
 	const { data: obicoStatus } = useQuery({
@@ -2580,6 +2583,7 @@ export function SettingsPage() {
 								</span>
 							)}
 						</button>
+						{/* [HIDDEN] Virtual printer tab hidden until needed
 						<button
 							onClick={() => handleTabChange("virtual-printer")}
 							className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px lg:border-b-0 lg:border-l-2 lg:-ml-px lg:mb-0 lg:justify-start flex items-center gap-2 ${
@@ -2594,6 +2598,7 @@ export function SettingsPage() {
 								className={`w-2 h-2 rounded-full ${virtualPrinterRunning ? "bg-green-400" : "bg-gray-500"}`}
 							/>
 						</button>
+						*/}
 						<button
 							onClick={() => handleTabChange("failure-detection")}
 							className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px lg:border-b-0 lg:border-l-2 lg:-ml-px lg:mb-0 lg:justify-start flex items-center gap-2 ${
@@ -7286,18 +7291,18 @@ export function SettingsPage() {
 							activeTab === "smart-power") && (
 							<div className="space-y-4">
 								{/* Sub-tab Navigation */}
-								<div className="flex gap-1 border-b border-bambu-dark-tertiary mb-6">
+								<div className="flex gap-1 border-b border-bambu-dark-tertiary mb-6 overflow-x-auto">
 									<button
 										onClick={() =>
 											handlePlugsSubTabChange("devices")
 										}
-										className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px flex items-center gap-2 ${
+										className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px flex items-center gap-2 whitespace-nowrap ${
 											plugsSubTab === "devices"
 												? "text-bambu-green border-bambu-green"
 												: "text-bambu-gray hover:text-gray-900 dark:hover:text-white border-transparent"
 										}`}
 									>
-										<Plug className="w-4 h-4" />
+										<Plug className="w-4 h-4 shrink-0" />
 										{t(
 											"settings.tabs.smartPlugs",
 											"Smart Plugs",
@@ -7313,13 +7318,13 @@ export function SettingsPage() {
 										onClick={() =>
 											handlePlugsSubTabChange("power")
 										}
-										className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px flex items-center gap-2 ${
+										className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px flex items-center gap-2 whitespace-nowrap ${
 											plugsSubTab === "power"
 												? "text-bambu-green border-bambu-green"
 												: "text-bambu-gray hover:text-gray-900 dark:hover:text-white border-transparent"
 										}`}
 									>
-										<Zap className="w-4 h-4 text-emerald-400" />
+										<Zap className="w-4 h-4 text-emerald-400 shrink-0" />
 										{t(
 											"settings.tabs.smartPower",
 											"Smart Power",
@@ -7345,87 +7350,115 @@ export function SettingsPage() {
 
 								{plugsSubTab === "devices" && (
 									<div id="card-plugs" className="pt-2">
-										<div className="flex items-start justify-between mb-6">
-											<div>
-												<h2 className="text-lg font-semibold text-white flex items-center gap-2">
-													<Plug className="w-5 h-5 text-bambu-green" />
-													{t("settings.smartPlugs")}
+										<div className="mb-6">
+											<div className="flex items-center justify-between gap-2">
+												<h2 className="text-lg font-semibold text-white flex items-center gap-2 min-w-0">
+													<Plug className="w-5 h-5 text-bambu-green shrink-0" />
+													<span className="truncate">
+														{t(
+															"settings.smartPlugs",
+														)}
+													</span>
 												</h2>
-												<p className="text-sm text-bambu-gray mt-1">
-													{t(
-														"settings.smartPlugsDescription",
-													)}
-												</p>
+												<div className="flex items-center gap-2 shrink-0">
+													{smartPlugs &&
+														smartPlugs.filter(
+															(p) => p.enabled,
+														).length > 1 && (
+															<>
+																<Button
+																	variant="secondary"
+																	size="sm"
+																	className="whitespace-nowrap px-2.5 sm:px-3"
+																	onClick={() =>
+																		setShowBulkPlugConfirm(
+																			"on",
+																		)
+																	}
+																	disabled={
+																		bulkPlugActionMutation.isPending
+																	}
+																	title={t(
+																		"settings.turnAllPlugsOn",
+																	)}
+																	aria-label={t(
+																		"settings.turnAllPlugsOn",
+																	)}
+																>
+																	{bulkPlugActionMutation.isPending ? (
+																		<Loader2 className="w-4 h-4 animate-spin" />
+																	) : (
+																		<Power className="w-4 h-4 text-bambu-green" />
+																	)}
+																	<span className="hidden sm:inline">
+																		{t(
+																			"settings.allOn",
+																		)}
+																	</span>
+																</Button>
+																<Button
+																	variant="secondary"
+																	size="sm"
+																	className="whitespace-nowrap px-2.5 sm:px-3"
+																	onClick={() =>
+																		setShowBulkPlugConfirm(
+																			"off",
+																		)
+																	}
+																	disabled={
+																		bulkPlugActionMutation.isPending
+																	}
+																	title={t(
+																		"settings.turnAllPlugsOff",
+																	)}
+																	aria-label={t(
+																		"settings.turnAllPlugsOff",
+																	)}
+																>
+																	{bulkPlugActionMutation.isPending ? (
+																		<Loader2 className="w-4 h-4 animate-spin" />
+																	) : (
+																		<PowerOff className="w-4 h-4 text-red-400" />
+																	)}
+																	<span className="hidden sm:inline">
+																		{t(
+																			"settings.allOff",
+																		)}
+																	</span>
+																</Button>
+															</>
+														)}
+													<Button
+														className="whitespace-nowrap px-2.5 sm:px-4"
+														onClick={() => {
+															setEditingPlug(
+																null,
+															);
+															setShowPlugModal(
+																true,
+															);
+														}}
+														title={t(
+															"settings.addSmartPlug",
+														)}
+														aria-label={t(
+															"settings.addSmartPlug",
+														)}
+													>
+														<Plus className="w-4 h-4" />
+														<span className="hidden sm:inline">
+															{t(
+																"settings.addSmartPlug",
+															)}
+														</span>
+													</Button>
+												</div>
 											</div>
-											<div className="flex items-center gap-2 pt-1 shrink-0">
-												{smartPlugs &&
-													smartPlugs.filter(
-														(p) => p.enabled,
-													).length > 1 && (
-														<>
-															<Button
-																variant="secondary"
-																size="sm"
-																className="whitespace-nowrap"
-																onClick={() =>
-																	setShowBulkPlugConfirm(
-																		"on",
-																	)
-																}
-																disabled={
-																	bulkPlugActionMutation.isPending
-																}
-																title={t(
-																	"settings.turnAllPlugsOn",
-																)}
-															>
-																{bulkPlugActionMutation.isPending ? (
-																	<Loader2 className="w-4 h-4 animate-spin" />
-																) : (
-																	<Power className="w-4 h-4 text-bambu-green" />
-																)}
-																{t(
-																	"settings.allOn",
-																)}
-															</Button>
-															<Button
-																variant="secondary"
-																size="sm"
-																className="whitespace-nowrap"
-																onClick={() =>
-																	setShowBulkPlugConfirm(
-																		"off",
-																	)
-																}
-																disabled={
-																	bulkPlugActionMutation.isPending
-																}
-																title={t(
-																	"settings.turnAllPlugsOff",
-																)}
-															>
-																{bulkPlugActionMutation.isPending ? (
-																	<Loader2 className="w-4 h-4 animate-spin" />
-																) : (
-																	<PowerOff className="w-4 h-4 text-red-400" />
-																)}
-																{t(
-																	"settings.allOff",
-																)}
-															</Button>
-														</>
-													)}
-												<Button
-													className="whitespace-nowrap"
-													onClick={() => {
-														setEditingPlug(null);
-														setShowPlugModal(true);
-													}}
-												>
-													<Plus className="w-4 h-4" />
-													{t("settings.addSmartPlug")}
-												</Button>
-											</div>
+											<p className="text-sm text-bambu-gray mt-1">
+												{t(
+													"settings.smartPlugsDescription",
+												)}
+											</p>
 										</div>
 
 										{/* Energy Summary Card */}
@@ -10820,59 +10853,59 @@ export function SettingsPage() {
 						{activeTab === "users" && (
 							<div className="space-y-3">
 								{/* Sub-tab Navigation */}
-								<div className="flex gap-1 border-b border-bambu-dark-tertiary">
+								<div className="flex gap-1 border-b border-bambu-dark-tertiary overflow-x-auto">
 									<button
 										onClick={() => setUsersSubTab("users")}
-										className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px lg:border-b-0 lg:border-l-2 lg:-ml-px lg:mb-0 lg:justify-start flex items-center gap-2 ${
+										className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px flex items-center gap-2 whitespace-nowrap shrink-0 ${
 											usersSubTab === "users"
 												? "text-bambu-green border-bambu-green"
 												: "text-bambu-gray hover:text-gray-900 dark:hover:text-white border-transparent"
 										}`}
 									>
-										<Users className="w-4 h-4" />
+										<Users className="w-4 h-4 shrink-0" />
 										{t("settings.tabs.users")}
 									</button>
 									<button
 										onClick={() => setUsersSubTab("email")}
-										className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px lg:border-b-0 lg:border-l-2 lg:-ml-px lg:mb-0 lg:justify-start flex items-center gap-2 ${
+										className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px flex items-center gap-2 whitespace-nowrap shrink-0 ${
 											usersSubTab === "email"
 												? "text-bambu-green border-bambu-green"
 												: "text-bambu-gray hover:text-gray-900 dark:hover:text-white border-transparent"
 										}`}
 									>
-										<Mail className="w-4 h-4" />
+										<Mail className="w-4 h-4 shrink-0" />
 										{t("settings.tabs.emailAuth") ||
 											"Email Authentication"}
 										{advancedAuthStatus?.advanced_auth_enabled && (
-											<span className="w-2 h-2 rounded-full bg-green-400" />
+											<span className="w-2 h-2 rounded-full bg-green-400 shrink-0" />
 										)}
 									</button>
 									<button
 										onClick={() => setUsersSubTab("ldap")}
-										className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px lg:border-b-0 lg:border-l-2 lg:-ml-px lg:mb-0 lg:justify-start flex items-center gap-2 ${
+										className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px flex items-center gap-2 whitespace-nowrap shrink-0 ${
 											usersSubTab === "ldap"
 												? "text-bambu-green border-bambu-green"
 												: "text-bambu-gray hover:text-gray-900 dark:hover:text-white border-transparent"
 										}`}
 									>
-										<Shield className="w-4 h-4" />
+										<Shield className="w-4 h-4 shrink-0" />
 										{t("settings.tabs.ldap") || "LDAP"}
 										{ldapStatus?.ldap_enabled && (
-											<span className="w-2 h-2 rounded-full bg-green-400" />
+											<span className="w-2 h-2 rounded-full bg-green-400 shrink-0" />
 										)}
 									</button>
 									<button
 										onClick={() => setUsersSubTab("twofa")}
-										className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px flex items-center gap-2 ${
+										className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px flex items-center gap-2 whitespace-nowrap shrink-0 ${
 											usersSubTab === "twofa"
 												? "text-bambu-green border-bambu-green"
 												: "text-bambu-gray hover:text-gray-900 dark:hover:text-white border-transparent"
 										}`}
 									>
-										<Shield className="w-4 h-4" />
+										<Shield className="w-4 h-4 shrink-0" />
 										{t("settings.tabs.twoFa")}
 										<span
-											className={`w-2 h-2 rounded-full ${
+											className={`w-2 h-2 rounded-full shrink-0 ${
 												twoFAStatus?.totp_enabled ||
 												twoFAStatus?.email_otp_enabled
 													? "bg-green-400"
@@ -10885,16 +10918,16 @@ export function SettingsPage() {
 											onClick={() =>
 												setUsersSubTab("oidc")
 											}
-											className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px flex items-center gap-2 ${
+											className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px flex items-center gap-2 whitespace-nowrap shrink-0 ${
 												usersSubTab === "oidc"
 													? "text-bambu-green border-bambu-green"
 													: "text-bambu-gray hover:text-gray-900 dark:hover:text-white border-transparent"
 											}`}
 										>
-											<Globe className="w-4 h-4" />
+											<Globe className="w-4 h-4 shrink-0" />
 											{t("settings.tabs.oidc")}
 											<span
-												className={`w-2 h-2 rounded-full ${
+												className={`w-2 h-2 rounded-full shrink-0 ${
 													oidcProvidersAll.some(
 														(p) => p.is_enabled,
 													)
@@ -10909,13 +10942,13 @@ export function SettingsPage() {
 											onClick={() =>
 												setUsersSubTab("security")
 											}
-											className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px flex items-center gap-2 ${
+											className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px flex items-center gap-2 whitespace-nowrap shrink-0 ${
 												usersSubTab === "security"
 													? "text-bambu-green border-bambu-green"
 													: "text-bambu-gray hover:text-gray-900 dark:hover:text-white border-transparent"
 											}`}
 										>
-											<Shield className="w-4 h-4" />
+											<Shield className="w-4 h-4 shrink-0" />
 											{t("settings.tabs.security")}
 										</button>
 									)}

@@ -14,6 +14,7 @@ import { defaultNavItems } from './Layout';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import {
+  DEFAULT_HIDDEN_SIDEBAR_SYSTEM_ITEM_IDS,
   getHiddenSidebarSystemItemIds,
   getSidebarOrder,
   saveHiddenSidebarSystemItemIds,
@@ -167,9 +168,10 @@ export function ExternalLinksSettings() {
       ...(links || []).map(link => `ext-${link.id}`),
     ];
 
-    setHiddenSystemItemIds([]);
+    const defaultHidden = [...DEFAULT_HIDDEN_SIDEBAR_SYSTEM_ITEM_IDS];
+    setHiddenSystemItemIds(defaultHidden);
     setSidebarOrder(resetOrder);
-    saveHiddenSidebarSystemItemIds([]);
+    saveHiddenSidebarSystemItemIds(defaultHidden);
     saveSidebarOrder(resetOrder);
   };
 

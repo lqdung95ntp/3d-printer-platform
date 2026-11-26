@@ -6138,7 +6138,7 @@ export default {
       deviceId: 'ID do dispositivo:',
       phoneLabel: 'Telefone para comprovante e suporte (opcional):',
       phonePlaceholder: 'ex: 0912345678 ou +84...',
-      internationalNotice: '🌐 Para pagamentos internacionais (PayPal, Stripe, Cartão), entre em contato com support@beestemsolutions.com.vn.',
+      internationalNotice: 'Para pagamentos internacionais (PayPal, Stripe, Cartão), entre em contato com support@beestemsolutions.com.vn.',
       alreadyHaveKey: 'Já tem uma chave?',
       pasteActivationKey: 'Clique aqui para colar a chave de ativação',
       copyMemo: 'Copiar memo',
