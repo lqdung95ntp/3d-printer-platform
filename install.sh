@@ -332,37 +332,57 @@ else
 
     if [ "$INSTALL_TS" = "y" ]; then
         echo -e "${CYAN}[INFO]${NC} Đang chuẩn bị Tailscale..."
-        
-        is_tailscale_usable() {
-            if [ -x "/Applications/Tailscale.app/Contents/MacOS/tailscale" ] && "/Applications/Tailscale.app/Contents/MacOS/tailscale" version >/dev/null 2>&1; then
-                return 0
-            fi
-            if command -v tailscale >/dev/null 2>&1 && tailscale version >/dev/null 2>&1; then
-                return 0
-            fi
-            return 1
-        }
 
-        if ! is_tailscale_usable; then
-            if [ "$OS" = "Linux" ]; then
+        if [ "$OS" = "Darwin" ]; then
+            # Clean up broken /usr/local/bin/tailscale wrapper if present
+            if [ -f "/usr/local/bin/tailscale" ]; then
+                if ! /usr/local/bin/tailscale version >/dev/null 2>&1; then
+                    rm -f "/usr/local/bin/tailscale" 2>/dev/null || sudo rm -f "/usr/local/bin/tailscale" 2>/dev/null || true
+                fi
+            fi
+
+            # Auto-install Tailscale.app if not installed
+            if [ ! -d "/Applications/Tailscale.app" ]; then
+                echo -e "${CYAN}[INFO]${NC} Đang tải và cài đặt Tailscale cho macOS..."
+                TS_TMP=$(mktemp -d /tmp/tailscale_install.XXXXXX)
+                curl -# -fL -o "${TS_TMP}/Tailscale.pkg" "https://pkgs.tailscale.com/stable/Tailscale-latest-macos.pkg"
+                pkgutil --expand-full "${TS_TMP}/Tailscale.pkg" "${TS_TMP}/expanded" 2>/dev/null || true
+                if [ -d "${TS_TMP}/expanded/Distribution.pkg/Payload/Tailscale.app" ]; then
+                    cp -R "${TS_TMP}/expanded/Distribution.pkg/Payload/Tailscale.app" /Applications/ 2>/dev/null || sudo cp -R "${TS_TMP}/expanded/Distribution.pkg/Payload/Tailscale.app" /Applications/ 2>/dev/null || true
+                elif command -v sudo >/dev/null 2>&1; then
+                    sudo installer -pkg "${TS_TMP}/Tailscale.pkg" -target / 2>/dev/null || open "${TS_TMP}/Tailscale.pkg"
+                else
+                    open "${TS_TMP}/Tailscale.pkg"
+                fi
+                rm -rf "${TS_TMP}"
+            fi
+
+            open -a Tailscale 2>/dev/null || true
+            echo -e "${GREEN}[✓] Ứng dụng Tailscale đã sẵn sàng trên macOS!${NC}"
+            echo -e "${CYAN}[INFO]${NC} Đang mở trang đăng nhập Tailscale trên trình duyệt web..."
+            open "https://login.tailscale.com/start" 2>/dev/null || true
+            echo -e "${BOLD}Bạn cũng có thể bấm vào biểu tượng Tailscale trên Menu Bar để đăng nhập.${NC}"
+
+        elif [ "$OS" = "Linux" ]; then
+            if ! command -v tailscale >/dev/null 2>&1; then
                 echo -e "${CYAN}[INFO]${NC} Đang cài đặt Tailscale qua script chính thức..."
                 curl -fsSL https://tailscale.com/install.sh | sh
-            elif [ "$OS" = "Darwin" ]; then
-                if [ ! -d "/Applications/Tailscale.app" ]; then
-                    echo -e "${CYAN}[INFO]${NC} Đang tải bộ cài Tailscale cho macOS..."
-                    curl -# -fL -o /tmp/Tailscale.pkg "https://pkgs.tailscale.com/stable/Tailscale-latest-macos.pkg"
-                    if command -v sudo >/dev/null 2>&1; then
-                        echo -e "${CYAN}[INFO]${NC} Đang cài đặt Tailscale vào hệ thống..."
-                        sudo installer -pkg /tmp/Tailscale.pkg -target / 2>/dev/null || open /tmp/Tailscale.pkg
-                    else
-                        open /tmp/Tailscale.pkg
-                    fi
-                    rm -f /tmp/Tailscale.pkg
+            fi
+
+            if command -v tailscale >/dev/null 2>&1; then
+                echo -e "${CYAN}[INFO]${NC} Khởi động xác thực Tailscale..."
+                echo -e "${BOLD}Vui lòng mở liên kết xác thực hiển thị dưới đây trên trình duyệt để đăng nhập:${NC}"
+                echo ""
+                TARGET_USER="${SUDO_USER:-$USER}"
+                if [ -n "$TARGET_USER" ] && [ "$TARGET_USER" != "root" ]; then
+                    sudo tailscale up --operator="$TARGET_USER" || sudo tailscale up || true
+                else
+                    tailscale up || true
                 fi
-                if [ -d "/Applications/Tailscale.app" ]; then
-                    export PATH="/Applications/Tailscale.app/Contents/MacOS:$PATH"
-                fi
-            elif [[ "$OS" == MINGW* || "$OS" == MSYS* || "$OS" == CYGWIN* ]]; then
+            fi
+
+        elif [[ "$OS" == MINGW* || "$OS" == MSYS* || "$OS" == CYGWIN* ]]; then
+            if ! command -v tailscale >/dev/null 2>&1; then
                 if command -v winget.exe >/dev/null 2>&1; then
                     echo -e "${CYAN}[INFO]${NC} Đang cài đặt Tailscale qua winget..."
                     winget.exe install -e --id Tailscale.Tailscale --accept-source-agreements --accept-package-agreements || true
@@ -376,43 +396,25 @@ else
                     export PATH="/c/Program Files/Tailscale:$PATH"
                 fi
             fi
+
+            if command -v tailscale >/dev/null 2>&1; then
+                echo -e "${CYAN}[INFO]${NC} Khởi động xác thực Tailscale..."
+                tailscale up || true
+            fi
         fi
 
-        # Find usable tailscale CLI
-        TS_CMD=""
-        if [ -x "/Applications/Tailscale.app/Contents/MacOS/tailscale" ]; then
-            TS_CMD="/Applications/Tailscale.app/Contents/MacOS/tailscale"
-        elif command -v tailscale >/dev/null 2>&1 && tailscale version >/dev/null 2>&1; then
-            TS_CMD="tailscale"
+        # Check Tailscale IP
+        TAILSCALE_IP=""
+        if command -v tailscale >/dev/null 2>&1; then
+            TAILSCALE_IP=$(tailscale ip -4 2>/dev/null || true)
         fi
 
-        if [ -n "$TS_CMD" ]; then
-            echo -e "${CYAN}[INFO]${NC} Khởi động xác thực Tailscale..."
-            echo -e "${BOLD}Vui lòng mở liên kết xác thực hiển thị dưới đây trên trình duyệt để đăng nhập:${NC}"
+        if [ -n "$TAILSCALE_IP" ]; then
             echo ""
-            if [ "$OS" = "Linux" ]; then
-                TARGET_USER="${SUDO_USER:-$USER}"
-                if [ -n "$TARGET_USER" ] && [ "$TARGET_USER" != "root" ]; then
-                    sudo "$TS_CMD" up --operator="$TARGET_USER" || sudo "$TS_CMD" up || true
-                else
-                    "$TS_CMD" up || true
-                fi
-            elif [ "$OS" = "Darwin" ]; then
-                open -a Tailscale 2>/dev/null || true
-                "$TS_CMD" up || true
-            else
-                "$TS_CMD" up || true
-            fi
-
-            TAILSCALE_IP=$("$TS_CMD" ip -4 2>/dev/null || true)
-            if [ -n "$TAILSCALE_IP" ]; then
-                echo ""
-                echo -e "${GREEN}[✓] Đã kết nối Tailscale thành công! (IP: ${TAILSCALE_IP})${NC}"
-            else
-                echo -e "${YELLOW}[WARN]${NC} Chưa hoàn tất xác thực Tailscale. Bạn có thể mở ứng dụng Tailscale để đăng nhập."
-            fi
+            echo -e "${GREEN}[✓] Đã kết nối Tailscale thành công! (IP: ${TAILSCALE_IP})${NC}"
         else
-            echo -e "${YELLOW}[WARN]${NC} Không thể tự động chạy Tailscale. Bạn có thể cài và mở thủ công từ: https://tailscale.com/download"
+            echo ""
+            echo -e "${CYAN}[INFO]${NC} Sau khi hoàn tất đăng nhập Tailscale trên trình duyệt, IP truy cập từ xa sẽ tự động sẵn sàng."
         fi
     fi
 fi

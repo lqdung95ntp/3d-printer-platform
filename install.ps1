@@ -239,12 +239,13 @@ if ($tailscaleIp) {
             $tailscaleIp = (& tailscale ip -4 2>$null).Trim()
             if ($tailscaleIp) {
                 Write-Host ""
-                Write-Host "[✓] Da ket noi Tailscale thanh cong! (IP: $tailscaleIp)" -ForegroundColor Green
+                Write-Host "[OK] Da ket noi Tailscale thanh cong! (IP: $tailscaleIp)" -ForegroundColor Green
             } else {
-                Write-Host "[!] Chua hoan tat xac thuc Tailscale. Ban co the chay lai 'tailscale up' bat cu luc nao." -ForegroundColor Yellow
+                Write-Host "[INFO] Sau khi hoan tat dang nhap tren trinh duyet, IP truy cap tu xa se tu dong san sang." -ForegroundColor Cyan
             }
         } else {
-            Write-Host "[!] Khong the tu dong cai dat Tailscale. Ban co the cai thu cong tu: https://tailscale.com/download" -ForegroundColor Yellow
+            Start-Process "https://login.tailscale.com/start" -ErrorAction SilentlyContinue
+            Write-Host "[INFO] Vui long hoan tat cai dat va dang nhap Tailscale tu: https://tailscale.com/download" -ForegroundColor Cyan
         }
     }
 }
