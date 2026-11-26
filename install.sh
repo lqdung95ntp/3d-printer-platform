@@ -332,16 +332,35 @@ else
 
     if [ "$INSTALL_TS" = "y" ]; then
         echo -e "${CYAN}[INFO]${NC} Đang chuẩn bị Tailscale..."
-        if ! command -v tailscale >/dev/null 2>&1; then
+        
+        is_tailscale_usable() {
+            if [ -x "/Applications/Tailscale.app/Contents/MacOS/tailscale" ] && "/Applications/Tailscale.app/Contents/MacOS/tailscale" version >/dev/null 2>&1; then
+                return 0
+            fi
+            if command -v tailscale >/dev/null 2>&1 && tailscale version >/dev/null 2>&1; then
+                return 0
+            fi
+            return 1
+        }
+
+        if ! is_tailscale_usable; then
             if [ "$OS" = "Linux" ]; then
                 echo -e "${CYAN}[INFO]${NC} Đang cài đặt Tailscale qua script chính thức..."
                 curl -fsSL https://tailscale.com/install.sh | sh
             elif [ "$OS" = "Darwin" ]; then
+                if [ ! -d "/Applications/Tailscale.app" ]; then
+                    echo -e "${CYAN}[INFO]${NC} Đang tải bộ cài Tailscale cho macOS..."
+                    curl -# -fL -o /tmp/Tailscale.pkg "https://pkgs.tailscale.com/stable/Tailscale-latest-macos.pkg"
+                    if command -v sudo >/dev/null 2>&1; then
+                        echo -e "${CYAN}[INFO]${NC} Đang cài đặt Tailscale vào hệ thống..."
+                        sudo installer -pkg /tmp/Tailscale.pkg -target / 2>/dev/null || open /tmp/Tailscale.pkg
+                    else
+                        open /tmp/Tailscale.pkg
+                    fi
+                    rm -f /tmp/Tailscale.pkg
+                fi
                 if [ -d "/Applications/Tailscale.app" ]; then
                     export PATH="/Applications/Tailscale.app/Contents/MacOS:$PATH"
-                elif command -v brew >/dev/null 2>&1; then
-                    echo -e "${CYAN}[INFO]${NC} Đang cài đặt Tailscale qua Homebrew..."
-                    brew install --cask tailscale || true
                 fi
             elif [[ "$OS" == MINGW* || "$OS" == MSYS* || "$OS" == CYGWIN* ]]; then
                 if command -v winget.exe >/dev/null 2>&1; then
@@ -359,30 +378,41 @@ else
             fi
         fi
 
-        if command -v tailscale >/dev/null 2>&1; then
+        # Find usable tailscale CLI
+        TS_CMD=""
+        if [ -x "/Applications/Tailscale.app/Contents/MacOS/tailscale" ]; then
+            TS_CMD="/Applications/Tailscale.app/Contents/MacOS/tailscale"
+        elif command -v tailscale >/dev/null 2>&1 && tailscale version >/dev/null 2>&1; then
+            TS_CMD="tailscale"
+        fi
+
+        if [ -n "$TS_CMD" ]; then
             echo -e "${CYAN}[INFO]${NC} Khởi động xác thực Tailscale..."
             echo -e "${BOLD}Vui lòng mở liên kết xác thực hiển thị dưới đây trên trình duyệt để đăng nhập:${NC}"
             echo ""
             if [ "$OS" = "Linux" ]; then
                 TARGET_USER="${SUDO_USER:-$USER}"
                 if [ -n "$TARGET_USER" ] && [ "$TARGET_USER" != "root" ]; then
-                    sudo tailscale up --operator="$TARGET_USER" || sudo tailscale up || true
+                    sudo "$TS_CMD" up --operator="$TARGET_USER" || sudo "$TS_CMD" up || true
                 else
-                    tailscale up || true
+                    "$TS_CMD" up || true
                 fi
+            elif [ "$OS" = "Darwin" ]; then
+                open -a Tailscale 2>/dev/null || true
+                "$TS_CMD" up || true
             else
-                tailscale up || true
+                "$TS_CMD" up || true
             fi
 
-            TAILSCALE_IP=$(tailscale ip -4 2>/dev/null || true)
+            TAILSCALE_IP=$("$TS_CMD" ip -4 2>/dev/null || true)
             if [ -n "$TAILSCALE_IP" ]; then
                 echo ""
                 echo -e "${GREEN}[✓] Đã kết nối Tailscale thành công! (IP: ${TAILSCALE_IP})${NC}"
             else
-                echo -e "${YELLOW}[WARN]${NC} Chưa hoàn tất xác thực Tailscale. Bạn có thể chạy lại lệnh 'sudo tailscale up' bất cứ lúc nào."
+                echo -e "${YELLOW}[WARN]${NC} Chưa hoàn tất xác thực Tailscale. Bạn có thể mở ứng dụng Tailscale để đăng nhập."
             fi
         else
-            echo -e "${YELLOW}[WARN]${NC} Không thể tự động cài đặt Tailscale. Bạn có thể cài thủ công từ: https://tailscale.com/download"
+            echo -e "${YELLOW}[WARN]${NC} Không thể tự động chạy Tailscale. Bạn có thể cài và mở thủ công từ: https://tailscale.com/download"
         fi
     fi
 fi
