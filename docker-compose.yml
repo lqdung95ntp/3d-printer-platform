@@ -58,6 +58,23 @@ services:
     networks:
       - bee-network
 
+  # =========================================================================
+  # BeE Printer Platform - Automated Safe Update (Watchtower)
+  # Automatically checks GHCR, pulls new images and updates containers gracefully
+  # =========================================================================
+  watchtower:
+    image: containrrr/watchtower:latest
+    container_name: bee-platform-watchtower
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - WATCHTOWER_CLEANUP=true
+      - WATCHTOWER_SCHEDULE=0 0 3 * * *
+      - WATCHTOWER_ROLLING_RESTART=true
+      - TZ=${TZ:-Asia/Ho_Chi_Minh}
+    command: bee-platform-core bee-platform-pro
+
 networks:
   bee-network:
     driver: bridge
